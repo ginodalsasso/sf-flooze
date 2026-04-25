@@ -1,0 +1,333 @@
+erDiagram
+
+%% =========================
+%% CORE
+%% =========================
+USER ||--o{ SPACE : owns
+
+SPACE ||--o{ ACCOUNT : contains
+SPACE ||--o{ CATEGORY : defines
+SPACE ||--o{ PROPERTY : contains
+SPACE ||--o{ CLIENT : manages
+SPACE ||--o{ TAX_YEAR : declares
+SPACE ||--o{ DOCUMENT : stores
+SPACE ||--o{ REMINDER : schedules
+SPACE ||--o{ TENANT : manages
+
+%% =========================
+%% FINANCE
+%% =========================
+ACCOUNT ||--o{ TRANSACTION : records
+TRANSACTION }o--|| CATEGORY : categorized
+ACCOUNT ||--o{ ASSET : holds
+CATEGORY ||--o{ CATEGORY : parent_of
+
+%% =========================
+%% IMMOBILIER
+%% =========================
+PROPERTY ||--o{ LEASE : has
+PROPERTY ||--o| LOAN : financed_by
+
+LEASE ||--o{ LEASE_TENANT : includes
+TENANT ||--o{ LEASE_TENANT : participates
+
+LEASE ||--o{ RENT_PAYMENT : generates
+RENT_PAYMENT }o--o| TRANSACTION : linked_to
+
+%% =========================
+%% LOAN PAYMENTS
+%% =========================
+LOAN ||--o{ LOAN_PAYMENT : generates
+LOAN_PAYMENT }o--|| TRANSACTION : linked_to
+
+%% =========================
+%% FACTURATION
+%% =========================
+CLIENT ||--o{ QUOTE : receives
+CLIENT ||--o{ INVOICE : receives
+QUOTE ||--o{ QUOTE_LINE : composed_of
+INVOICE ||--o{ INVOICE_LINE : composed_of
+QUOTE ||--o| INVOICE : converts_to
+
+%% =========================
+%% FISCALITE
+%% =========================
+TAX_YEAR ||--o{ TAX_ITEM : contains
+TAX_ITEM }o--o| TRANSACTION : linked_to
+TAX_ITEM }o--o| PROPERTY : concerns
+
+%% =========================
+%% GENERIC LINKS
+%% =========================
+DOCUMENT ||--o{ DOCUMENT_LINK : links
+REMINDER ||--o{ REMINDER_LINK : links
+
+%% =========================
+%% ENTITIES
+%% =========================
+
+USER {
+  string id PK
+  string email
+  string name
+  timestamp created_at
+  timestamp updated_at
+}
+
+SPACE {
+  string id PK
+  string user_id FK
+  string name
+  enum type "personal | professional"
+  string currency
+  timestamp created_at
+  timestamp updated_at
+  timestamp deleted_at
+}
+
+%% -------- FINANCE --------
+ACCOUNT {
+  string id PK
+  string space_id FK
+  string name
+  enum type "bank | cash | crypto | saving"
+  float balance
+  timestamp created_at
+  timestamp updated_at
+  timestamp deleted_at
+}
+
+TRANSACTION {
+  string id PK
+  string account_id FK
+  string destination_account_id FK "nullable (transfer)"
+  string category_id FK
+  enum type "income | expense | transfer"
+  float amount
+  date date
+  string description
+  timestamp created_at
+  timestamp updated_at
+}
+
+CATEGORY {
+  string id PK
+  string space_id FK
+  string parent_id FK
+  string name
+  enum type "income | expense"
+  bool is_declarable "revenus imposables"
+  bool is_deductible "charges déductibles"
+  timestamp created_at
+  timestamp updated_at
+}
+
+ASSET {
+  string id PK
+  string account_id FK
+  string name
+  string ticker
+  float quantity
+  float avg_price
+  timestamp created_at
+  timestamp updated_at
+}
+
+%% -------- IMMOBILIER --------
+PROPERTY {
+  string id PK
+  string space_id FK
+  string name
+  string address
+  enum type "primary | rental | secondary"
+  float purchase_price
+  date purchase_date
+  timestamp created_at
+  timestamp updated_at
+  timestamp deleted_at
+}
+
+TENANT {
+  string id PK
+  string space_id FK
+  string first_name
+  string last_name
+  string email
+  string phone
+  string national_id
+  float monthly_income
+  string guarantor_name
+  string guarantor_phone
+  bool is_active
+  timestamp created_at
+  timestamp updated_at
+}
+
+LEASE {
+  string id PK
+  string property_id FK
+  date start_date
+  date end_date
+  float rent
+  float charges
+  enum type "meuble | nu | colocation"
+  float security_deposit
+  bool is_active
+  timestamp created_at
+  timestamp updated_at
+  timestamp deleted_at
+}
+
+LEASE_TENANT {
+  string lease_id FK
+  string tenant_id FK
+}
+
+RENT_PAYMENT {
+  string id PK
+  string lease_id FK
+  string transaction_id FK
+  date due_date
+  float amount
+  bool paid
+  date paid_date
+  timestamp created_at
+  timestamp updated_at
+}
+
+LOAN {
+  string id PK
+  string property_id FK
+  float amount
+  float rate
+  float insurance_rate
+  int duration_months
+  float monthly_payment
+  float remaining_capital
+  date start_date
+  timestamp created_at
+  timestamp updated_at
+}
+
+LOAN_PAYMENT {
+  string id PK
+  string loan_id FK
+  string transaction_id FK
+  date date
+  float amount "total prélevé"
+  float capital_part "non déductible"
+  float interest_part "déductible"
+  float insurance_part "déductible"
+}
+
+%% -------- FACTURATION --------
+CLIENT {
+  string id PK
+  string space_id FK
+  string name
+  string email
+  string phone
+  string address
+  string vat_number
+  timestamp created_at
+  timestamp updated_at
+}
+
+QUOTE {
+  string id PK
+  string client_id FK
+  string number
+  enum status "draft | sent | accepted | rejected"
+  date created_at
+  date valid_until
+  timestamp updated_at
+}
+
+QUOTE_LINE {
+  string id PK
+  string quote_id FK
+  string description
+  float quantity
+  float unit_price
+  float vat_rate
+}
+
+INVOICE {
+  string id PK
+  string client_id FK
+  string quote_id FK
+  string number
+  enum status "draft | sent | paid | overdue"
+  date issued_at
+  date due_date
+  float total_ht
+  float total_ttc
+  timestamp created_at
+  timestamp updated_at
+  timestamp deleted_at
+}
+
+INVOICE_LINE {
+  string id PK
+  string invoice_id FK
+  string description
+  float quantity
+  float unit_price
+  float vat_rate
+}
+
+%% -------- FISCALITE --------
+TAX_YEAR {
+  string id PK
+  string space_id FK
+  int year
+  enum status "draft | filed | paid"
+  string note
+  timestamp created_at
+  timestamp updated_at
+}
+
+TAX_ITEM {
+  string id PK
+  string tax_year_id FK
+  string transaction_id FK "nullable"
+  string property_id FK "nullable"
+  enum kind "to_declare | to_deduct | to_pay"
+  string label
+  float amount "nullable"
+  string note
+  bool done
+  timestamp created_at
+  timestamp updated_at
+}
+
+%% -------- GENERIC --------
+DOCUMENT {
+  string id PK
+  string space_id FK
+  string name
+  string file_url
+  timestamp created_at
+  timestamp updated_at
+}
+
+DOCUMENT_LINK {
+  string document_id FK
+  string entity_id
+  string entity_type
+}
+
+REMINDER {
+  string id PK
+  string space_id FK
+  string title
+  date due_date
+  timestamp created_at
+  timestamp updated_at
+}
+
+REMINDER_LINK {
+  string reminder_id FK
+  string entity_id
+  string entity_type
+}

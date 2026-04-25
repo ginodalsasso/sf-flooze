@@ -1,0 +1,15 @@
+.git/
+.github/
+.gitignore
+
+/var/
+!/var/cache/
+/var/cache/
+!/var/log/
+/var/log/
+
+vendor/
+
+node_modules/
+
+erd/
