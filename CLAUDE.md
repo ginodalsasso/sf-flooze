@@ -1,93 +1,156 @@
-# CLAUDE.md
+# CLAUDE.md — sf-flooze
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**sf-flooze** : Application Symfony 8.0 hybride ERP + gestion bancaire + fiscalité personnelle/professionnelle. Multi-tenant via `Space`. OCR via Ollama local. PDF via dompdf.
 
-## Project Overview
+**Stack** : PHP 8.4 · Symfony 8.0 · Doctrine 3.x · MySQL 8.0 · FrankenPHP · Ollama · dompdf · Stimulus/Turbo
 
-**sf-flooze** is a personal finance and real-estate management SaaS built with Symfony 8.0 / PHP 8.4. It handles budgeting, property management, invoicing, and tax declarations, all scoped to multi-tenant *Spaces*.
+**Docs** : [Architecture](ARCHITECTURE.md) · [Modules](MODULES.md) · [Setup](SETUP.md) · [Rules](.claude/rules.md) · [Memory](.claude/memory.md)
 
-## Development Environment
+---
 
-The stack runs in Docker via FrankenPHP (Caddy + PHP-FPM in one binary). Local dev uses Laragon with a direct MySQL connection (no Docker required).
-
-| Context | Database URL |
-|---------|-------------|
-| Laragon (local) | `mysql://root@127.0.0.1:3306/sf_flooze` (set in `.env`) |
-| Docker dev | `mysql://app:!ChangeMe!@database:3306/app` (injected by compose) |
-
-### Common Commands
+## Quick Dev Workflow
 
 ```bash
-# Start Docker dev stack (builds frankenphp_dev image, mounts source)
-docker compose up -d
+# 1. Start services
+symfony serve           # PHP dev server (port 8000)
+ollama serve            # Ollama IA (port 11434)
+# MySQL via Laragon or Docker
 
-# Symfony console (local)
-php bin/console <command>
-
-# Symfony console (Docker)
-docker compose exec php bin/console <command>
-
-# Run database migrations
+# 2. Make changes + run migrations
+php bin/console doctrine:migrations:diff
 php bin/console doctrine:migrations:migrate
 
-# Generate a migration after entity changes
-php bin/console doctrine:migrations:diff
-
-# Clear cache
+# 3. Clear cache if needed
 php bin/console cache:clear
 
-# Run tests
-php bin/phpunit
+# 4. Run tests
+php bin/phpunit tests/
 
-# Run a single test file
-php bin/phpunit tests/path/to/SomeTest.php
-
-# Run a single test method
-php bin/phpunit --filter testMethodName
-
-# Install JS assets
-php bin/console importmap:install
+# 5. Commit (see Before Committing below)
 ```
 
-### Docker Compose Files
+---
 
-- `compose.yaml` — base services (php, database)
-- `compose.override.yaml` — dev overrides: mounts local source, adds Mailpit (port 8025), enables Xdebug toggle via `XDEBUG_MODE`
-- `compose.prod.yaml` — production overrides
+## Code Patterns
 
-## Architecture
+### Where to Put Code
 
-### Multi-tenant Data Model
+| Type | Location |
+|------|----------|
+| Business logic | `src/Service/{Domain}/` |
+| HTTP layer | `src/Controller/{Domain}/` |
+| DB entities | `src/Entity/` |
+| Custom queries | `src/Repository/` |
+| Console tasks | `src/Command/` |
+| Forms | `src/Form/` |
+| Event hooks | `src/EventListener/` |
+| Reusable mixins | `src/Trait/` |
+| Strict types | `src/Enum/` |
+| Input validation | `src/Dto/` |
 
-Everything is scoped to a **Space**. A `User` owns one or more `Space` records. All domain entities (Account, Category, Property, Client, etc.) carry a `space_id` FK. The ERD lives in `erd/erdfinal.txt` and `erd/erd final.svg`.
+### Naming Quick Reference
 
-### Domain Modules (planned entities, not yet implemented)
+```
+Entity:      CamelCase singular       → User, Property, Transaction
+Service:     VerbNounService          → TransactionService, ReceiptOcrService
+Controller:  NounController           → QuoteController, DashboardController
+Repository:  CamelCaseRepository      → TransactionRepository
+Enum:        NounStatusEnum           → InvoiceStatusEnum, TransactionTypeEnum
+Trait:       NounTrait                → TimestampTrait, SpaceScopeTrait
+DB table:    snake_case singular       → user, property, transaction
+DB FK:       entity_id                → space_id, account_id, user_id
+DB pivot:    parent_child             → lease_tenant, document_link
+```
 
-| Module | Key entities |
-|--------|-------------|
-| **Finance** | Account, Transaction, Category (hierarchical), Asset |
-| **Real Estate** | Property, Lease, LeaseTenant, Tenant, RentPayment, Loan, LoanPayment |
-| **Invoicing** | Client, Quote, QuoteLine, Invoice, InvoiceLine |
-| **Tax** | TaxYear, TaxItem |
-| **Generic** | Document + DocumentLink, Reminder + ReminderLink |
+### Multi-tenant Rule
 
-`Transaction` is the financial backbone — RentPayment, LoanPayment, and TaxItem all optionally link back to a Transaction.
+Every entity **must** have `space_id`. Use `SpaceScopeTrait` + `SpaceScopeVoter`. Never query without space filter.
 
-### Symfony Layer
+### Service Domains
 
-- **Entities** → `src/Entity/` (Doctrine ORM, attribute mapping)
-- **Repositories** → `src/Repository/`
-- **Controllers** → `src/Controller/`
-- **Templates** → `templates/` (Twig)
-- **Config** → `config/packages/` (one YAML per bundle)
-- **Migrations** → `frankenphp/migrations/` (Doctrine migrations)
+```
+src/Service/
+├── AI/           → OllamaClient, ReceiptOcrService, PayslipParsingService
+├── Finance/      → TransactionService, CategoryService, AssetService
+├── RealEstate/   → PropertyService, LeaseService, LoanService
+├── Invoicing/    → QuoteService, InvoiceService
+├── Tax/          → TaxItemService, TaxYearService
+├── PDF/          → QuotePdfGenerator, InvoicePdfGenerator, TaxSummaryPdfGenerator
+├── Document/     → DocumentService
+├── Notification/ → ReminderService
+└── Security/     → SpaceAuthorizationService, EncryptionService
+```
 
-Doctrine uses `underscore` naming strategy and attribute-based mapping. Test databases are suffixed `_test`.
+### Doctrine Entity Pattern
 
-### Frontend
+```php
+#[ORM\Entity(repositoryClass: TransactionRepository::class)]
+#[ORM\Table(name: 'transaction')]
+class Transaction {
+    use TimestampTrait, SpaceScopeTrait, SoftDeleteTrait;
 
-Assets are managed via Symfony AssetMapper (`importmap.php`) — no Node/Webpack build step. Stimulus (via `symfony/stimulus-bundle`) and Turbo (`symfony/ux-turbo`) are included for interactivity.
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
+    private ?int $id = null;
 
-### Runtime
+    #[ORM\Column(type: Types::STRING, enumType: TransactionTypeEnum::class)]
+    private TransactionTypeEnum $type;
+    // ...
+}
+```
 
-FrankenPHP serves the app. The Caddyfile (`frankenphp/Caddyfile`) rewrites all non-static, non-Mercure requests to `index.php`. The dev image runs with `--watch` for auto-reload.
+### PDF Generation Pattern
+
+```php
+// Service generates PDF bytes from Twig template
+$html = $this->twig->render('pdf/quote.html.twig', ['quote' => $quote]);
+$dompdf = new Dompdf(new Options());
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'portrait');
+$dompdf->render();
+return $dompdf->output(); // bytes
+```
+
+### Ollama Integration Pattern
+
+```php
+// Text extraction
+$result = $this->ollama->generate($prompt, model: 'neural-chat');
+// Vision OCR
+$result = $this->ollama->generateWithImage($prompt, $imagePath, model: 'llava');
+```
+
+---
+
+## Before Committing
+
+```bash
+php bin/phpunit tests/                          # All tests green
+php bin/console doctrine:schema:validate        # Schema valid
+php bin/console doctrine:migrations:diff        # No pending migrations
+php bin/console lint:twig templates/            # Templates valid
+php bin/console debug:container --unused        # No unused services
+```
+
+---
+
+## Key Commands
+
+```bash
+php bin/console doctrine:migrations:diff        # Generate migration
+php bin/console doctrine:migrations:migrate     # Apply migrations
+php bin/console doctrine:fixtures:load          # Load test data
+php bin/console cache:clear                     # Clear cache
+php bin/console debug:router                    # List routes
+php bin/console debug:container                 # List services
+```
+
+---
+
+## Documentation Index
+
+- [README.md](README.md) — Project overview & quick start
+- [ARCHITECTURE.md](ARCHITECTURE.md) — Directory structure, entity relationships, design patterns
+- [MODULES.md](MODULES.md) — Detailed specs for all 6 modules
+- [SETUP.md](SETUP.md) — Installation guide (Laragon + Docker)
+- [.claude/rules.md](.claude/rules.md) — Code guidelines, SOLID, naming, testing
+- [.claude/memory.md](.claude/memory.md) — Persistent context for Claude Code
