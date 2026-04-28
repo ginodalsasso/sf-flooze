@@ -263,6 +263,48 @@ Examples of forbidden over-engineering:
 
 ---
 
+## Using Context7 for Documentation
+
+When implementing or debugging anything involving a specific library or framework, **always fetch up-to-date docs via context7** before writing code. Training data may be outdated.
+
+### When to use context7
+
+| Use context7 | Don't use context7 |
+|---|---|
+| Symfony component API (forms, security, events…) | Refactoring existing business logic |
+| Doctrine query syntax / mapping options | Writing services from scratch (no external API) |
+| dompdf configuration / options | Code review |
+| Ollama REST API parameters | General PHP patterns |
+| FrankenPHP / Caddy config | Debugging pure business logic |
+| AssetMapper / Stimulus / Turbo | ERD / entity design decisions |
+
+### How to use
+
+```bash
+# 1. Resolve library ID
+npx ctx7@latest library <name> "<question>"
+# Example:
+npx ctx7@latest library "Symfony" "how to create a custom voter"
+
+# 2. Fetch docs with the returned ID
+npx ctx7@latest docs /symfony/symfony "how to create a custom voter"
+
+# 3. If result is unsatisfying, add --research flag
+npx ctx7@latest docs /symfony/symfony "how to create a custom voter" --research
+```
+
+### Common library IDs for this project
+
+| Library | ctx7 ID |
+|---------|---------|
+| Symfony | `/symfony/symfony` |
+| Doctrine ORM | `/doctrine/orm` |
+| dompdf | `/dompdf/dompdf` |
+| Stimulus | `/hotwired/stimulus` |
+| Turbo | `/hotwired/turbo` |
+
+---
+
 ## Anti-Patterns to Avoid
 
 - **Inventing entities** : if it's not in the ERD, don't create it
