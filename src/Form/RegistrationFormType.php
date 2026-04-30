@@ -12,6 +12,8 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\IsTrue;
@@ -29,12 +31,20 @@ class RegistrationFormType extends AbstractType
                 'constraints' => [
                     new NotBlank(message: 'Please enter your first name.'),
                     new Length(min: 2, max: 100),
+                    new Regex(
+                        pattern: '/^[\p{L}\p{M}\s\'\-\.]+$/u',
+                        message: 'First name may only contain letters, spaces, hyphens, apostrophes or dots.',
+                    ),
                 ],
             ])
             ->add('lastName', TextType::class, [
                 'constraints' => [
                     new NotBlank(message: 'Please enter your last name.'),
                     new Length(min: 2, max: 100),
+                    new Regex(
+                        pattern: '/^[\p{L}\p{M}\s\'\-\.]+$/u',
+                        message: 'Last name may only contain letters, spaces, hyphens, apostrophes or dots.',
+                    ),
                 ],
             ])
             ->add('email', EmailType::class, [
@@ -56,6 +66,7 @@ class RegistrationFormType extends AbstractType
                         min: 12,
                         max: 4096,
                         minMessage: 'Your password must be at least {{ limit }} characters.',
+                        maxMessage: 'Your password cannot be longer than {{ limit }} characters.',
                     ),
                     new Regex(
                         pattern: '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d\s])/',
@@ -71,6 +82,13 @@ class RegistrationFormType extends AbstractType
                 ],
             ])
         ;
+
+        $builder->get('email')->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event): void {
+            $value = $event->getData();
+            if (is_string($value)) {
+                $event->setData(mb_strtolower($value));
+            }
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void

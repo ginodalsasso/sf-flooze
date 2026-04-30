@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'user')]
@@ -29,15 +30,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Email(mode: 'strict')]
+    #[Assert\Length(max: 180)]
     private string $email;
 
     #[ORM\Column]
     private string $password;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
+    #[Assert\Regex(
+        pattern: '/^[\p{L}\p{M}\s\'\-\.]+$/u',
+        message: 'First name may only contain letters, spaces, hyphens, apostrophes or dots.',
+    )]
     private string $firstName;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
+    #[Assert\Regex(
+        pattern: '/^[\p{L}\p{M}\s\'\-\.]+$/u',
+        message: 'Last name may only contain letters, spaces, hyphens, apostrophes or dots.',
+    )]
     private string $lastName;
 
     #[ORM\Column(type: 'json')]
