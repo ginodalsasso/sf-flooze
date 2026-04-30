@@ -18,6 +18,12 @@ class UserChecker implements UserCheckerInterface
             return;
         }
 
+        if ($user->isDeleted()) {
+            throw new CustomUserMessageAccountStatusException(
+                'This account has been deactivated.'
+            );
+        }
+
         if (!$user->isVerified()) {
             throw new CustomUserMessageAccountStatusException(
                 'Your account is not verified. Please check your email.'

@@ -7,17 +7,15 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
 use App\Repository\UserRepository;
+use App\Service\Notification\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class RegistrationController extends AbstractController
 {
@@ -26,7 +24,7 @@ class RegistrationController extends AbstractController
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $em,
-        MailerInterface $mailer,
+        EmailService $emailService,
         RateLimiterFactoryInterface $registrationLimiter,
     ): Response {
         if ($this->getUser()) {
@@ -55,10 +53,8 @@ class RegistrationController extends AbstractController
 
             $em->persist($user);
             $em->flush();
-            
-            $verifyUrl = $this->verifyUrl($user);
 
-            $this->generateEmail($user, $verifyUrl, $mailer);
+            $emailService->sendVerificationEmail($user);
 
             $this->addFlash('success', 'Account created. Please check your email to verify your account.');
 
@@ -68,32 +64,6 @@ class RegistrationController extends AbstractController
         return $this->render('registration/register.html.twig', [
             'registrationForm' => $form,
         ]);
-    }
-
-    private function verifyUrl(User $user): string
-    {
-        return $this->generateUrl('app_verify_email', [
-            'id' => $user->getId(),
-            'token' => $user->getVerificationToken(),
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
-    }
-
-    private function generateEmail(
-        User $user,
-        string $verifyUrl,
-        MailerInterface $mailer,
-    ): void
-    {
-        $email = (new Email())
-            ->from($_ENV['EMAIL_SENDER'])
-            ->to($user->getEmail())
-            ->subject('Verify your Flooze account')
-            ->html($this->renderView('emails/verify_email.html.twig', [
-                'user' => $user,
-                'verifyUrl' => $verifyUrl,
-            ]));
-
-        $mailer->send($email);
     }
 
     #[Route('/verify-email/{id}/{token}', name: 'app_verify_email')]
@@ -112,9 +82,12 @@ class RegistrationController extends AbstractController
         }
 
         if ($user->getVerificationTokenExpiresAt() < new \DateTimeImmutable()) {
+            $em->remove($user);
+            $em->flush();
+
             $this->addFlash('error', 'Verification link has expired. Please register again.');
 
-            return $this->redirectToRoute('app_login');
+            return $this->redirectToRoute('app_register');
         }
 
         if ($user->isVerified()) {
