@@ -7,6 +7,10 @@
     <div class="auth-card">
         <h1>Create account</h1>
 
+        {% for flash in app.flashes('error') %}
+            <div class="flash flash--error">{{ flash }}</div>
+        {% endfor %}
+
         {{ form_start(registrationForm) }}
 
             <div class="form-group">
@@ -31,6 +35,7 @@
                 {{ form_label(registrationForm.plainPassword.first) }}
                 {{ form_widget(registrationForm.plainPassword.first) }}
                 {{ form_errors(registrationForm.plainPassword.first) }}
+                <small class="form-hint">Min. 12 characters with uppercase, lowercase, digit and special character.</small>
             </div>
 
             <div class="form-group">
@@ -40,6 +45,12 @@
             </div>
 
             {{ form_errors(registrationForm.plainPassword) }}
+
+            <div class="form-group form-group--checkbox">
+                {{ form_widget(registrationForm.agreeTerms) }}
+                {{ form_label(registrationForm.agreeTerms) }}
+                {{ form_errors(registrationForm.agreeTerms) }}
+            </div>
 
             <button type="submit">Create account</button>
 

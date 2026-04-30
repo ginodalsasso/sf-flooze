@@ -11,6 +11,14 @@
             <div class="flash flash--success">{{ flash }}</div>
         {% endfor %}
 
+        {% for flash in app.flashes('info') %}
+            <div class="flash flash--info">{{ flash }}</div>
+        {% endfor %}
+
+        {% for flash in app.flashes('error') %}
+            <div class="flash flash--error">{{ flash }}</div>
+        {% endfor %}
+
         {% if error %}
             <div class="flash flash--error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
         {% endif %}
@@ -26,6 +34,13 @@
                 <label for="inputPassword">Password</label>
                 <input type="password" id="inputPassword" name="_password"
                        autocomplete="current-password" required>
+            </div>
+
+            <div class="form-group form-group--checkbox">
+                <label>
+                    <input type="checkbox" name="_remember_me">
+                    Remember me for 7 days
+                </label>
             </div>
 
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
