@@ -85,7 +85,7 @@ class RegistrationController extends AbstractController
     ): void
     {
         $email = (new Email())
-            ->from('')
+            ->from($_ENV['EMAIL_SENDER'])
             ->to($user->getEmail())
             ->subject('Verify your Flooze account')
             ->html($this->renderView('emails/verify_email.html.twig', [
