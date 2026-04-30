@@ -146,11 +146,33 @@ php bin/console debug:container                 # List services
 
 ---
 
+## UI / Design System
+
+**Règle absolue** : lire [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) avant tout travail sur les templates, CSS ou composants visuels.
+
+### Rappels critiques
+
+| Sujet | Règle |
+|-------|-------|
+| Polices | Syne (titres) · DM Sans (corps) · JetBrains Mono (montants) — jamais Inter/Arial |
+| Couleurs | Palette désaturée sage `#C8D5C2` · pas de bleu/rouge/vert vifs · pas de gold/orange |
+| Espacement | Base 8px — `gap` uniquement entre frères, jamais `margin` |
+| Thème | `data-theme="dark"` par défaut · persisté via `localStorage['flooze-theme']` |
+| Sidebar | Toujours `#1E1E1E`, largeur 228px fixe |
+| Montants | Format FR `1 234,56 €` · JetBrains Mono obligatoire · tiret cadratin pour le négatif |
+| Icônes | Lucide Icons uniquement · 14 ou 16px · `stroke-width: 1.5` · jamais filled |
+| Radius | sm 6px · md 10px · lg 14px · xl 20px · pill 9999px — jamais > 20px |
+| Emoji | Aucun dans l'UI |
+| Scroll | Vertical uniquement — jamais horizontal |
+
+---
+
 ## Documentation Index
 
 - [README.md](README.md) — Project overview & quick start
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Directory structure, entity relationships, design patterns
 - [MODULES.md](MODULES.md) — Detailed specs for all 6 modules
 - [SETUP.md](SETUP.md) — Installation guide (Laragon + Docker)
+- [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) — **Source de vérité UI** : palette, typo, composants, layout, tokens CSS
 - [.claude/rules.md](.claude/rules.md) — Code guidelines, SOLID, naming, testing
 - [.claude/memory.md](.claude/memory.md) — Persistent context for Claude Code
