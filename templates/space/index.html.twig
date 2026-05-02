@@ -1,0 +1,89 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'space/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Mes espaces — Flooze{% endblock %}
+
+{% block content %}
+{% set _has_personal = false %}
+{% set _has_pro = false %}
+{% for s in spaces %}
+    {% if s.type.value == 'personal' %}{% set _has_personal = true %}{% endif %}
+    {% if s.type.value == 'professional' %}{% set _has_pro = true %}{% endif %}
+{% endfor %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Mes espaces</h1>
+        <p class="page-subtitle">Gérez vos espaces personnel et professionnel</p>
+    </div>
+    {% if not (_has_personal and _has_pro) %}
+    <a href="{{ path('app_space_new') }}" class="btn btn--primary">
+        <i data-lucide="plus"></i>
+        Créer un espace
+    </a>
+    {% endif %}
+</div>
+
+<div class="page-content">
+
+    {% for flash in app.flashes('success') %}
+        <div class="flash flash--success">{{ flash }}</div>
+    {% endfor %}
+    {% for flash in app.flashes('error') %}
+        <div class="flash flash--error">{{ flash }}</div>
+    {% endfor %}
+
+    {% if spaces|length > 0 %}
+    <div class="spaces-list-full">
+        {% for space in spaces %}
+        <div class="space-full-card">
+            <div class="space-full-icon space-full-icon--{{ space.type.value }}">
+                <i data-lucide="{{ space.type.value == 'personal' ? 'user' : 'briefcase' }}"></i>
+            </div>
+            <div class="space-full-body">
+                <div class="space-full-name">{{ space.name }}</div>
+                <div class="space-full-meta">
+                    <span class="space-dot space-dot--{{ space.type.value }}" style="width:7px;height:7px;"></span>
+                    {{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}
+                    &middot; créé le {{ space.createdAt|date('d/m/Y') }}
+                </div>
+            </div>
+            <div class="space-full-actions">
+                <a href="{{ path('app_space_edit', {'id': space.id}) }}" class="btn btn--secondary">
+                    <i data-lucide="pencil"></i>
+                    Modifier
+                </a>
+                <form method="post" action="{{ path('app_space_delete', {'id': space.id}) }}"
+                      onsubmit="return confirm('Supprimer l\'espace « {{ space.name }} » ?\n\nToutes les données associées seront définitivement supprimées.')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('space_delete_' ~ space.id) }}">
+                    <button type="submit" class="btn btn--danger">
+                        <i data-lucide="trash-2"></i>
+                        Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="panel-card" style="max-width:680px;">
+        <div class="panel-empty" style="padding:32px 0 16px;">
+            <div class="panel-empty-icon"><i data-lucide="layers"></i></div>
+            <p class="panel-empty-text">Aucun espace créé</p>
+            <p class="panel-empty-hint">Un espace personnel et un espace professionnel te permettent de séparer tes finances</p>
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:8px;">
+            <a href="{{ path('app_space_new') }}" class="btn btn--primary">
+                <i data-lucide="plus"></i>
+                Créer mon premier espace
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

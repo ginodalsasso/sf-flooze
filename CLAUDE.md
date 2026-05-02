@@ -158,12 +158,35 @@ php bin/console debug:container                 # List services
 | Couleurs | Palette désaturée sage `#C8D5C2` · pas de bleu/rouge/vert vifs · pas de gold/orange |
 | Espacement | Base 8px — `gap` uniquement entre frères, jamais `margin` |
 | Thème | `data-theme="dark"` par défaut · persisté via `localStorage['flooze-theme']` |
-| Sidebar | Toujours `#1E1E1E`, largeur 228px fixe |
+| Sidebar | Toujours `#1E1E1E`, largeur 228px fixe · dropdown hardcodé dark (pas de CSS vars) |
 | Montants | Format FR `1 234,56 €` · JetBrains Mono obligatoire · tiret cadratin pour le négatif |
 | Icônes | Lucide Icons uniquement · 14 ou 16px · `stroke-width: 1.5` · jamais filled |
 | Radius | sm 6px · md 10px · lg 14px · xl 20px · pill 9999px — jamais > 20px |
 | Emoji | Aucun dans l'UI |
 | Scroll | Vertical uniquement — jamais horizontal |
+
+### CSS — règle de séparation
+
+```
+assets/styles/app.css           → tokens, reset, layout shell, composants partagés
+                                  (sidebar, cards, buttons, forms génériques)
+
+templates/{module}/_styles.html.twig  → styles spécifiques à un module/page
+                                        inclus dans {% block stylesheets %} de chaque vue
+```
+
+**Règle** : toute page avec un formulaire complet ou un layout propre doit avoir
+son fichier `_styles.html.twig` dans le dossier de ses templates.
+
+```twig
+{# Dans la vue #}
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'module/_styles.html.twig' %}
+{% endblock %}
+```
+
+Ne jamais polluer `app.css` avec des styles spécifiques à une seule page.
 
 ---
 

@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="app-wrapper">
+    {% include 'layout/sidebar.html.twig' %}
+    <main class="app-main">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

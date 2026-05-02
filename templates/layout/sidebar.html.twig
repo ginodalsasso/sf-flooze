@@ -1,0 +1,163 @@
+{% set _sid = app.session.get('flooze_active_space_id') %}
+{% set _active_space = null %}
+{% for _s in app.user.spaces %}
+    {% if _s.id == _sid %}{% set _active_space = _s %}{% endif %}
+{% endfor %}
+{% if _active_space is null and app.user.spaces|length > 0 %}
+    {% set _active_space = app.user.spaces.first() %}
+{% endif %}
+
+{% set _route = app.request.attributes.get('_route') %}
+
+<aside class="app-sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-mark">
+                <i data-lucide="trending-up"></i>
+            </div>
+            <span class="sidebar-logo-name">Flooze</span>
+        </div>
+
+        {% if app.user.spaces|length > 0 %}
+        <div class="space-switcher" id="spaceSwitcher">
+            <button class="space-switcher-btn" type="button" onclick="toggleSpaceSwitcher(event)">
+                <span class="space-dot space-dot--{{ _active_space ? _active_space.type.value : 'personal' }}"></span>
+                <span class="space-switcher-name">{{ _active_space ? _active_space.name : 'Aucun espace' }}</span>
+                <span class="space-switcher-type">{{ _active_space ? (_active_space.type.value == 'professional' ? 'Pro' : 'Personnel') : '' }}</span>
+                <i data-lucide="chevrons-up-down" class="space-switcher-chevron"></i>
+            </button>
+            <div class="space-switcher-dropdown" id="spaceSwitcherDropdown">
+                {% for space in app.user.spaces %}
+                <form method="post" action="{{ path('app_space_switch', {id: space.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('space_switch') }}">
+                    <button type="submit" class="space-option{{ _active_space and space.id == _active_space.id ? ' space-option--active' : '' }}">
+                        <span class="space-dot space-dot--{{ space.type.value }}"></span>
+                        <div class="space-option-info">
+                            <span class="space-option-name">{{ space.name }}</span>
+                            <span class="space-option-type">{{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
+                        </div>
+                        {% if _active_space and space.id == _active_space.id %}
+                        <i data-lucide="check" class="space-option-check"></i>
+                        {% endif %}
+                    </button>
+                </form>
+                {% endfor %}
+                {% if app.user.spaces|length < 2 %}
+                <div class="space-switcher-divider"></div>
+                <a href="{{ path('app_space_new') }}" class="space-option space-option--create">
+                    <span class="space-dot-plus"><i data-lucide="plus" style="width:12px;height:12px;"></i></span>
+                    <div class="space-option-info">
+                        <span class="space-option-name">Créer un espace</span>
+                        <span class="space-option-type">{{ app.user.spaces|length == 0 ? 'Personnel ou professionnel' : 'Ajouter le second espace' }}</span>
+                    </div>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <a href="{{ path('app_space_new') }}" class="space-create-btn">
+            <i data-lucide="plus-circle"></i>
+            Créer un espace
+        </a>
+        {% endif %}
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{{ path('app_home') }}" class="nav-item{{ _route == 'app_home' ? ' is-active' : '' }}">
+            <i data-lucide="layout-dashboard"></i>
+            Tableau de bord
+        </a>
+
+        <span class="nav-section-label">Finance</span>
+        <a href="#" class="nav-item">
+            <i data-lucide="landmark"></i>
+            Comptes
+        </a>
+        <a href="#" class="nav-item">
+            <i data-lucide="arrow-left-right"></i>
+            Transactions
+        </a>
+
+        <span class="nav-section-label">Patrimoine</span>
+        <a href="#" class="nav-item">
+            <i data-lucide="building-2"></i>
+            Immobilier
+        </a>
+
+        <span class="nav-section-label">Pro</span>
+        <a href="#" class="nav-item">
+            <i data-lucide="file-text"></i>
+            Facturation
+        </a>
+        <a href="#" class="nav-item">
+            <i data-lucide="receipt"></i>
+            Impôts
+        </a>
+
+        <span class="nav-section-label">Outils</span>
+        <a href="#" class="nav-item">
+            <i data-lucide="folder"></i>
+            Documents
+        </a>
+        <a href="#" class="nav-item">
+            <i data-lucide="scan"></i>
+            Import IA
+        </a>
+        <a href="#" class="nav-item">
+            <i data-lucide="bell"></i>
+            Rappels
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <button class="sidebar-action" type="button" onclick="toggleTheme()" id="themeToggleBtn">
+            <i data-lucide="sun" id="themeIcon"></i>
+            <span id="themeLabel">Mode clair</span>
+        </button>
+        <div class="sidebar-user">
+            <div class="sidebar-user-avatar">
+                {{ app.user.firstName|slice(0,1)|upper }}{{ app.user.lastName|slice(0,1)|upper }}
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">{{ app.user.fullName }}</div>
+                <div class="sidebar-user-email">{{ app.user.email }}</div>
+            </div>
+        </div>
+        <a href="{{ path('app_logout') }}" class="sidebar-action">
+            <i data-lucide="log-out"></i>
+            Se déconnecter
+        </a>
+    </div>
+</aside>
+
+<script>
+function toggleSpaceSwitcher(e) {
+    e.stopPropagation();
+    document.getElementById('spaceSwitcherDropdown').classList.toggle('is-open');
+}
+
+document.addEventListener('click', function () {
+    const d = document.getElementById('spaceSwitcherDropdown');
+    if (d) d.classList.remove('is-open');
+});
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const next = (html.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('flooze-theme', next);
+    syncThemeBtn(next);
+}
+
+function syncThemeBtn(theme) {
+    const icon = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if (icon) icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
+    if (label) label.textContent = theme === 'dark' ? 'Mode clair' : 'Mode sombre';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+(function () {
+    syncThemeBtn(localStorage.getItem('flooze-theme') || 'dark');
+})();
+</script>

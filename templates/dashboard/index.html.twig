@@ -1,0 +1,231 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Tableau de bord — Flooze{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Bonjour, {{ app.user.firstName }}</h1>
+        <p class="page-subtitle">{{ 'now'|date('l d F Y') }}</p>
+    </div>
+    {% if active_space %}
+    <div class="active-space-badge">
+        <span class="space-dot space-dot--{{ active_space.type.value }}"></span>
+        <span class="active-space-name">{{ active_space.name }}</span>
+        <span class="active-space-type">{{ active_space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="page-content">
+
+    {# KPI strip #}
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <span class="kpi-label">Balance totale</span>
+            <span class="kpi-value kpi-value--empty">—</span>
+            <div class="kpi-trend">
+                <i data-lucide="landmark"></i>
+                Aucun compte
+            </div>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Revenus du mois</span>
+            <span class="kpi-value kpi-value--empty">—</span>
+            <div class="kpi-trend">
+                <i data-lucide="arrow-down-left" style="color:var(--color-positive)"></i>
+                <span>Ce mois-ci</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Dépenses du mois</span>
+            <span class="kpi-value kpi-value--empty">—</span>
+            <div class="kpi-trend">
+                <i data-lucide="arrow-up-right" style="color:var(--color-negative)"></i>
+                <span>Ce mois-ci</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Flux net</span>
+            <span class="kpi-value kpi-value--empty">—</span>
+            <div class="kpi-trend">
+                <i data-lucide="activity"></i>
+                Revenus − Dépenses
+            </div>
+        </div>
+    </div>
+
+    {# Main body: modules + aside #}
+    <div class="dashboard-body">
+
+        {# Left column #}
+        <div class="dashboard-main">
+
+            <div>
+                <h2 class="section-title">Modules</h2>
+                <div class="module-grid">
+
+                    <a href="#" class="module-card">
+                        <div class="module-card-icon module-card-icon--finance">
+                            <i data-lucide="landmark"></i>
+                        </div>
+                        <div class="module-card-body">
+                            <div class="module-card-title">Finance</div>
+                            <div class="module-card-desc">Comptes, transactions, catégories, actifs financiers</div>
+                        </div>
+                        <span class="module-card-badge">Bientôt disponible</span>
+                    </a>
+
+                    <a href="#" class="module-card">
+                        <div class="module-card-icon module-card-icon--realestate">
+                            <i data-lucide="building-2"></i>
+                        </div>
+                        <div class="module-card-body">
+                            <div class="module-card-title">Immobilier</div>
+                            <div class="module-card-desc">Biens, baux, locataires, emprunts</div>
+                        </div>
+                        <span class="module-card-badge">Bientôt disponible</span>
+                    </a>
+
+                    <a href="#" class="module-card">
+                        <div class="module-card-icon module-card-icon--invoicing">
+                            <i data-lucide="file-text"></i>
+                        </div>
+                        <div class="module-card-body">
+                            <div class="module-card-title">Facturation</div>
+                            <div class="module-card-desc">Clients, devis, factures, suivi paiements</div>
+                        </div>
+                        <span class="module-card-badge">Bientôt disponible</span>
+                    </a>
+
+                    <a href="#" class="module-card">
+                        <div class="module-card-icon module-card-icon--tax">
+                            <i data-lucide="receipt"></i>
+                        </div>
+                        <div class="module-card-body">
+                            <div class="module-card-title">Impôts</div>
+                            <div class="module-card-desc">Années fiscales, déclarations, optimisation</div>
+                        </div>
+                        <span class="module-card-badge">Bientôt disponible</span>
+                    </a>
+
+                    <a href="#" class="module-card">
+                        <div class="module-card-icon module-card-icon--docs">
+                            <i data-lucide="folder"></i>
+                        </div>
+                        <div class="module-card-body">
+                            <div class="module-card-title">Documents</div>
+                            <div class="module-card-desc">Coffre-fort numérique, justificatifs, archivage</div>
+                        </div>
+                        <span class="module-card-badge">Bientôt disponible</span>
+                    </a>
+
+                    <a href="#" class="module-card">
+                        <div class="module-card-icon module-card-icon--ai">
+                            <i data-lucide="scan"></i>
+                        </div>
+                        <div class="module-card-body">
+                            <div class="module-card-title">Import IA</div>
+                            <div class="module-card-desc">OCR reçus, fiches de paie, factures fournisseurs</div>
+                        </div>
+                        <span class="module-card-badge">Bientôt disponible</span>
+                    </a>
+
+                </div>
+            </div>
+
+            {# Recent activity #}
+            <div>
+                <h2 class="section-title">Activité récente</h2>
+                <div class="panel-card">
+                    <div class="panel-empty">
+                        <div class="panel-empty-icon">
+                            <i data-lucide="clock"></i>
+                        </div>
+                        <p class="panel-empty-text">Aucune activité récente</p>
+                        <p class="panel-empty-hint">Les transactions et événements apparaîtront ici</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {# Right column #}
+        <div class="dashboard-aside">
+
+            {# Spaces panel #}
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <h3 class="section-title">Mes espaces</h3>
+                    <a href="{{ path('app_space_index') }}" class="panel-card-action">Gérer</a>
+                </div>
+                {% if spaces|length > 0 %}
+                <div class="space-list">
+                    {% for space in spaces %}
+                    <div class="space-list-item{{ active_space and space.id == active_space.id ? ' space-list-item--active' : '' }}">
+                        <span class="space-dot space-dot--{{ space.type.value }}" style="width:10px;height:10px;flex-shrink:0;"></span>
+                        <div class="space-list-info">
+                            <span class="space-list-name">{{ space.name }}</span>
+                            <span class="space-list-type">{{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
+                        </div>
+                        {% if active_space and space.id == active_space.id %}
+                        <span class="space-list-active-label">Actif</span>
+                        {% else %}
+                        <form method="post" action="{{ path('app_space_switch', {id: space.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('space_switch') }}">
+                            <button type="submit" class="space-list-switch">Activer</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="panel-empty">
+                    <div class="panel-empty-icon"><i data-lucide="layers"></i></div>
+                    <p class="panel-empty-text">Aucun espace créé</p>
+                    <p class="panel-empty-hint">Crée un espace personnel ou professionnel pour commencer à gérer tes finances</p>
+                </div>
+                <a href="{{ path('app_space_new') }}" class="btn btn--primary btn--full" style="margin-top:14px;">
+                    <i data-lucide="plus"></i>
+                    Créer mon premier espace
+                </a>
+                {% endif %}
+            </div>
+
+            {# Reminders #}
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <h3 class="section-title">Rappels à venir</h3>
+                    <a href="#" class="panel-card-action">Voir tout</a>
+                </div>
+                <div class="panel-empty">
+                    <div class="panel-empty-icon"><i data-lucide="bell"></i></div>
+                    <p class="panel-empty-text">Aucun rappel</p>
+                    <p class="panel-empty-hint">Échéances, loyers et déclarations apparaîtront ici</p>
+                </div>
+            </div>
+
+            {# Quick actions #}
+            <div class="panel-card">
+                <h3 class="section-title">Actions rapides</h3>
+                <div class="quick-actions">
+                    <button type="button" class="quick-action-btn" disabled>
+                        <i data-lucide="plus"></i>
+                        Nouvelle transaction
+                    </button>
+                    <button type="button" class="quick-action-btn" disabled>
+                        <i data-lucide="scan"></i>
+                        Scanner un reçu
+                    </button>
+                    <button type="button" class="quick-action-btn" disabled>
+                        <i data-lucide="file-text"></i>
+                        Nouveau devis
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

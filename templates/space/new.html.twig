@@ -1,0 +1,128 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'space/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Créer un espace — Flooze{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Créer un espace</h1>
+        <p class="page-subtitle">Un espace regroupe toutes tes données financières personnelles ou professionnelles</p>
+    </div>
+</div>
+
+<div class="page-content">
+    <div class="form-page">
+
+        {% for flash in app.flashes('error') %}
+            <div class="flash flash--error">{{ flash }}</div>
+        {% endfor %}
+
+        {{ form_start(form, {attr: {id: 'spaceForm', novalidate: 'novalidate'}}) }}
+
+        {# Type selector #}
+        <div class="form-section">
+            <p class="form-section-label">Type d'espace</p>
+            <div class="space-type-selector">
+                {% for type_choice in form.type %}
+                    {% set is_personal = type_choice.vars.value == 'personal' %}
+                    {% set is_taken    = (is_personal and has_personal) or (not is_personal and has_pro) %}
+                    <label
+                        for="{{ type_choice.vars.id }}"
+                        class="type-card{{ is_taken ? ' type-card--disabled' : '' }}"
+                        data-suggested="{{ is_personal ? 'Mes finances' : 'Mon activité pro' }}"
+                    >
+                        {{ form_widget(type_choice, {attr: {class: 'sr-only', disabled: is_taken ? 'disabled' : false}}) }}
+                        <div class="type-card-icon type-card-icon--{{ type_choice.vars.value }}">
+                            <i data-lucide="{{ is_personal ? 'user' : 'briefcase' }}"></i>
+                        </div>
+                        <div class="type-card-body">
+                            <div class="type-card-title">{{ is_personal ? 'Personnel' : 'Professionnel' }}</div>
+                            <div class="type-card-desc">
+                                {% if is_personal %}
+                                    Comptes perso, budget, patrimoine, impôts personnels
+                                {% else %}
+                                    Facturation clients, TVA, charges pro, déclarations
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if is_taken %}
+                            <span class="type-card-taken-badge">Déjà créé</span>
+                        {% endif %}
+                    </label>
+                {% endfor %}
+            </div>
+            {% if form.type.vars.errors|length > 0 %}
+                {% for error in form.type.vars.errors %}
+                    <span class="form-error">{{ error.message }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        {# Name field #}
+        <div class="form-section">
+            <div class="form-group">
+                <label for="{{ form.name.vars.id }}" class="form-label-app">Nom de l'espace</label>
+                {{ form_widget(form.name) }}
+                {% if form.name.vars.errors|length > 0 %}
+                    {% for error in form.name.vars.errors %}
+                        <span class="form-error">{{ error.message }}</span>
+                    {% endfor %}
+                {% endif %}
+                <span class="form-hint">Choisis un nom qui identifie clairement cet espace</span>
+            </div>
+        </div>
+
+        {# Actions #}
+        <div class="form-actions">
+            <a href="{{ path('app_home') }}" class="btn btn--secondary">Annuler</a>
+            <button type="submit" class="btn btn--primary">
+                <i data-lucide="plus"></i>
+                Créer l'espace
+            </button>
+        </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+
+<script>
+(function () {
+    const cards = document.querySelectorAll('.type-card:not(.type-card--disabled)');
+    const nameInput = document.getElementById('{{ form.name.vars.id }}');
+
+    function refreshCards() {
+        cards.forEach(card => {
+            const radio = card.querySelector('input[type="radio"]');
+            card.classList.toggle('type-card--selected', !!radio?.checked);
+        });
+    }
+
+    cards.forEach(card => {
+        card.addEventListener('click', () => {
+            const radio = card.querySelector('input[type="radio"]');
+            if (!radio || radio.disabled) return;
+            radio.checked = true;
+
+            const suggested = card.dataset.suggested;
+            if (suggested && (!nameInput.value || nameInput.dataset.auto === 'true')) {
+                nameInput.value = suggested;
+                nameInput.dataset.auto = 'true';
+            }
+
+            refreshCards();
+        });
+    });
+
+    nameInput.addEventListener('input', () => {
+        nameInput.dataset.auto = 'false';
+    });
+
+    refreshCards();
+})();
+</script>
+{% endblock %}
