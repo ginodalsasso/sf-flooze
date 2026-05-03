@@ -299,6 +299,9 @@ npx ctx7@latest docs /symfony/symfony "how to create a custom voter" --research
 |---------|---------|
 | Symfony | `/symfony/symfony` |
 | Doctrine ORM | `/doctrine/orm` |
+| Twig | `/twigphp/twig` |
+| Twig Components (Symfony UX) | `/symfony/ux-twig-component` |
+| Live Components (Symfony UX) | `/symfony/ux-live-component` |
 | dompdf | `/dompdf/dompdf` |
 | Stimulus | `/hotwired/stimulus` |
 | Turbo | `/hotwired/turbo` |
@@ -316,6 +319,194 @@ npx ctx7@latest docs /symfony/symfony "how to create a custom voter" --research
 - Use CSS for: hover/focus states, transitions, `:has(input:checked)` for radio/checkbox selection styling, `:focus-within` for parent highlighting.
 - Only use JS when truly necessary: localStorage persistence, async data, complex interactions with no CSS equivalent.
 - When you're about to write a JS class-toggle, ask first if `:has()`, `:checked`, `:focus-within`, or `<details>` solves it.
+
+---
+
+## Twig Templating & UI Factorization
+
+> **Rule of 2** — any HTML/CSS block that appears **twice or more** must be factored into a reusable unit.
+> Three similar lines is fine. A repeated 5+ line fragment is not.
+>
+> Do not pre-factor speculatively. Wait for the second occurrence, then extract.
+
+### Decision matrix — which tool to reach for
+
+| Situation | Use | File location |
+|---|---|---|
+| Small inline HTML fragment, no slots, ≤ ~10 lines (button, badge, money cell) | **Macro** | `templates/macros/{topic}.html.twig` |
+| Static partial reused across pages, no surcharge needed (sidebar, page header) | **`{% include %}`** | `templates/{module}/_{name}.html.twig` |
+| Partial with **overridable blocks/slots** (card with custom body, modal) | **`{% embed %}`** | `templates/{module}/_{name}.html.twig` |
+| Complex reusable unit with multiple props, attributes pass-through, defaults, nested blocks | **Twig Component (anonymous)** | `templates/components/{Name}.html.twig` |
+| Component with PHP logic, computed props, dispatched actions | **Twig Component (class-based)** | `src/Twig/Components/{Name}.php` + `templates/components/{Name}.html.twig` |
+
+> **Twig Components require `symfony/ux-twig-component`.** It is *not currently installed*.
+> Before introducing the first component, run `composer require symfony/ux-twig-component`
+> and confirm with the user. Until then, use macros and `embed` only.
+
+### Naming conventions
+
+```
+templates/macros/forms.html.twig            → grouped macros by topic (forms, money, icons)
+templates/macros/buttons.html.twig
+templates/components/Button.html.twig       → PascalCase, one component per file
+templates/components/Form/Field.html.twig   → namespaced via folder → <twig:Form:Field />
+templates/components/EmptyState.html.twig
+src/Twig/Components/Money.php               → matches template name 1-to-1
+```
+
+### Macros — pattern
+
+```twig
+{# templates/macros/buttons.html.twig #}
+{% macro primary(label, icon = null, attrs = {}) %}
+    <button type="{{ attrs.type|default('button') }}"
+            class="btn btn--primary {{ attrs.class|default('') }}"
+            {% if attrs.disabled|default(false) %}disabled{% endif %}>
+        {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
+        {{ label }}
+    </button>
+{% endmacro %}
+
+{% macro link(label, href, icon = null, variant = 'secondary') %}
+    <a href="{{ href }}" class="btn btn--{{ variant }}">
+        {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
+        {{ label }}
+    </a>
+{% endmacro %}
+```
+
+```twig
+{# Usage #}
+{% import 'macros/buttons.html.twig' as btn %}
+{{ btn.link('Créer un espace', path('app_space_new'), 'plus', 'primary') }}
+
+{# Or import only what is needed #}
+{% from 'macros/buttons.html.twig' import primary as btn_primary %}
+```
+
+### Embeds — when slots are needed
+
+```twig
+{# templates/space/_card.html.twig #}
+<div class="space-full-card">
+    <div class="space-full-icon space-full-icon--{{ variant }}">
+        <i data-lucide="{{ icon }}"></i>
+    </div>
+    <div class="space-full-body">
+        {% block body %}{% endblock %}
+    </div>
+    <div class="space-full-actions">
+        {% block actions %}{% endblock %}
+    </div>
+</div>
+
+{# Caller #}
+{% embed 'space/_card.html.twig' with {variant: space.type.value, icon: 'user'} %}
+    {% block body %}<div class="space-full-name">{{ space.name }}</div>{% endblock %}
+    {% block actions %}{{ btn.link('Modifier', path('app_space_edit', {id: space.id}), 'pencil') }}{% endblock %}
+{% endembed %}
+```
+
+### Twig Components — pattern (once `ux-twig-component` is installed)
+
+```twig
+{# templates/components/Button.html.twig — anonymous component #}
+{% props label, icon = null, variant = 'primary', as = 'button' %}
+
+<{{ as }} {{ attributes.defaults({class: 'btn btn--' ~ variant}) }}>
+    {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
+    {{ label }}
+</{{ as }}>
+```
+
+```twig
+{# Usage — props are required/optional per defaults; extra HTML attrs pass through #}
+<twig:Button label="Créer un espace" icon="plus" as="a" href="{{ path('app_space_new') }}" />
+```
+
+Use `attributes.defaults({...})` to merge passed attributes; `attributes.nested('header')` to extract `header:*` props; `block(outerBlocks.content)` to forward parent slots when wrapping.
+
+### Component catalogue — extract on second occurrence
+
+These patterns already appear in the codebase. The moment any of them shows up a second time, factor it:
+
+| Pattern | Form | Note |
+|---|---|---|
+| `<a/button class="btn btn--{variant}">` + Lucide icon | macro `buttons.html.twig` → `Button` component | Variants: `primary`, `secondary`, `ghost`, `danger` |
+| `<div class="flash flash--{level}">` | macro `flashes.html.twig` rendering all `app.flashes` | One call replaces both `success` + `error` loops |
+| Form field (label + input + error) | macro `forms.html.twig` → `Form:Field` component | Wraps Symfony form rendering |
+| `panel-empty` block (icon + text + hint + CTA) | `EmptyState` component | Slots: icon, text, hint, cta |
+| Page header (title + subtitle + right-action slot) | `PageHeader` component | Slot for `actions` |
+| Money formatting `1 234,56 €` (JetBrains Mono, sign rules) | macro `money.html.twig` → `Money` component | Centralizes FR formatting + negative em-dash |
+| Status/type badge (`space-dot`, role pill) | `Badge` component | Variants from enum value |
+| Card shell (icon + body + actions) | `Card` component (`embed` until then) | Used for spaces, properties, transactions |
+
+### Templating anti-patterns
+
+- **Computation in templates** — no arithmetic, aggregation, or filtering inside `{% set %}` for business values. Compute in the controller, expose via DTO/ViewModel.
+- **Copy-pasted partials > 5 lines** — extract before pasting a third time.
+- **Inline `style="..."`** — already forbidden, repeated here for emphasis.
+- **Macro doing 3+ unrelated things** — split. One macro = one visual concern.
+- **Component with > ~6 props** — split into sub-components or use slots.
+- **Logic duplicated between macro and component** — keep one source of truth; delete the other.
+
+---
+
+## CSS Factorization
+
+Same rule of 2: a CSS block (selector body or property group) repeated twice → factor it. Always prefer **composition over override**.
+
+### Hierarchy of reuse (cheapest to most expensive)
+
+1. **Design tokens** (`--color-*`, `--space-*`, `--radius-*`, `--font-*`) — defined once in `app.css`. Hard-coded values are forbidden once a token exists.
+2. **BEM modifiers** (`btn btn--primary`, `space-dot space-dot--sm`) — preferred over creating a new component with overrides.
+3. **Utility composition** for one-off layout (`flex`, `gap-2`, `items-center`) — only if a token-driven utility layer exists; otherwise use BEM.
+4. **Shared component class** in `app.css` — only when a pattern is used by **3+** unrelated modules.
+5. **Module-scoped class** in `templates/{module}/_styles.html.twig` — for anything that belongs to a single module.
+
+### Where each style lives
+
+```
+assets/styles/app.css
+├── tokens             → :root vars, [data-theme="dark"] overrides
+├── reset / base       → element defaults
+├── layout shell       → sidebar, topbar, main, page-header
+└── shared components  → .btn, .flash, .badge, .card, .panel-empty, .space-dot
+                         (only when used in ≥ 3 modules)
+
+templates/{module}/_styles.html.twig
+└── classes prefixed by module → .space-full-card, .quote-line-row
+                                 (do NOT bleed into app.css)
+```
+
+### Refactor triggers
+
+Any of the following → stop and factor:
+
+- Same color/spacing/radius/font-size value typed twice → introduce or use a token.
+- Two selectors with identical bodies → merge or @extend via shared base class + modifier.
+- A module's `_styles.html.twig` declaration is now used in a second module → promote to `app.css` (and rename without the module prefix).
+- A component's CSS lives in `app.css` but only one module renders it → demote to that module's `_styles.html.twig`.
+
+### CSS anti-patterns
+
+- **Hard-coded colors** when a token exists — every hex must trace to `var(--color-*)`. Exception: tokens themselves.
+- **`!important`** — almost always means the cascade order is wrong; fix the order.
+- **Deep selectors (> 3 levels)** — sign of leaky scope; reach for BEM.
+- **Polluting `app.css` with module-specific classes** — re-read the CLAUDE.md "CSS — règle de séparation".
+- **Duplicated dark-theme rule blocks** — toggle via `[data-theme="dark"] .x { ... }`, never write a parallel `.x-dark` class.
+- **Inline `<style>`** in templates — use `{% block stylesheets %}` + `_styles.html.twig`.
+
+### When in doubt — fetch the docs
+
+Twig is a documented library. Before introducing macros/components/embeds, run:
+
+```bash
+npx ctx7@latest docs /twigphp/twig "<question>"
+npx ctx7@latest docs /symfony/ux-twig-component "<question>"
+```
+
+Twig is in scope for the **Use context7** column of the table above (treat it like Symfony component API).
 
 ---
 
