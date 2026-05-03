@@ -153,45 +153,6 @@
         {# Right column #}
         <div class="dashboard-aside">
 
-            {# Spaces panel #}
-            <div class="panel-card">
-                <div class="panel-card-header">
-                    <h3 class="section-title">Mes espaces</h3>
-                    <a href="{{ path('app_space_index') }}" class="panel-card-action">Gérer</a>
-                </div>
-                {% if spaces|length > 0 %}
-                <ul class="space-list">
-                    {% for space in spaces %}
-                    <li class="space-list-item{{ active_space and space.id == active_space.id ? ' space-list-item--active' : '' }}">
-                        <span class="space-dot space-dot--{{ space.type.value }} space-dot--md"></span>
-                        <div class="space-list-info">
-                            <span class="space-list-name">{{ space.name }}</span>
-                            <span class="space-list-type">{{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
-                        </div>
-                        {% if active_space and space.id == active_space.id %}
-                        <span class="space-list-active-label">Actif</span>
-                        {% else %}
-                        <form method="post" action="{{ path('app_space_switch', {id: space.id}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('space_switch') }}">
-                            <button type="submit" class="space-list-switch">Activer</button>
-                        </form>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <div class="panel-empty">
-                    <div class="panel-empty-icon"><i data-lucide="layers"></i></div>
-                    <p class="panel-empty-text">Aucun espace créé</p>
-                    <p class="panel-empty-hint">Crée un espace personnel ou professionnel pour commencer à gérer tes finances</p>
-                </div>
-                <a href="{{ path('app_space_new') }}" class="btn btn--primary btn--full btn--mt">
-                    <i data-lucide="plus"></i>
-                    Créer mon premier espace
-                </a>
-                {% endif %}
-            </div>
-
             {# Reminders #}
             <div class="panel-card">
                 <div class="panel-card-header">

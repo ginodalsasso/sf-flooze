@@ -182,12 +182,11 @@ ul.form-errors li,
 }
 
 /* ─── Buttons ─────────────────────────────────────────────────── */
-button[type="submit"] {
+.auth-card button[type="submit"] {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  background: var(--sage-400);
   color: #1A1F18;
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
@@ -199,8 +198,6 @@ button[type="submit"] {
   margin-top: 8px;
   transition: background .15s;
 }
-
-button[type="submit"]:hover { background: var(--sage-300); }
 
 /* ─── Auth link ───────────────────────────────────────────────── */
 .auth-link {
@@ -374,7 +371,7 @@ button[type="submit"]:hover { background: var(--sage-300); }
   text-align: left;
 }
 
-.space-option:hover { background: #2E2E2E; }
+.space-option:hover { background: rgba(255,255,255,0.04); }
 
 .space-option-info {
   display: flex;
@@ -386,7 +383,7 @@ button[type="submit"]:hover { background: var(--sage-300); }
 .space-option-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--fg-);
+  color: var(--fg-1);
 }
 
 .space-option-type {
@@ -395,7 +392,7 @@ button[type="submit"]:hover { background: var(--sage-300); }
   color: var(--fg-3);
 }
 
-.space-option--active .space-option-name { color: var(--bg-base); }
+.space-option--active .space-option-name { color: var(--sage-400); }
 
 .space-option-check {
   width: 14px !important;
@@ -882,21 +879,22 @@ button[type="submit"]:hover { background: var(--sage-300); }
   margin: 4px 0;
 }
 
-.space-option--create { text-decoration: none; }
-.space-option--create:hover { background: var(--bg-elevated); }
-.space-option--create .space-option-name { color: var(--sage-400); }
+.space-option--action { text-decoration: none; }
 
-.space-dot-plus {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  border: 1px dashed var(--fg-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.space-action-icon {
+  width: 14px !important;
+  height: 14px !important;
+  color: var(--fg-3);
   flex-shrink: 0;
+}
+
+.space-action-label {
+  font-size: 12px;
   color: var(--fg-3);
 }
+
+.space-option--action:hover .space-action-icon,
+.space-option--action:hover .space-action-label { color: var(--fg-2); }
 
 .space-dot-plus i { width: 12px; height: 12px; }
 

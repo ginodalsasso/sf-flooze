@@ -42,16 +42,17 @@
                     </button>
                 </form>
                 {% endfor %}
-                {% if app.user.spaces|length < 2 %}
                 <div class="space-switcher-divider"></div>
-                <a href="{{ path('app_space_new') }}" class="space-option space-option--create">
-                    <span class="space-dot-plus"><i data-lucide="plus"></i></span>
-                    <div class="space-option-info">
-                        <span class="space-option-name">Créer un espace</span>
-                        <span class="space-option-type">{{ app.user.spaces|length == 0 ? 'Personnel ou professionnel' : 'Ajouter le second espace' }}</span>
-                    </div>
+                {% if app.user.spaces|length < 2 %}
+                <a href="{{ path('app_space_new') }}" class="space-option space-option--action">
+                    <i data-lucide="plus" class="space-action-icon"></i>
+                    <span class="space-action-label">Créer un espace</span>
                 </a>
                 {% endif %}
+                <a href="{{ path('app_space_index') }}" class="space-option space-option--action">
+                    <i data-lucide="settings-2" class="space-action-icon"></i>
+                    <span class="space-action-label">Gérer les espaces</span>
+                </a>
             </div>
         </details>
         {% else %}
