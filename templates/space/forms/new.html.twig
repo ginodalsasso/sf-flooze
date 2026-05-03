@@ -1,0 +1,66 @@
+{% block content %}
+    {{ form_start(form, {attr: {id: 'spaceForm', novalidate: 'novalidate'}}) }}
+        {# Type selector #}
+        <div class="form-section">
+            <p class="form-section-label">Type d'espace</p>
+            <div class="space-type-selector">
+                {% for type_choice in form.type %}
+                    {% set is_personal = type_choice.vars.value == 'personal' %}
+                    {% set is_taken    = (is_personal and has_personal) or (not is_personal and has_pro) %}
+                    <label
+                        for="{{ type_choice.vars.id }}"
+                        class="type-card{{ is_taken ? ' type-card--disabled' : '' }}"
+                        data-suggested="{{ is_personal ? 'Mes finances' : 'Mon activité pro' }}"
+                    >
+                        {{ form_widget(type_choice, {attr: {class: 'sr-only', disabled: is_taken ? 'disabled' : false}}) }}
+                        <div class="type-card-icon type-card-icon--{{ type_choice.vars.value }}">
+                            <i data-lucide="{{ is_personal ? 'user' : 'briefcase' }}"></i>
+                        </div>
+                        <div class="type-card-body">
+                            <div class="type-card-title">{{ is_personal ? 'Personnel' : 'Professionnel' }}</div>
+                            <div class="type-card-desc">
+                                {% if is_personal %}
+                                    Comptes perso, budget, patrimoine, impôts personnels
+                                {% else %}
+                                    Facturation clients, TVA, charges pro, déclarations
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if is_taken %}
+                            <span class="type-card-taken-badge">Déjà créé</span>
+                        {% endif %}
+                    </label>
+                {% endfor %}
+            </div>
+            {% if form.type.vars.errors|length > 0 %}
+                {% for error in form.type.vars.errors %}
+                    <span class="form-error">{{ error.message }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        {# Name field #}
+        <div class="form-section">
+            <div class="form-group">
+                <label for="{{ form.name.vars.id }}" class="form-label-app">Nom de l'espace</label>
+                {{ form_widget(form.name) }}
+                {% if form.name.vars.errors|length > 0 %}
+                    {% for error in form.name.vars.errors %}
+                        <span class="form-error">{{ error.message }}</span>
+                    {% endfor %}
+                {% endif %}
+                <span class="form-hint">Choisis un nom qui identifie clairement cet espace</span>
+            </div>
+        </div>
+
+        {# Actions #}
+        <div class="form-actions">
+            <a href="{{ path('app_home') }}" class="btn btn--secondary">Annuler</a>
+            <button type="submit" class="btn btn--primary">
+                <i data-lucide="plus"></i>
+                Créer l'espace
+            </button>
+        </div>
+
+    {{ form_end(form) }}
+{% endblock %}

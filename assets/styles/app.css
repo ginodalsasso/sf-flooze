@@ -287,6 +287,10 @@ button[type="submit"]:hover { background: var(--sage-300); }
 /* Space switcher */
 .space-switcher { position: relative; }
 
+/* Remove native <summary> triangle */
+.space-switcher-btn { list-style: none; }
+.space-switcher-btn::-webkit-details-marker { display: none; }
+
 .space-switcher-btn {
   width: 100%;
   background: var(--bg-elevated);
@@ -312,6 +316,10 @@ button[type="submit"]:hover { background: var(--sage-300); }
 
 .space-dot--personal  { background: var(--color-info); }
 .space-dot--professional { background: var(--color-positive); }
+
+.space-dot--sm { width: 7px; height: 7px; }
+.space-dot--md { width: 10px; height: 10px; }
+.space-dot--inline { display: inline-block; vertical-align: middle; margin-right: 4px; }
 
 .space-switcher-name {
   flex: 1;
@@ -349,10 +357,7 @@ button[type="submit"]:hover { background: var(--sage-300); }
   box-shadow: 0 4px 24px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
   overflow: hidden;
   z-index: 200;
-  display: none;
 }
-
-.space-switcher-dropdown.is-open { display: block; }
 
 .space-switcher-dropdown form { margin: 0; }
 
@@ -381,16 +386,16 @@ button[type="submit"]:hover { background: var(--sage-300); }
 .space-option-name {
   font-size: 13px;
   font-weight: 500;
-  color: #EDEEED;
+  color: var(--fg-);
 }
 
 .space-option-type {
   font-size: 11px;
   /* Hardcoded: readable on dark dropdown background */
-  color: #9A9E99;
+  color: var(--fg-3);
 }
 
-.space-option--active .space-option-name { color: var(--sage-400); }
+.space-option--active .space-option-name { color: var(--bg-base); }
 
 .space-option-check {
   width: 14px !important;
@@ -567,6 +572,7 @@ button[type="submit"]:hover { background: var(--sage-300); }
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+  list-style: none;
 }
 
 .kpi-card {
@@ -609,6 +615,9 @@ button[type="submit"]:hover { background: var(--sage-300); }
 
 .kpi-trend i { width: 12px; height: 12px; flex-shrink: 0; }
 
+.icon--positive { color: var(--color-positive); }
+.icon--negative { color: var(--color-negative); }
+
 /* ─── Dashboard body grid ─────────────────────────────────────── */
 .dashboard-body {
   display: grid;
@@ -644,7 +653,10 @@ button[type="submit"]:hover { background: var(--sage-300); }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  list-style: none;
 }
+
+.module-grid > li { display: contents; }
 
 .module-card {
   background: var(--bg-surface);
@@ -766,11 +778,18 @@ button[type="submit"]:hover { background: var(--sage-300); }
 
 .panel-empty-hint { font-size: 12px; color: var(--fg-3); line-height: 1.5; max-width: 240px; }
 
+.panel-empty--padded { padding: 32px 0 16px; }
+
+.panel-card--constrained { max-width: 680px; }
+
+.panel-cta { display: flex; justify-content: center; margin-top: 8px; }
+
 /* ─── Space list (right panel) ────────────────────────────────── */
 .space-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  list-style: none;
 }
 
 .space-list-item {
@@ -879,6 +898,8 @@ button[type="submit"]:hover { background: var(--sage-300); }
   color: var(--fg-3);
 }
 
+.space-dot-plus i { width: 12px; height: 12px; }
+
 .space-create-btn {
   display: flex;
   align-items: center;
@@ -944,6 +965,7 @@ button[type="submit"]:hover { background: var(--sage-300); }
 .btn--secondary:hover { background: var(--bg-overlay); }
 
 .btn--full { width: 100%; justify-content: center; }
+.btn--mt { margin-top: 14px; }
 
 .btn--danger {
   background: rgba(194,168,154,.12);

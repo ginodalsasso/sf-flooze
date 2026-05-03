@@ -12,7 +12,7 @@
     <div>
         <h1 class="page-title">Modifier l'espace</h1>
         <p class="page-subtitle">
-            <span class="space-dot space-dot--{{ space.type.value }}" style="display:inline-block;vertical-align:middle;margin-right:4px;"></span>
+            <span class="space-dot space-dot--{{ space.type.value }} space-dot--inline"></span>
             {{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}
         </p>
     </div>
@@ -25,46 +25,7 @@
             <div class="flash flash--error">{{ flash }}</div>
         {% endfor %}
 
-        {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
-
-        {# Type indicator (read-only) #}
-        <div class="form-section">
-            <p class="form-section-label">Type d'espace</p>
-            <div class="type-card-readonly">
-                <div class="type-card-icon type-card-icon--{{ space.type.value }}">
-                    <i data-lucide="{{ space.type.value == 'personal' ? 'user' : 'briefcase' }}"></i>
-                </div>
-                <div class="type-card-body">
-                    <div class="type-card-title">{{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</div>
-                    <div class="type-card-desc">Le type d'espace ne peut pas être modifié après la création</div>
-                </div>
-                <span class="type-card-taken-badge">Verrouillé</span>
-            </div>
-        </div>
-
-        {# Name field #}
-        <div class="form-section">
-            <div class="form-group">
-                <label for="{{ form.name.vars.id }}" class="form-label-app">Nom de l'espace</label>
-                {{ form_widget(form.name) }}
-                {% if form.name.vars.errors|length > 0 %}
-                    {% for error in form.name.vars.errors %}
-                        <span class="form-error">{{ error.message }}</span>
-                    {% endfor %}
-                {% endif %}
-            </div>
-        </div>
-
-        {# Actions #}
-        <div class="form-actions">
-            <a href="{{ path('app_home') }}" class="btn btn--secondary">Annuler</a>
-            <button type="submit" class="btn btn--primary">
-                <i data-lucide="check"></i>
-                Enregistrer
-            </button>
-        </div>
-
-        {{ form_end(form) }}
+        {% include 'space/forms/edit.html.twig' %}
     </div>
 </div>
 {% endblock %}

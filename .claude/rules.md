@@ -305,6 +305,20 @@ npx ctx7@latest docs /symfony/symfony "how to create a custom voter" --research
 
 ---
 
+## HTML Semantics
+
+- Use semantic elements: `<nav>`, `<main>`, `<aside>`, `<ul>`/`<li>` for lists, `<details>`/`<summary>` for collapsible UI, `<p>` for text blocks. Reserve `<div>` for non-semantic layout containers.
+- Prefer `<details>`/`<summary>` for toggle/dropdown patterns before reaching for JS.
+- Never use inline `style=""` — use CSS classes or modifiers.
+
+## CSS over JS
+
+- Use CSS for: hover/focus states, transitions, `:has(input:checked)` for radio/checkbox selection styling, `:focus-within` for parent highlighting.
+- Only use JS when truly necessary: localStorage persistence, async data, complex interactions with no CSS equivalent.
+- When you're about to write a JS class-toggle, ask first if `:has()`, `:checked`, `:focus-within`, or `<details>` solves it.
+
+---
+
 ## Anti-Patterns to Avoid
 
 - **Inventing entities** : if it's not in the ERD, don't create it

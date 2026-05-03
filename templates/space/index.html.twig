@@ -47,7 +47,7 @@
             <div class="space-full-body">
                 <div class="space-full-name">{{ space.name }}</div>
                 <div class="space-full-meta">
-                    <span class="space-dot space-dot--{{ space.type.value }}" style="width:7px;height:7px;"></span>
+                    <span class="space-dot space-dot--{{ space.type.value }} space-dot--sm"></span>
                     {{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}
                     &middot; créé le {{ space.createdAt|date('d/m/Y') }}
                 </div>
@@ -57,26 +57,19 @@
                     <i data-lucide="pencil"></i>
                     Modifier
                 </a>
-                <form method="post" action="{{ path('app_space_delete', {'id': space.id}) }}"
-                      onsubmit="return confirm('Supprimer l\'espace « {{ space.name }} » ?\n\nToutes les données associées seront définitivement supprimées.')">
-                    <input type="hidden" name="_token" value="{{ csrf_token('space_delete_' ~ space.id) }}">
-                    <button type="submit" class="btn btn--danger">
-                        <i data-lucide="trash-2"></i>
-                        Supprimer
-                    </button>
-                </form>
+                {% include 'space/forms/delete.html.twig' with {space: space} %}
             </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="panel-card" style="max-width:680px;">
-        <div class="panel-empty" style="padding:32px 0 16px;">
+    <div class="panel-card panel-card--constrained">
+        <div class="panel-empty panel-empty--padded">
             <div class="panel-empty-icon"><i data-lucide="layers"></i></div>
             <p class="panel-empty-text">Aucun espace créé</p>
             <p class="panel-empty-hint">Un espace personnel et un espace professionnel te permettent de séparer tes finances</p>
         </div>
-        <div style="display:flex;justify-content:center;margin-top:8px;">
+        <div class="panel-cta">
             <a href="{{ path('app_space_new') }}" class="btn btn--primary">
                 <i data-lucide="plus"></i>
                 Créer mon premier espace

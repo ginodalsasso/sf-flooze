@@ -19,14 +19,14 @@
         </div>
 
         {% if app.user.spaces|length > 0 %}
-        <div class="space-switcher" id="spaceSwitcher">
-            <button class="space-switcher-btn" type="button" onclick="toggleSpaceSwitcher(event)">
+        <details class="space-switcher">
+            <summary class="space-switcher-btn">
                 <span class="space-dot space-dot--{{ _active_space ? _active_space.type.value : 'personal' }}"></span>
                 <span class="space-switcher-name">{{ _active_space ? _active_space.name : 'Aucun espace' }}</span>
                 <span class="space-switcher-type">{{ _active_space ? (_active_space.type.value == 'professional' ? 'Pro' : 'Personnel') : '' }}</span>
                 <i data-lucide="chevrons-up-down" class="space-switcher-chevron"></i>
-            </button>
-            <div class="space-switcher-dropdown" id="spaceSwitcherDropdown">
+            </summary>
+            <div class="space-switcher-dropdown">
                 {% for space in app.user.spaces %}
                 <form method="post" action="{{ path('app_space_switch', {id: space.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('space_switch') }}">
@@ -45,7 +45,7 @@
                 {% if app.user.spaces|length < 2 %}
                 <div class="space-switcher-divider"></div>
                 <a href="{{ path('app_space_new') }}" class="space-option space-option--create">
-                    <span class="space-dot-plus"><i data-lucide="plus" style="width:12px;height:12px;"></i></span>
+                    <span class="space-dot-plus"><i data-lucide="plus"></i></span>
                     <div class="space-option-info">
                         <span class="space-option-name">Créer un espace</span>
                         <span class="space-option-type">{{ app.user.spaces|length == 0 ? 'Personnel ou professionnel' : 'Ajouter le second espace' }}</span>
@@ -53,7 +53,7 @@
                 </a>
                 {% endif %}
             </div>
-        </div>
+        </details>
         {% else %}
         <a href="{{ path('app_space_new') }}" class="space-create-btn">
             <i data-lucide="plus-circle"></i>
@@ -131,33 +131,26 @@
 </aside>
 
 <script>
-function toggleSpaceSwitcher(e) {
-    e.stopPropagation();
-    document.getElementById('spaceSwitcherDropdown').classList.toggle('is-open');
-}
-
-document.addEventListener('click', function () {
-    const d = document.getElementById('spaceSwitcherDropdown');
-    if (d) d.classList.remove('is-open');
+document.addEventListener('click', function (e) {
+    const d = document.querySelector('details.space-switcher');
+    if (d && !d.contains(e.target)) d.removeAttribute('open');
 });
 
 function toggleTheme() {
-    const html = document.documentElement;
-    const next = (html.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
-    html.setAttribute('data-theme', next);
+    const next = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('flooze-theme', next);
-    syncThemeBtn(next);
-}
-
-function syncThemeBtn(theme) {
     const icon = document.getElementById('themeIcon');
     const label = document.getElementById('themeLabel');
-    if (icon) icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
-    if (label) label.textContent = theme === 'dark' ? 'Mode clair' : 'Mode sombre';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    if (icon) { icon.setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon'); lucide?.createIcons(); }
+    if (label) label.textContent = next === 'dark' ? 'Mode clair' : 'Mode sombre';
 }
 
 (function () {
-    syncThemeBtn(localStorage.getItem('flooze-theme') || 'dark');
+    const theme = localStorage.getItem('flooze-theme') || 'dark';
+    const icon = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if (icon) { icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon'); lucide?.createIcons(); }
+    if (label) label.textContent = theme === 'dark' ? 'Mode clair' : 'Mode sombre';
 })();
 </script>

@@ -20,40 +20,40 @@
 <div class="page-content">
 
     {# KPI strip #}
-    <div class="kpi-grid">
-        <div class="kpi-card">
+    <ul class="kpi-grid">
+        <li class="kpi-card">
             <span class="kpi-label">Balance totale</span>
             <span class="kpi-value kpi-value--empty">—</span>
             <div class="kpi-trend">
                 <i data-lucide="landmark"></i>
                 Aucun compte
             </div>
-        </div>
-        <div class="kpi-card">
+        </li>
+        <li class="kpi-card">
             <span class="kpi-label">Revenus du mois</span>
             <span class="kpi-value kpi-value--empty">—</span>
             <div class="kpi-trend">
-                <i data-lucide="arrow-down-left" style="color:var(--color-positive)"></i>
+                <i data-lucide="arrow-down-left" class="icon--positive"></i>
                 <span>Ce mois-ci</span>
             </div>
-        </div>
-        <div class="kpi-card">
+        </li>
+        <li class="kpi-card">
             <span class="kpi-label">Dépenses du mois</span>
             <span class="kpi-value kpi-value--empty">—</span>
             <div class="kpi-trend">
-                <i data-lucide="arrow-up-right" style="color:var(--color-negative)"></i>
+                <i data-lucide="arrow-up-right" class="icon--negative"></i>
                 <span>Ce mois-ci</span>
             </div>
-        </div>
-        <div class="kpi-card">
+        </li>
+        <li class="kpi-card">
             <span class="kpi-label">Flux net</span>
             <span class="kpi-value kpi-value--empty">—</span>
             <div class="kpi-trend">
                 <i data-lucide="activity"></i>
                 Revenus − Dépenses
             </div>
-        </div>
-    </div>
+        </li>
+    </ul>
 
     {# Main body: modules + aside #}
     <div class="dashboard-body">
@@ -63,75 +63,75 @@
 
             <div>
                 <h2 class="section-title">Modules</h2>
-                <div class="module-grid">
+                <ul class="module-grid">
 
-                    <a href="#" class="module-card">
+                    <li><a href="#" class="module-card">
                         <div class="module-card-icon module-card-icon--finance">
                             <i data-lucide="landmark"></i>
                         </div>
                         <div class="module-card-body">
-                            <div class="module-card-title">Finance</div>
-                            <div class="module-card-desc">Comptes, transactions, catégories, actifs financiers</div>
+                            <p class="module-card-title">Finance</p>
+                            <p class="module-card-desc">Comptes, transactions, catégories, actifs financiers</p>
                         </div>
                         <span class="module-card-badge">Bientôt disponible</span>
-                    </a>
+                    </a></li>
 
-                    <a href="#" class="module-card">
+                    <li><a href="#" class="module-card">
                         <div class="module-card-icon module-card-icon--realestate">
                             <i data-lucide="building-2"></i>
                         </div>
                         <div class="module-card-body">
-                            <div class="module-card-title">Immobilier</div>
-                            <div class="module-card-desc">Biens, baux, locataires, emprunts</div>
+                            <p class="module-card-title">Immobilier</p>
+                            <p class="module-card-desc">Biens, baux, locataires, emprunts</p>
                         </div>
                         <span class="module-card-badge">Bientôt disponible</span>
-                    </a>
+                    </a></li>
 
-                    <a href="#" class="module-card">
+                    <li><a href="#" class="module-card">
                         <div class="module-card-icon module-card-icon--invoicing">
                             <i data-lucide="file-text"></i>
                         </div>
                         <div class="module-card-body">
-                            <div class="module-card-title">Facturation</div>
-                            <div class="module-card-desc">Clients, devis, factures, suivi paiements</div>
+                            <p class="module-card-title">Facturation</p>
+                            <p class="module-card-desc">Clients, devis, factures, suivi paiements</p>
                         </div>
                         <span class="module-card-badge">Bientôt disponible</span>
-                    </a>
+                    </a></li>
 
-                    <a href="#" class="module-card">
+                    <li><a href="#" class="module-card">
                         <div class="module-card-icon module-card-icon--tax">
                             <i data-lucide="receipt"></i>
                         </div>
                         <div class="module-card-body">
-                            <div class="module-card-title">Impôts</div>
-                            <div class="module-card-desc">Années fiscales, déclarations, optimisation</div>
+                            <p class="module-card-title">Impôts</p>
+                            <p class="module-card-desc">Années fiscales, déclarations, optimisation</p>
                         </div>
                         <span class="module-card-badge">Bientôt disponible</span>
-                    </a>
+                    </a></li>
 
-                    <a href="#" class="module-card">
+                    <li><a href="#" class="module-card">
                         <div class="module-card-icon module-card-icon--docs">
                             <i data-lucide="folder"></i>
                         </div>
                         <div class="module-card-body">
-                            <div class="module-card-title">Documents</div>
-                            <div class="module-card-desc">Coffre-fort numérique, justificatifs, archivage</div>
+                            <p class="module-card-title">Documents</p>
+                            <p class="module-card-desc">Coffre-fort numérique, justificatifs, archivage</p>
                         </div>
                         <span class="module-card-badge">Bientôt disponible</span>
-                    </a>
+                    </a></li>
 
-                    <a href="#" class="module-card">
+                    <li><a href="#" class="module-card">
                         <div class="module-card-icon module-card-icon--ai">
                             <i data-lucide="scan"></i>
                         </div>
                         <div class="module-card-body">
-                            <div class="module-card-title">Import IA</div>
-                            <div class="module-card-desc">OCR reçus, fiches de paie, factures fournisseurs</div>
+                            <p class="module-card-title">Import IA</p>
+                            <p class="module-card-desc">OCR reçus, fiches de paie, factures fournisseurs</p>
                         </div>
                         <span class="module-card-badge">Bientôt disponible</span>
-                    </a>
+                    </a></li>
 
-                </div>
+                </ul>
             </div>
 
             {# Recent activity #}
@@ -160,10 +160,10 @@
                     <a href="{{ path('app_space_index') }}" class="panel-card-action">Gérer</a>
                 </div>
                 {% if spaces|length > 0 %}
-                <div class="space-list">
+                <ul class="space-list">
                     {% for space in spaces %}
-                    <div class="space-list-item{{ active_space and space.id == active_space.id ? ' space-list-item--active' : '' }}">
-                        <span class="space-dot space-dot--{{ space.type.value }}" style="width:10px;height:10px;flex-shrink:0;"></span>
+                    <li class="space-list-item{{ active_space and space.id == active_space.id ? ' space-list-item--active' : '' }}">
+                        <span class="space-dot space-dot--{{ space.type.value }} space-dot--md"></span>
                         <div class="space-list-info">
                             <span class="space-list-name">{{ space.name }}</span>
                             <span class="space-list-type">{{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
@@ -176,16 +176,16 @@
                             <button type="submit" class="space-list-switch">Activer</button>
                         </form>
                         {% endif %}
-                    </div>
+                    </li>
                     {% endfor %}
-                </div>
+                </ul>
                 {% else %}
                 <div class="panel-empty">
                     <div class="panel-empty-icon"><i data-lucide="layers"></i></div>
                     <p class="panel-empty-text">Aucun espace créé</p>
                     <p class="panel-empty-hint">Crée un espace personnel ou professionnel pour commencer à gérer tes finances</p>
                 </div>
-                <a href="{{ path('app_space_new') }}" class="btn btn--primary btn--full" style="margin-top:14px;">
+                <a href="{{ path('app_space_new') }}" class="btn btn--primary btn--full btn--mt">
                     <i data-lucide="plus"></i>
                     Créer mon premier espace
                 </a>

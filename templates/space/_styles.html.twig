@@ -25,13 +25,13 @@
   background: var(--bg-overlay);
 }
 
-.type-card--selected {
+.type-card:has(input[type="radio"]:checked) {
   border-color: var(--sage-400) !important;
   background: var(--bg-overlay) !important;
   box-shadow: var(--shadow-focus);
 }
 
-.type-card--selected::after {
+.type-card:has(input[type="radio"]:checked)::after {
   content: '';
   position: absolute;
   top: 14px;

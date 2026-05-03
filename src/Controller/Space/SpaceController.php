@@ -18,6 +18,29 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/spaces', name: 'app_space_')]
 class SpaceController extends AbstractController
 {
+
+
+    #[Route('/switch/{id}', name: 'switch', methods: ['POST'])]
+    public function switch(int $id, Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('space_switch', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        foreach ($user->getSpaces() as $space) {
+            if ($space->getId() === $id) {
+                $request->getSession()->set('flooze_active_space_id', $id);
+                break;
+            }
+        }
+        $referer = $request->headers->get('Referer');
+
+        return $this->redirect($referer ?: $this->generateUrl('app_home'));
+    }
+
     #[Route('', name: 'index')]
     public function index(): Response
     {
@@ -149,26 +172,5 @@ class SpaceController extends AbstractController
         }
 
         return $space;
-    }
-
-    #[Route('/space/switch/{id}', name: 'app_space_switch', methods: ['POST'])]
-    public function switch(int $id, Request $request): Response
-    {
-        if (!$this->isCsrfTokenValid('space_switch', $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        /** @var User $user */
-        $user = $this->getUser();
-
-        foreach ($user->getSpaces() as $space) {
-            if ($space->getId() === $id) {
-                $request->getSession()->set('flooze_active_space_id', $id);
-                break;
-            }
-        }
-        $referer = $request->headers->get('Referer');
-
-        return $this->redirect($referer ?: $this->generateUrl('app_home'));
     }
 }
