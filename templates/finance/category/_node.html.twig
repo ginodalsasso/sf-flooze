@@ -1,0 +1,24 @@
+<div class="cat-node{{ level > 0 ? ' cat-node--child' : '' }}">
+    <div class="cat-row">
+        <div class="cat-row-name">
+            <i data-lucide="tag"></i>
+            {{ category.name }}
+        </div>
+        <div class="cat-row-flags">
+            {% if category.isDeductible %}
+                <twig:Badge label="Déductible" variant="fiscal" />
+            {% endif %}
+            {% if category.isDeclarable %}
+                <twig:Badge label="Déclarable" variant="positive" />
+            {% endif %}
+        </div>
+        <div class="cat-row-actions">
+            <twig:Button as="a" href="{{ path('app_category_edit', {id: category.id}) }}"
+                         icon="pencil" label="Modifier" variant="secondary" />
+            {% include 'finance/category/forms/_delete.html.twig' with {category: category} %}
+        </div>
+    </div>
+    {% for child in category.children %}
+        {% include 'finance/category/_node.html.twig' with {category: child, level: level + 1} %}
+    {% endfor %}
+</div>

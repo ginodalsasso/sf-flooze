@@ -78,7 +78,7 @@
             <i data-lucide="arrow-left-right"></i>
             Transactions
         </a>
-        <a href="#" class="nav-item">
+        <a href="{{ path('app_category_index') }}" class="nav-item{{ _route starts with 'app_category_' ? ' is-active' : '' }}">
             <i data-lucide="tag"></i>
             Catégories
         </a>

@@ -1,0 +1,27 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.name }}" label="Nom de la catégorie" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.parent }}" label="Catégorie parente"
+                         hint="Laisse vide pour une catégorie racine" />
+    </div>
+
+    <div class="form-section">
+        <p class="form-section-label">Flags fiscaux</p>
+        <div class="cat-form-flags">
+            <twig:Form:CheckboxField field="{{ form.isDeductible }}"
+                                     label="Déductible (charges déductibles des revenus)" />
+            <twig:Form:CheckboxField field="{{ form.isDeclarable }}"
+                                     label="Déclarable (revenus à déclarer aux impôts)" />
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_category_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

@@ -1,0 +1,37 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/category/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Catégories — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Catégories"
+    subtitle="Classes tes transactions et identifie les charges déductibles"
+    ctaLabel="Nouvelle catégorie"
+    ctaHref="{{ path('app_category_new') }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% if roots|length > 0 %}
+        <div class="cat-tree">
+            {% for root in roots %}
+                {% include 'finance/category/_node.html.twig' with {category: root, level: 0} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="tag"
+            text="Aucune catégorie"
+            hint="Les catégories permettent de classer tes transactions et d'identifier les charges déductibles."
+            ctaLabel="Créer une catégorie"
+            ctaHref="{{ path('app_category_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

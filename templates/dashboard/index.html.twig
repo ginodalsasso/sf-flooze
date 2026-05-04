@@ -3,19 +3,16 @@
 {% block title %}Tableau de bord — Flooze{% endblock %}
 
 {% block content %}
-<twig:PageHeader :title="'Bonjour, ' ~ app.user.firstName" :subtitle="'now'|date('l d F Y')">
-    {% block actions %}
-        {% if active_space %}
-        <div class="active-space-badge">
-            <span class="space-dot space-dot--{{ active_space.type.value }}"></span>
-            <span class="active-space-name">{{ active_space.name }}</span>
-            <span class="active-space-type">{{ active_space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
-        </div>
-        {% endif %}
-    {% endblock %}
-</twig:PageHeader>
+<twig:PageHeader :title="'Bonjour, ' ~ app.user.firstName" :subtitle="'now'|date('l d F Y')" />
 
 <div class="page-content">
+    {% if active_space %}
+    <div class="active-space-badge">
+        <span class="space-dot space-dot--{{ active_space.type.value }}"></span>
+        <span class="active-space-name">{{ active_space.name }}</span>
+        <span class="active-space-type">{{ active_space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
+    </div>
+    {% endif %}
 
     {# KPI strip #}
     <ul class="kpi-grid">

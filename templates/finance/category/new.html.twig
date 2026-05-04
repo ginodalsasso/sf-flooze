@@ -1,0 +1,19 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/category/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Nouvelle catégorie — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader title="Nouvelle catégorie" subtitle="Crée une catégorie pour classer tes transactions" />
+
+<div class="page-content">
+    <div class="form-page">
+        <twig:Flash levels="{{ ['error'] }}" />
+        {% include 'finance/category/forms/_form.html.twig' with {submit_label: 'Créer la catégorie'} %}
+    </div>
+</div>
+{% endblock %}

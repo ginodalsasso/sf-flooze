@@ -15,13 +15,12 @@
     {% if s.type.value == 'professional' %}{% set _has_pro = true %}{% endif %}
 {% endfor %}
 
-<twig:PageHeader title="Mes espaces" subtitle="Gérez vos espaces personnel et professionnel">
-    {% block actions %}
-        {% if not (_has_personal and _has_pro) %}
-            <twig:Button as="a" href="{{ path('app_space_new') }}" icon="plus" label="Créer un espace" />
-        {% endif %}
-    {% endblock %}
-</twig:PageHeader>
+<twig:PageHeader
+    title="Mes espaces"
+    subtitle="Gérez vos espaces personnel et professionnel"
+    :ctaLabel="not (_has_personal and _has_pro) ? 'Créer un espace' : null"
+    :ctaHref="not (_has_personal and _has_pro) ? path('app_space_new') : null"
+/>
 
 <div class="page-content">
 

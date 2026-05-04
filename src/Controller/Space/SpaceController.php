@@ -8,7 +8,6 @@ use App\Entity\Space;
 use App\Entity\User;
 use App\Enum\SpaceTypeEnum;
 use App\Form\SpaceFormType;
-use App\Repository\SpaceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,27 +17,24 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/spaces', name: 'app_space_')]
 class SpaceController extends AbstractController
 {
-
+    public function __construct(
+        private readonly Request $request,
+        private readonly EntityManagerInterface $em,
+        private readonly Space $space
+    ) {}
 
     #[Route('/switch/{id}', name: 'switch', methods: ['POST'])]
-    public function switch(int $id, Request $request): Response
+    public function switch(): Response
     {
-        if (!$this->isCsrfTokenValid('space_switch', $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('space_switch', $this->request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        /** @var User $user */
-        $user = $this->getUser();
+        $this->denyAccessUnlessGranted('VIEW', $this->space);
 
-        foreach ($user->getSpaces() as $space) {
-            if ($space->getId() === $id) {
-                $request->getSession()->set('flooze_active_space_id', $id);
-                break;
-            }
-        }
-        $referer = $request->headers->get('Referer');
+        $this->request->getSession()->set('flooze_active_space_id', $this->space->getId());
 
-        return $this->redirect($referer ?: $this->generateUrl('app_home'));
+        return $this->redirect($this->request->headers->get('Referer') ?: $this->generateUrl('app_home'));
     }
 
     #[Route('', name: 'index')]
@@ -53,7 +49,7 @@ class SpaceController extends AbstractController
     }
 
     #[Route('/new', name: 'new')]
-    public function new(Request $request, EntityManagerInterface $em): Response
+    public function new(): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -78,7 +74,7 @@ class SpaceController extends AbstractController
         $space->setType($hasPersonal ? SpaceTypeEnum::PROFESSIONAL : SpaceTypeEnum::PERSONAL);
 
         $form = $this->createForm(SpaceFormType::class, $space);
-        $form->handleRequest($request);
+        $form->handleRequest($this->request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             foreach ($user->getSpaces() as $existing) {
@@ -97,10 +93,10 @@ class SpaceController extends AbstractController
             }
 
             $space->setUser($user);
-            $em->persist($space);
-            $em->flush();
+            $this->em->persist($space);
+            $this->em->flush();
 
-            $request->getSession()->set('flooze_active_space_id', $space->getId());
+            $this->request->getSession()->set('flooze_active_space_id', $space->getId());
             $this->addFlash('success', 'Espace "' . $space->getName() . '" créé avec succès.');
 
             return $this->redirectToRoute('app_home');
@@ -114,63 +110,49 @@ class SpaceController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'])]
-    public function edit(int $id, Request $request, SpaceRepository $repo, EntityManagerInterface $em): Response
+    public function edit(): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        $space = $this->resolveOwnedSpace($id, $user, $repo);
+        $this->denyAccessUnlessGranted('EDIT', $this->space);
 
-        $form = $this->createForm(SpaceFormType::class, $space, ['is_edit' => true]);
-        $form->handleRequest($request);
+        $form = $this->createForm(SpaceFormType::class, $this->space, ['is_edit' => true]);
+        $form->handleRequest($this->request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $em->flush();
-            $this->addFlash('success', 'Espace "' . $space->getName() . '" mis à jour.');
+            $this->em->flush();
+            $this->addFlash('success', 'Espace "' . $this->space->getName() . '" mis à jour.');
 
             return $this->redirectToRoute('app_space_index');
         }
 
         return $this->render('space/edit.html.twig', [
             'form' => $form,
-            'space' => $space,
+            'space' => $this->space,
         ]);
     }
 
     #[Route('/{id}/delete', name: 'delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(int $id, Request $request, SpaceRepository $repo, EntityManagerInterface $em): Response
+    public function delete(): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
+        $this->denyAccessUnlessGranted('EDIT', $this->space);
 
-        if (!$this->isCsrfTokenValid('space_delete_' . $id, $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('space_delete_' . $this->space->getId(), $this->request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $space = $this->resolveOwnedSpace($id, $user, $repo);
-        $name = $space->getName();
+        $name = $this->space->getName();
 
         // If the deleted space is currently active, remove it from the session to avoid broken references
-        if ($request->getSession()->get('flooze_active_space_id') === $id) {
-            $request->getSession()->remove('flooze_active_space_id');
+        if ($this->request->getSession()->get('flooze_active_space_id') === $this->space->getId()) {
+            $this->request->getSession()->remove('flooze_active_space_id');
         }
 
-        $em->remove($space);
-        $em->flush();
+        $this->em->remove($this->space);
+        $this->em->flush();
 
         $this->addFlash('success', 'Espace "' . $name . '" supprimé.');
 
         return $this->redirectToRoute('app_space_index');
     }
 
-    // Ensure the space belongs to the user
-    private function resolveOwnedSpace(int $id, User $user, SpaceRepository $repo): Space
-    {
-        $space = $repo->find($id);
 
-        if (!$space || $space->getUser() !== $user) {
-            throw $this->createNotFoundException('Espace introuvable.');
-        }
-
-        return $space;
-    }
 }

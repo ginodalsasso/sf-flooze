@@ -1,0 +1,55 @@
+<style>
+.cat-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 820px;
+}
+
+.cat-node { display: flex; flex-direction: column; gap: 4px; }
+
+.cat-node--child { margin-left: 28px; }
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+
+.cat-node:not(.cat-node--child) > .cat-row {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.cat-node--child > .cat-row {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+.cat-row-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-size: 14px;
+  color: var(--fg-1);
+}
+
+.cat-row-name i { width: 14px; height: 14px; color: var(--fg-3); flex-shrink: 0; }
+
+.cat-row-flags { display: flex; gap: 6px; }
+
+.cat-row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+.cat-row-actions form { margin: 0; }
+
+/* ── Form ──────────────────────────────────────────────── */
+.cat-form-flags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+</style>

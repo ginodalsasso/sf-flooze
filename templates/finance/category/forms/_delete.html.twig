@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_category_delete', {id: category.id}) }}"
+      onsubmit="return confirm('Supprimer « {{ category.name }} » ?\n\nSes sous-catégories seront remontées au niveau supérieur.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('category_delete_' ~ category.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>

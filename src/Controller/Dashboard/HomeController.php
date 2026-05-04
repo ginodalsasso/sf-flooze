@@ -5,38 +5,29 @@ declare(strict_types=1);
 namespace App\Controller\Dashboard;
 
 use App\Entity\User;
+use App\Service\Space\SpaceResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 class HomeController extends AbstractController
 {
+    public function __construct(private readonly SpaceResolver $spaceResolver) {}
+
     #[Route('/', name: 'app_home')]
-    public function index(Request $request): Response
+    public function index(): Response
     {
-        /** @var User $user */ 
+        /** @var User $user */
         $user = $this->getUser();
-        $spaces = $user->getSpaces()->toArray();
 
-        $activeSpaceId = $request->getSession()->get('flooze_active_space_id');
-        $activeSpace = null;
+        $activeSpace = $this->spaceResolver->resolve($user);
 
-        foreach ($spaces as $space) {
-            if ($space->getId() === $activeSpaceId) {
-                $activeSpace = $space;
-                break;
-            }
-        }
-
-        // If the active space is not found (e.g., it was deleted), default to the first available space
-        if ($activeSpace === null && !empty($spaces)) {
-            $activeSpace = $spaces[0];
-            $request->getSession()->set('flooze_active_space_id', $activeSpace->getId());
+        if ($activeSpace === null) {
+            return $this->redirectToRoute('app_space_new');
         }
 
         return $this->render('dashboard/index.html.twig', [
-            'spaces' => $spaces,
+            'spaces' => $user->getSpaces()->toArray(),
             'active_space' => $activeSpace,
         ]);
     }
