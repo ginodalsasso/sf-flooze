@@ -3,19 +3,17 @@
 {% block title %}Tableau de bord — Flooze{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Bonjour, {{ app.user.firstName }}</h1>
-        <p class="page-subtitle">{{ 'now'|date('l d F Y') }}</p>
-    </div>
-    {% if active_space %}
-    <div class="active-space-badge">
-        <span class="space-dot space-dot--{{ active_space.type.value }}"></span>
-        <span class="active-space-name">{{ active_space.name }}</span>
-        <span class="active-space-type">{{ active_space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
-    </div>
-    {% endif %}
-</div>
+<twig:PageHeader :title="'Bonjour, ' ~ app.user.firstName" :subtitle="'now'|date('l d F Y')">
+    {% block actions %}
+        {% if active_space %}
+        <div class="active-space-badge">
+            <span class="space-dot space-dot--{{ active_space.type.value }}"></span>
+            <span class="active-space-name">{{ active_space.name }}</span>
+            <span class="active-space-type">{{ active_space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
+        </div>
+        {% endif %}
+    {% endblock %}
+</twig:PageHeader>
 
 <div class="page-content">
 
@@ -73,7 +71,7 @@
                             <p class="module-card-title">Finance</p>
                             <p class="module-card-desc">Comptes, transactions, catégories, actifs financiers</p>
                         </div>
-                        <span class="module-card-badge">Bientôt disponible</span>
+                        <twig:Badge label="Bientôt disponible" variant="soon" class="module-card-badge" />
                     </a></li>
 
                     <li><a href="#" class="module-card">
@@ -84,7 +82,7 @@
                             <p class="module-card-title">Immobilier</p>
                             <p class="module-card-desc">Biens, baux, locataires, emprunts</p>
                         </div>
-                        <span class="module-card-badge">Bientôt disponible</span>
+                        <twig:Badge label="Bientôt disponible" variant="soon" class="module-card-badge" />
                     </a></li>
 
                     <li><a href="#" class="module-card">
@@ -95,7 +93,7 @@
                             <p class="module-card-title">Facturation</p>
                             <p class="module-card-desc">Clients, devis, factures, suivi paiements</p>
                         </div>
-                        <span class="module-card-badge">Bientôt disponible</span>
+                        <twig:Badge label="Bientôt disponible" variant="soon" class="module-card-badge" />
                     </a></li>
 
                     <li><a href="#" class="module-card">
@@ -106,7 +104,7 @@
                             <p class="module-card-title">Impôts</p>
                             <p class="module-card-desc">Années fiscales, déclarations, optimisation</p>
                         </div>
-                        <span class="module-card-badge">Bientôt disponible</span>
+                        <twig:Badge label="Bientôt disponible" variant="soon" class="module-card-badge" />
                     </a></li>
 
                     <li><a href="#" class="module-card">
@@ -117,7 +115,7 @@
                             <p class="module-card-title">Documents</p>
                             <p class="module-card-desc">Coffre-fort numérique, justificatifs, archivage</p>
                         </div>
-                        <span class="module-card-badge">Bientôt disponible</span>
+                        <twig:Badge label="Bientôt disponible" variant="soon" class="module-card-badge" />
                     </a></li>
 
                     <li><a href="#" class="module-card">
@@ -128,7 +126,7 @@
                             <p class="module-card-title">Import IA</p>
                             <p class="module-card-desc">OCR reçus, fiches de paie, factures fournisseurs</p>
                         </div>
-                        <span class="module-card-badge">Bientôt disponible</span>
+                        <twig:Badge label="Bientôt disponible" variant="soon" class="module-card-badge" />
                     </a></li>
 
                 </ul>
@@ -138,13 +136,11 @@
             <div>
                 <h2 class="section-title">Activité récente</h2>
                 <div class="panel-card">
-                    <div class="panel-empty">
-                        <div class="panel-empty-icon">
-                            <i data-lucide="clock"></i>
-                        </div>
-                        <p class="panel-empty-text">Aucune activité récente</p>
-                        <p class="panel-empty-hint">Les transactions et événements apparaîtront ici</p>
-                    </div>
+                    <twig:EmptyState
+                        icon="clock"
+                        text="Aucune activité récente"
+                        hint="Les transactions et événements apparaîtront ici"
+                    />
                 </div>
             </div>
 
@@ -153,17 +149,54 @@
         {# Right column #}
         <div class="dashboard-aside">
 
+            {# Spaces #}
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <h3 class="section-title">Mes espaces</h3>
+                    <a href="{{ path('app_space_index') }}" class="panel-card-action">Gérer</a>
+                </div>
+                {% if app.user.spaces|length > 0 %}
+                <ul class="space-list">
+                    {% for space in app.user.spaces %}
+                    <li class="space-list-item{{ active_space and space.id == active_space.id ? ' space-list-item--active' : '' }}">
+                        <span class="space-dot space-dot--{{ space.type.value }}"></span>
+                        <div class="space-list-info">
+                            <span class="space-list-name">{{ space.name }}</span>
+                            <span class="space-list-type">{{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</span>
+                        </div>
+                        {% if active_space and space.id == active_space.id %}
+                            <span class="space-list-active-label">Actif</span>
+                        {% else %}
+                            <form method="post" action="{{ path('app_space_switch', {id: space.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('space_switch') }}">
+                                <button type="submit" class="space-list-switch">Activer</button>
+                            </form>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <twig:EmptyState
+                    icon="layout-grid"
+                    text="Aucun espace"
+                    hint="Créez votre premier espace pour commencer"
+                    ctaLabel="Créer un espace"
+                    :ctaHref="path('app_space_new')"
+                />
+                {% endif %}
+            </div>
+
             {# Reminders #}
             <div class="panel-card">
                 <div class="panel-card-header">
                     <h3 class="section-title">Rappels à venir</h3>
                     <a href="#" class="panel-card-action">Voir tout</a>
                 </div>
-                <div class="panel-empty">
-                    <div class="panel-empty-icon"><i data-lucide="bell"></i></div>
-                    <p class="panel-empty-text">Aucun rappel</p>
-                    <p class="panel-empty-hint">Échéances, loyers et déclarations apparaîtront ici</p>
-                </div>
+                <twig:EmptyState
+                    icon="bell"
+                    text="Aucun rappel"
+                    hint="Échéances, loyers et déclarations apparaîtront ici"
+                />
             </div>
 
             {# Quick actions #}

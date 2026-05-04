@@ -1,0 +1,15 @@
+{# Empty state. icon: Lucide name. text: primary label. hint: secondary. ctaLabel+ctaHref: optional CTA link. #}
+{% props icon, text, hint = null, ctaLabel = null, ctaHref = null %}
+
+<div {{ attributes.defaults({class: 'panel-empty'}) }}>
+    <div class="panel-empty-icon"><i data-lucide="{{ icon }}"></i></div>
+    <p class="panel-empty-text">{{ text }}</p>
+    {% if hint is not null %}
+        <p class="panel-empty-hint">{{ hint }}</p>
+    {% endif %}
+    {% if ctaLabel is not null and ctaHref is not null %}
+        <div class="panel-cta">
+            <twig:Button as="a" variant="secondary" :label="ctaLabel" :href="ctaHref" />
+        </div>
+    {% endif %}
+</div>

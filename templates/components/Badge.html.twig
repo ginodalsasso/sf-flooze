@@ -1,0 +1,4 @@
+{# Status badge. variant: soon|active|inactive|positive|negative|info|fiscal|alert #}
+{% props label, variant = 'soon' %}
+
+<span {{ attributes.defaults({class: 'badge badge--' ~ variant}) }}>{{ label }}</span>

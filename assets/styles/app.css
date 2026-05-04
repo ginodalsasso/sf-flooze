@@ -835,6 +835,91 @@ ul.form-errors li,
 .space-list-switch:hover { color: var(--sage-400); }
 
 
+/* ─── Badge ──────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.badge--soon     { background: var(--bg-elevated); color: var(--fg-3); }
+.badge--active   { background: rgba(168,196,160,.15); color: var(--color-positive); border: 1px solid rgba(168,196,160,.25); }
+.badge--inactive { background: var(--bg-elevated); color: var(--fg-3); }
+.badge--positive { background: rgba(168,196,160,.15); color: var(--color-positive); }
+.badge--negative { background: rgba(194,168,154,.15); color: var(--color-negative); }
+.badge--info     { background: rgba(154,175,194,.15); color: var(--color-info); }
+.badge--fiscal   { background: rgba(168,154,194,.15); color: var(--color-fiscal); }
+.badge--alert    { background: rgba(194,184,154,.15); color: var(--color-alert); }
+
+/* ─── Nav badge (count pill on nav items) ─────────────────────── */
+.nav-badge {
+  margin-left: auto;
+  background: var(--color-alert);
+  color: #1A1F18;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  min-width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ─── Nav group (collapsible sidebar section) ─────────────────── */
+.nav-group { list-style: none; }
+
+.nav-group > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--fg-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  user-select: none;
+}
+
+.nav-group > summary::-webkit-details-marker { display: none; }
+.nav-group > summary i { flex-shrink: 0; width: 16px; height: 16px; }
+.nav-group > summary:hover { background: var(--bg-elevated); color: var(--fg-1); }
+.nav-group[open] > summary { color: var(--fg-1); }
+
+.nav-group-chevron {
+  margin-left: auto;
+  width: 12px !important;
+  height: 12px !important;
+  color: var(--fg-3);
+  transition: transform .15s;
+}
+
+.nav-group[open] .nav-group-chevron { transform: rotate(90deg); }
+
+.nav-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 10px;
+  margin-top: 1px;
+  padding-bottom: 2px;
+}
+
+.nav-item--sub {
+  font-size: 12.5px;
+  padding: 5px 10px;
+  color: var(--fg-3);
+}
+
+.nav-item--sub:hover { color: var(--fg-1); }
+
 /* ─── Quick actions ───────────────────────────────────────────── */
 .quick-actions {
   display: flex;
