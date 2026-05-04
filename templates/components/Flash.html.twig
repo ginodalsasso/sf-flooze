@@ -1,0 +1,8 @@
+{# Renders all session flash messages. levels: types to display (default: success/error/info/warning). #}
+{% props levels = ['success', 'error', 'info', 'warning'] %}
+
+{% for level in levels %}
+    {% for message in app.flashes(level) %}
+        <div class="flash flash--{{ level }}">{{ message }}</div>
+    {% endfor %}
+{% endfor %}

@@ -15,35 +15,23 @@
     {% if s.type.value == 'professional' %}{% set _has_pro = true %}{% endif %}
 {% endfor %}
 
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Mes espaces</h1>
-        <p class="page-subtitle">Gérez vos espaces personnel et professionnel</p>
-    </div>
-    {% if not (_has_personal and _has_pro) %}
-    <a href="{{ path('app_space_new') }}" class="btn btn--primary">
-        <i data-lucide="plus"></i>
-        Créer un espace
-    </a>
-    {% endif %}
-</div>
+<twig:PageHeader title="Mes espaces" subtitle="Gérez vos espaces personnel et professionnel">
+    {% block actions %}
+        {% if not (_has_personal and _has_pro) %}
+            <twig:Button as="a" href="{{ path('app_space_new') }}" icon="plus" label="Créer un espace" />
+        {% endif %}
+    {% endblock %}
+</twig:PageHeader>
 
 <div class="page-content">
 
-    {% for flash in app.flashes('success') %}
-        <div class="flash flash--success">{{ flash }}</div>
-    {% endfor %}
-    {% for flash in app.flashes('error') %}
-        <div class="flash flash--error">{{ flash }}</div>
-    {% endfor %}
+    <twig:Flash />
 
     {% if spaces|length > 0 %}
     <div class="spaces-list-full">
         {% for space in spaces %}
         <div class="space-full-card">
-            <div class="space-full-icon space-full-icon--{{ space.type.value }}">
-                <i data-lucide="{{ space.type.value == 'personal' ? 'user' : 'briefcase' }}"></i>
-            </div>
+            <twig:SpaceTypeIcon type="{{ space.type.value }}" size="lg" />
             <div class="space-full-body">
                 <div class="space-full-name">{{ space.name }}</div>
                 <div class="space-full-meta">
@@ -53,10 +41,8 @@
                 </div>
             </div>
             <div class="space-full-actions">
-                <a href="{{ path('app_space_edit', {'id': space.id}) }}" class="btn btn--secondary">
-                    <i data-lucide="pencil"></i>
-                    Modifier
-                </a>
+                <twig:Button as="a" href="{{ path('app_space_edit', {'id': space.id}) }}"
+                             icon="pencil" label="Modifier" variant="secondary" />
                 {% include 'space/forms/_delete.html.twig' with {space: space} %}
             </div>
         </div>
@@ -70,10 +56,7 @@
             <p class="panel-empty-hint">Un espace personnel et un espace professionnel te permettent de séparer tes finances</p>
         </div>
         <div class="panel-cta">
-            <a href="{{ path('app_space_new') }}" class="btn btn--primary">
-                <i data-lucide="plus"></i>
-                Créer mon premier espace
-            </a>
+            <twig:Button as="a" href="{{ path('app_space_new') }}" icon="plus" label="Créer mon premier espace" />
         </div>
     </div>
     {% endif %}

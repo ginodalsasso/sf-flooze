@@ -1,0 +1,14 @@
+{# Button or link. variant: primary|secondary|danger|ghost. as: button|a. icon: Lucide name. #}
+{% props label = null, icon = null, variant = 'primary', as = 'button' %}
+
+<{{ as }} {{ attributes.defaults({class: 'btn btn--' ~ variant}) }}>
+    {% if icon %}
+        <i data-lucide="{{ icon }}"></i>
+    {% endif %}
+    
+    {%- if label is not null -%}
+        {{ label }}
+    {%- else -%}
+        {% block content %}{% endblock %}
+    {%- endif -%}
+</{{ as }}>

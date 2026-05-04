@@ -1,0 +1,7 @@
+{# Colored icon for a space type. type: personal|professional. size: sm|md|lg. #}
+{% props type, size = 'md' %}
+{% set icon = type == 'personal' ? 'user' : 'briefcase' %}
+
+<div {{ attributes.defaults({class: 'type-icon type-icon--' ~ type ~ ' type-icon--' ~ size}) }}>
+    <i data-lucide="{{ icon }}"></i>
+</div>

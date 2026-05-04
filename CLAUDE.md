@@ -1,201 +1,100 @@
 # CLAUDE.md — sf-flooze
 
-**sf-flooze** : Application Symfony 8.0 hybride ERP + gestion bancaire + fiscalité personnelle/professionnelle. Multi-tenant via `Space`. OCR via Ollama local. PDF via dompdf.
+Application Symfony 8.0 hybride : ERP + gestion bancaire + fiscalité personnelle/professionnelle.
+Multi-tenant via `Space`. OCR Ollama local. PDF dompdf.
 
-**Stack** : PHP 8.4 · Symfony 8.0 · Doctrine 3.x · MySQL 8.0 · FrankenPHP · Ollama · dompdf · Stimulus/Turbo
+**Stack** : PHP 8.4 · Symfony 8.0 · Doctrine 3.x · MySQL 8.0 · FrankenPHP · Ollama · dompdf · Stimulus/Turbo.
 
-**Docs** : [Architecture](ARCHITECTURE.md) · [Modules](MODULES.md) · [Setup](SETUP.md) · [Rules](.claude/rules.md) · [Memory](.claude/memory.md)
+---
+
+## Documents — toujours consulter avant d'agir
+
+| Avant de... | Lire |
+|---|---|
+| Créer/modifier une entité, relation, FK, colonne | [`ARCHITECTURE.md`](ARCHITECTURE.md) — **ERD = autorité** |
+| Écrire ou refactorer du code PHP | [`rules.md`](rules.md) — conventions, naming, anti-patterns |
+| Toucher `templates/` ou `assets/styles/` | [`FRONTEND.md`](FRONTEND.md) + [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) |
+| Écrire ou modifier des tests | [`TESTING.md`](TESTING.md) |
+| Installer le projet, comprendre les services tournants | [`SETUP.md`](SETUP.md) |
+| Comprendre le périmètre d'un module métier | [`MODULES.md`](MODULES.md) |
+
+---
+
+## Garde-fous critiques (cassent le projet si violés)
+
+1. **ERD = autorité.** Toute entité, relation, pivot, colonne doit exister dans `ARCHITECTURE.md → Entity Map`. Sinon, ne pas le créer.
+2. **Multi-tenant.** Toute entité métier a `space_id` + filtre par `space` dans toute query.
+3. **Soft delete.** `deleted_at` (TIMESTAMP nullable), jamais `is_deleted`. Filtre `deletedAt IS NULL` dans les queries actives.
+4. **DI uniquement.** Jamais `new XxxService()` dans un autre service. Constructor injection avec `private readonly`.
+5. **Security par espace.** `denyAccessUnlessGranted('VIEW'|'EDIT', $entity->getSpace())` via `SpaceScopeVoter`.
 
 ---
 
 ## Quick Dev Workflow
 
 ```bash
-# 1. Start services
-symfony serve           # PHP dev server (port 8000)
-ollama serve            # Ollama IA (port 11434)
-# MySQL via Laragon or Docker
+# Démarrage (3 terminaux ou Docker)
+symfony serve                   # PHP dev server :8000
+ollama serve                    # IA :11434
+# MySQL : Laragon (auto) ou docker compose up -d database
 
-# 2. Make changes + run migrations
+# Cycle de modif
 php bin/console doctrine:migrations:diff
 php bin/console doctrine:migrations:migrate
+php bin/console cache:clear     # si nécessaire
 
-# 3. Clear cache if needed
-php bin/console cache:clear
-
-# 4. Run tests
-php bin/phpunit tests/
-
-# 5. Commit (see Before Committing below)
+# Avant tout commit
+php bin/phpunit tests/                          # tous tests verts
+php bin/console doctrine:schema:validate        # schéma valide
+php bin/console doctrine:migrations:diff        # aucune migration en attente
+php bin/console lint:twig templates/            # templates valides
 ```
 
 ---
 
-## Code Patterns
+## Décisions clés du projet
 
-### Where to Put Code
-
-| Type | Location |
-|------|----------|
-| Business logic | `src/Service/{Domain}/` |
-| HTTP layer | `src/Controller/{Domain}/` |
-| DB entities | `src/Entity/` |
-| Custom queries | `src/Repository/` |
-| Console tasks | `src/Command/` |
-| Forms | `src/Form/` |
-| Event hooks | `src/EventListener/` |
-| Reusable mixins | `src/Trait/` |
-| Strict types | `src/Enum/` |
-| Input validation | `src/Dto/` |
-
-### Naming Quick Reference
-
-```
-Entity:      CamelCase singular       → User, Property, Transaction
-Service:     VerbNounService          → TransactionService, ReceiptOcrService
-Controller:  NounController           → QuoteController, DashboardController
-Repository:  CamelCaseRepository      → TransactionRepository
-Enum:        NounStatusEnum           → InvoiceStatusEnum, TransactionTypeEnum
-Trait:       NounTrait                → TimestampTrait, SpaceScopeTrait
-DB table:    snake_case singular       → user, property, transaction
-DB FK:       entity_id                → space_id, account_id, user_id
-DB pivot:    parent_child             → lease_tenant, document_link
-```
-
-### Multi-tenant Rule
-
-Every entity **must** have `space_id`. Use `SpaceScopeTrait` + `SpaceScopeVoter`. Never query without space filter.
-
-### Service Domains
-
-```
-src/Service/
-├── AI/           → OllamaClient, ReceiptOcrService, PayslipParsingService
-├── Finance/      → TransactionService, CategoryService, AssetService
-├── RealEstate/   → PropertyService, LeaseService, LoanService
-├── Invoicing/    → QuoteService, InvoiceService
-├── Tax/          → TaxItemService, TaxYearService
-├── PDF/          → QuotePdfGenerator, InvoicePdfGenerator, TaxSummaryPdfGenerator
-├── Document/     → DocumentService
-├── Notification/ → ReminderService
-└── Security/     → SpaceAuthorizationService, EncryptionService
-```
-
-### Doctrine Entity Pattern
-
-```php
-#[ORM\Entity(repositoryClass: TransactionRepository::class)]
-#[ORM\Table(name: 'transaction')]
-class Transaction {
-    use TimestampTrait, SpaceScopeTrait, SoftDeleteTrait;
-
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
-    private ?int $id = null;
-
-    #[ORM\Column(type: Types::STRING, enumType: TransactionTypeEnum::class)]
-    private TransactionTypeEnum $type;
-    // ...
-}
-```
-
-### PDF Generation Pattern
-
-```php
-// Service generates PDF bytes from Twig template
-$html = $this->twig->render('pdf/quote.html.twig', ['quote' => $quote]);
-$dompdf = new Dompdf(new Options());
-$dompdf->loadHtml($html);
-$dompdf->setPaper('A4', 'portrait');
-$dompdf->render();
-return $dompdf->output(); // bytes
-```
-
-### Ollama Integration Pattern
-
-```php
-// Text extraction
-$result = $this->ollama->generate($prompt, model: 'neural-chat');
-// Vision OCR
-$result = $this->ollama->generateWithImage($prompt, $imagePath, model: 'llava');
-```
+- **Monolithe Symfony** — pas de microservices avant un bottleneck prouvé. Symfony DI suffit.
+- **dompdf > wkhtmltopdf** — zero deps système, Docker-friendly, FrankenPHP-compatible.
+- **Ollama local > cloud AI** — privacy-first, coût zéro, fonctionne offline.
+- **`DocumentLink` polymorphique** — un `Document` attachable à n'importe quelle entité (évite N tables de jointure).
+- **`Space` = unité multi-tenant** — un user peut avoir plusieurs spaces (perso, pro, EIRL).
+- **Tout flux monétaire passe par `Transaction`** — `RentPayment` et `LoanPayment` génèrent automatiquement leur `Transaction` via `LinkedTransactionListener`. Source de vérité unique pour le module Finance.
 
 ---
 
-## Before Committing
+## Documentation libs externes — context7 obligatoire
+
+Avant d'utiliser une lib externe (Symfony component, Doctrine, Twig, dompdf, Stimulus, Turbo, Ollama, FrankenPHP) :
 
 ```bash
-php bin/phpunit tests/                          # All tests green
-php bin/console doctrine:schema:validate        # Schema valid
-php bin/console doctrine:migrations:diff        # No pending migrations
-php bin/console lint:twig templates/            # Templates valid
-php bin/console debug:container --unused        # No unused services
+npx ctx7@latest library "<name>" "<question>"
+npx ctx7@latest docs <id> "<question>"
+npx ctx7@latest docs <id> "<question>" --research   # si la 1re passe est insuffisante
 ```
+
+IDs courants : `/symfony/symfony` · `/doctrine/orm` · `/twigphp/twig` · `/symfony/ux-twig-component` · `/symfony/ux-live-component` · `/dompdf/dompdf` · `/hotwired/stimulus` · `/hotwired/turbo`.
+
+Liste complète des cas où context7 est attendu (et ceux où il ne l'est pas) : voir [`rules.md`](rules.md) → "Workflow Claude".
 
 ---
 
-## Key Commands
+## Commandes fréquentes
 
 ```bash
-php bin/console doctrine:migrations:diff        # Generate migration
-php bin/console doctrine:migrations:migrate     # Apply migrations
-php bin/console doctrine:fixtures:load          # Load test data
-php bin/console cache:clear                     # Clear cache
-php bin/console debug:router                    # List routes
-php bin/console debug:container                 # List services
+# Doctrine
+php bin/console doctrine:migrations:diff        # générer migration
+php bin/console doctrine:migrations:migrate     # appliquer
+php bin/console doctrine:fixtures:load          # data de test
+php bin/console doctrine:schema:validate
+
+# Debug
+php bin/console debug:router                    # routes
+php bin/console debug:container                 # services
+php bin/console debug:container --unused        # services orphelins
+
+# Tests
+php bin/phpunit tests/                          # tout
+php bin/phpunit tests/Unit/                     # unit only
+php bin/phpunit --filter testMethodName         # un seul test
 ```
-
----
-
-## UI / Design System
-
-**Règle absolue** : lire [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) avant tout travail sur les templates, CSS ou composants visuels.
-
-### Rappels critiques
-
-| Sujet | Règle |
-|-------|-------|
-| Polices | Syne (titres) · DM Sans (corps) · JetBrains Mono (montants) — jamais Inter/Arial |
-| Couleurs | Palette désaturée sage `#C8D5C2` · pas de bleu/rouge/vert vifs · pas de gold/orange |
-| Espacement | Base 8px — `gap` uniquement entre frères, jamais `margin` |
-| Thème | `data-theme="dark"` par défaut · persisté via `localStorage['flooze-theme']` |
-| Sidebar | Toujours `#1E1E1E`, largeur 228px fixe · dropdown hardcodé dark (pas de CSS vars) |
-| Montants | Format FR `1 234,56 €` · JetBrains Mono obligatoire · tiret cadratin pour le négatif |
-| Icônes | Lucide Icons uniquement · 14 ou 16px · `stroke-width: 1.5` · jamais filled |
-| Radius | sm 6px · md 10px · lg 14px · xl 20px · pill 9999px — jamais > 20px |
-| Emoji | Aucun dans l'UI |
-| Scroll | Vertical uniquement — jamais horizontal |
-
-### CSS — règle de séparation
-
-```
-assets/styles/app.css           → tokens, reset, layout shell, composants partagés
-                                  (sidebar, cards, buttons, forms génériques)
-
-templates/{module}/_styles.html.twig  → styles spécifiques à un module/page
-                                        inclus dans {% block stylesheets %} de chaque vue
-```
-
-**Règle** : toute page avec un formulaire complet ou un layout propre doit avoir
-son fichier `_styles.html.twig` dans le dossier de ses templates.
-
-```twig
-{# Dans la vue #}
-{% block stylesheets %}
-    {{ parent() }}
-    {% include 'module/_styles.html.twig' %}
-{% endblock %}
-```
-
-Ne jamais polluer `app.css` avec des styles spécifiques à une seule page.
-
----
-
-## Documentation Index
-
-- [README.md](README.md) — Project overview & quick start
-- [ARCHITECTURE.md](ARCHITECTURE.md) — Directory structure, entity relationships, design patterns
-- [MODULES.md](MODULES.md) — Detailed specs for all 6 modules
-- [SETUP.md](SETUP.md) — Installation guide (Laragon + Docker)
-- [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) — **Source de vérité UI** : palette, typo, composants, layout, tokens CSS
-- [.claude/rules.md](.claude/rules.md) — Code guidelines, SOLID, naming, testing
-- [.claude/memory.md](.claude/memory.md) — Persistent context for Claude Code

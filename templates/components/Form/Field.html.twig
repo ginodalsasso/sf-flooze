@@ -1,0 +1,13 @@
+{# Symfony form field: label + widget + errors + optional hint. field = FormView object. #}
+{% props field, label, hint = null %}
+
+<div {{ attributes.defaults({class: 'form-group'}) }}>
+    <label for="{{ field.vars.id }}" class="form-label-app">{{ label }}</label>
+    {{ form_widget(field) }}
+    {% for error in field.vars.errors %}
+        <span class="form-error">{{ error.message }}</span>
+    {% endfor %}
+    {% if hint %}
+        <span class="form-hint">{{ hint }}</span>
+    {% endif %}
+</div>

@@ -8,19 +8,12 @@
 {% block title %}Créer un espace — Flooze{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Créer un espace</h1>
-        <p class="page-subtitle">Un espace regroupe toutes tes données financières personnelles ou professionnelles</p>
-    </div>
-</div>
+<twig:PageHeader title="Créer un espace"
+                 subtitle="Un espace regroupe toutes tes données financières personnelles ou professionnelles" />
 
 <div class="page-content">
     <div class="form-page">
-
-        {% for flash in app.flashes('error') %}
-            <div class="flash flash--error">{{ flash }}</div>
-        {% endfor %}
+        <twig:Flash levels="{{ ['error'] }}" />
         {% include 'space/forms/_new.html.twig' %}
     </div>
 </div>

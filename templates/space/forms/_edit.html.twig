@@ -4,9 +4,7 @@
         <div class="form-section">
             <p class="form-section-label">Type d'espace</p>
             <div class="type-card-readonly">
-                <div class="type-card-icon type-card-icon--{{ space.type.value }}">
-                    <i data-lucide="{{ space.type.value == 'personal' ? 'user' : 'briefcase' }}"></i>
-                </div>
+                <twig:SpaceTypeIcon type="{{ space.type.value }}" size="md" />
                 <div class="type-card-body">
                     <div class="type-card-title">{{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}</div>
                     <div class="type-card-desc">Le type d'espace ne peut pas être modifié après la création</div>
@@ -17,24 +15,13 @@
 
         {# Name field #}
         <div class="form-section">
-            <div class="form-group">
-                <label for="{{ form.name.vars.id }}" class="form-label-app">Nom de l'espace</label>
-                {{ form_widget(form.name) }}
-                {% if form.name.vars.errors|length > 0 %}
-                    {% for error in form.name.vars.errors %}
-                        <span class="form-error">{{ error.message }}</span>
-                    {% endfor %}
-                {% endif %}
-            </div>
+            <twig:Form:Field field="{{ form.name }}" label="Nom de l'espace" />
         </div>
 
         {# Actions #}
         <div class="form-actions">
-            <a href="{{ path('app_home') }}" class="btn btn--secondary">Annuler</a>
-            <button type="submit" class="btn btn--primary">
-                <i data-lucide="check"></i>
-                Enregistrer
-            </button>
+            <twig:Button as="a" href="{{ path('app_home') }}" label="Annuler" variant="secondary" />
+            <twig:Button type="submit" icon="check" label="Enregistrer" />
         </div>
     {{ form_end(form) }}
 {% endblock %}

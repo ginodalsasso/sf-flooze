@@ -1,0 +1,16 @@
+{# Page header. Optional blocks: {% block subtitle %} (rich HTML), {% block actions %} (right side). #}
+{% props title, subtitle = null %}
+
+<div {{ attributes.defaults({class: 'page-header'}) }}>
+    <div>
+        <h1 class="page-title">{{ title }}</h1>
+        {% if outerBlocks.subtitle is defined %}
+            <p class="page-subtitle">{{ block(outerBlocks.subtitle) }}</p>
+        {% elseif subtitle is not null %}
+            <p class="page-subtitle">{{ subtitle }}</p>
+        {% endif %}
+    </div>
+    {% if outerBlocks.actions is defined %}
+        <div class="page-header-actions">{{ block(outerBlocks.actions) }}</div>
+    {% endif %}
+</div>

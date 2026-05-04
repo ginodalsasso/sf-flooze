@@ -8,23 +8,16 @@
 {% block title %}Modifier l'espace — Flooze{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Modifier l'espace</h1>
-        <p class="page-subtitle">
-            <span class="space-dot space-dot--{{ space.type.value }} space-dot--inline"></span>
-            {{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}
-        </p>
-    </div>
-</div>
+<twig:PageHeader title="Modifier l'espace">
+    {% block subtitle %}
+        <span class="space-dot space-dot--{{ space.type.value }} space-dot--inline"></span>
+        {{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}
+    {% endblock %}
+</twig:PageHeader>
 
 <div class="page-content">
     <div class="form-page">
-
-        {% for flash in app.flashes('error') %}
-            <div class="flash flash--error">{{ flash }}</div>
-        {% endfor %}
-
+        <twig:Flash levels="{{ ['error'] }}" />
         {% include 'space/forms/_edit.html.twig' %}
     </div>
 </div>

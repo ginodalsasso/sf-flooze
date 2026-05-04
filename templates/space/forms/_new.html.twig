@@ -13,9 +13,7 @@
                         data-suggested="{{ is_personal ? 'Mes finances' : 'Mon activité pro' }}"
                     >
                         {{ form_widget(type_choice, {attr: {class: 'sr-only', disabled: is_taken ? 'disabled' : false}}) }}
-                        <div class="type-card-icon type-card-icon--{{ type_choice.vars.value }}">
-                            <i data-lucide="{{ is_personal ? 'user' : 'briefcase' }}"></i>
-                        </div>
+                        <twig:SpaceTypeIcon type="{{ type_choice.vars.value }}" size="md" />
                         <div class="type-card-body">
                             <div class="type-card-title">{{ is_personal ? 'Personnel' : 'Professionnel' }}</div>
                             <div class="type-card-desc">
@@ -32,34 +30,22 @@
                     </label>
                 {% endfor %}
             </div>
-            {% if form.type.vars.errors|length > 0 %}
-                {% for error in form.type.vars.errors %}
-                    <span class="form-error">{{ error.message }}</span>
-                {% endfor %}
-            {% endif %}
+            {% for error in form.type.vars.errors %}
+                <span class="form-error">{{ error.message }}</span>
+            {% endfor %}
         </div>
 
         {# Name field #}
         <div class="form-section">
-            <div class="form-group">
-                <label for="{{ form.name.vars.id }}" class="form-label-app">Nom de l'espace</label>
-                {{ form_widget(form.name) }}
-                {% if form.name.vars.errors|length > 0 %}
-                    {% for error in form.name.vars.errors %}
-                        <span class="form-error">{{ error.message }}</span>
-                    {% endfor %}
-                {% endif %}
-                <span class="form-hint">Choisis un nom qui identifie clairement cet espace</span>
-            </div>
+            <twig:Form:Field field="{{ form.name }}"
+                             label="Nom de l'espace"
+                             hint="Choisis un nom qui identifie clairement cet espace" />
         </div>
 
         {# Actions #}
         <div class="form-actions">
-            <a href="{{ path('app_home') }}" class="btn btn--secondary">Annuler</a>
-            <button type="submit" class="btn btn--primary">
-                <i data-lucide="plus"></i>
-                Créer l'espace
-            </button>
+            <twig:Button as="a" href="{{ path('app_home') }}" label="Annuler" variant="secondary" />
+            <twig:Button type="submit" icon="plus" label="Créer l'espace" />
         </div>
 
     {{ form_end(form) }}

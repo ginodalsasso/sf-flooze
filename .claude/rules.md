@@ -1,586 +1,394 @@
 # Development Rules — sf-flooze
 
-Code guidelines, conventions, and patterns for this Symfony 8.0 project.
+Conventions et patterns pour ce projet Symfony 8.0. Règles prescriptives — exemples uniquement quand non-évident.
 
 ---
 
-## SOLID Principles
+## SOLID — application stricte
 
-### Single Responsibility
-One class = one reason to change. Services handle business logic only; Controllers handle HTTP only.
-
-```php
-// BAD: controller doing business logic
-class InvoiceController {
-    public function create(Request $request, EntityManagerInterface $em): Response {
-        $invoice = new Invoice();
-        $invoice->setNumber($this->generateNumber()); // business logic in controller
-        $em->persist($invoice);
-        ...
-    }
-}
-
-// GOOD: delegate to service
-class InvoiceController {
-    public function create(Request $request, InvoiceService $service): Response {
-        $invoice = $service->createFromRequest($request);
-        return $this->redirectToRoute('invoice_show', ['id' => $invoice->getId()]);
-    }
-}
-```
-
-### Open/Closed
-Extend via new services, don't modify existing entities. Add AI models via new service, not modifying `OllamaClient`.
-
-### Liskov Substitution
-Use interfaces for swappable components (AI client, PDF generator). Future `CloudAIClient` must be interchangeable with `OllamaClient`.
-
-### Interface Segregation
-Traits stay small and focused. `SpaceScopeTrait` only adds `space_id`. `TimestampTrait` only adds `created_at`/`updated_at`.
-
-### Dependency Inversion
-Always inject via Symfony DI container. Never `new Service()` inside another service.
+- **SRP** : Controllers = HTTP only (validation + délégation + réponse). Services = business logic. Repositories = queries DB.
+- **OCP** : étendre via nouveau service, ne pas modifier les entités/services existants.
+- **LSP** : utiliser des interfaces pour les composants swappables (AI client, PDF generator).
+- **ISP** : traits petits et focalisés (`SpaceScopeTrait` ajoute uniquement `space_id`).
+- **DIP** : injection via DI container uniquement. **Jamais `new Service()` dans un autre service.**
 
 ```php
-// BAD
-class TransactionService {
-    private OllamaClient $ollama;
-    public function __construct() {
-        $this->ollama = new OllamaClient(); // hard coupling
-    }
-}
-
 // GOOD
-class TransactionService {
-    public function __construct(private readonly OllamaClient $ollama) {}
-}
+public function __construct(private readonly OllamaClient $ollama) {}
 ```
 
 ---
 
 ## Naming Conventions
 
-### PHP Classes
+### Classes PHP
 
-| Type | Pattern | Example |
+| Type | Pattern | Exemple |
 |------|---------|---------|
-| Entity | `CamelCase` singular | `User`, `Property`, `Transaction` |
+| Entity | `CamelCase` singulier | `User`, `Property`, `Transaction` |
 | Repository | `{Entity}Repository` | `TransactionRepository` |
-| Service | `{Verb}{Noun}Service` | `ReceiptOcrService`, `TransactionService` |
-| Controller | `{Noun}Controller` | `QuoteController`, `DashboardController` |
-| Form | `{Noun}FormType` | `TransactionFormType`, `LeaseFormType` |
-| Enum | `{Noun}{Adj}Enum` | `InvoiceStatusEnum`, `TransactionTypeEnum` |
-| Trait | `{Noun}Trait` | `TimestampTrait`, `SpaceScopeTrait` |
-| Event Listener | `{Trigger}Listener` | `AutoCategoryListener`, `TimestampListener` |
+| Service | `{Verb}{Noun}Service` | `ReceiptOcrService` |
+| Controller | `{Noun}Controller` | `QuoteController` |
+| Form | `{Noun}FormType` | `TransactionFormType` |
+| Enum | `{Noun}{Adj}Enum` | `InvoiceStatusEnum` |
+| Trait | `{Noun}Trait` | `TimestampTrait` |
+| Event Listener | `{Trigger}Listener` | `AutoCategoryListener` |
 | Command | `{Verb}{Noun}Command` | `GenerateRentPaymentsCommand` |
-| DTO | `{Action}{Noun}Dto` | `CreateTransactionDto`, `ReceiptExtractionDto` |
-| PDF Generator | `{Noun}PdfGenerator` | `QuotePdfGenerator`, `TaxSummaryPdfGenerator` |
+| DTO | `{Action}{Noun}Dto` | `CreateTransactionDto` |
+| PDF Generator | `{Noun}PdfGenerator` | `QuotePdfGenerator` |
 | Voter | `{Noun}Voter` | `SpaceScopeVoter` |
 
-### Methods
+### Méthodes
 
-```php
-// Repositories: descriptive query names
-findBySpaceAndDateRange(Space $space, \DateTimeInterface $from, \DateTimeInterface $to): array
-findOverdueInvoices(Space $space): array
-sumExpensesByCategory(Space $space, int $year): array
-
-// Services: verb-first
-createTransaction(CreateTransactionDto $dto): Transaction
-reconcileWithBankStatement(Account $account, array $rows): ReconciliationResult
-generateMonthlyRentPayments(\DateTimeInterface $month): int
-
-// Controllers: HTTP verb + noun
-#[Route('/transactions', name: 'transaction_index', methods: ['GET'])]
-#[Route('/transactions/new', name: 'transaction_new', methods: ['GET', 'POST'])]
-#[Route('/transactions/{id}', name: 'transaction_show', methods: ['GET'])]
-#[Route('/transactions/{id}/edit', name: 'transaction_edit', methods: ['GET', 'POST'])]
-#[Route('/transactions/{id}', name: 'transaction_delete', methods: ['DELETE'])]
-```
+- **Repositories** : descriptifs — `findBySpaceAndDateRange()`, `findOverdueInvoices()`, `sumExpensesByCategory()`
+- **Services** : verbe d'abord — `createTransaction()`, `reconcileWithBankStatement()`
+- **Controllers** : noms de routes en `{noun}_{action}` — `transaction_index`, `transaction_new`, `transaction_edit`, `transaction_delete`
 
 ---
 
 ## Database Conventions
 
 ### Tables
-- **Singular** : `user`, `property`, `transaction` (NOT `users`, `properties`)
-- **snake_case** : `tax_year`, `rent_payment`, `loan_payment`
-- **Pivots** : `parent_child` format → `lease_tenant`, `document_link`
+- **Singulier, snake_case** : `user`, `property`, `tax_year`, `rent_payment`
+- **Pivots** : `parent_child` → `lease_tenant`, `document_link`
 
-### Columns
-- Primary key : `id` (int, auto-increment)
-- Foreign keys : `{entity}_id` → `space_id`, `account_id`, `category_id`
-- Booleans : `is_{adjective}` → `is_deductible`, `is_declarable`, `is_active`
-- Soft delete : `deleted_at` (nullable TIMESTAMP, NOT boolean `is_deleted`)
+### Colonnes
+- PK : `id` (int, auto-increment)
+- FK : `{entity}_id` → `space_id`, `account_id`
+- Booléens : `is_{adj}` → `is_deductible`, `is_active`
+- **Soft delete** : `deleted_at` (TIMESTAMP nullable) — **jamais** `is_deleted`
 - Audit : `created_at`, `updated_at` (auto via `TimestampListener`)
-- Multi-tenant : **all entities** must have `space_id` FK
+- **Multi-tenant** : toutes les entités ont `space_id` FK
 
-### Doctrine Mapping (attributes only)
-
-```php
-#[ORM\Entity(repositoryClass: PropertyRepository::class)]
-#[ORM\Table(name: 'property')]
-#[ORM\HasLifecycleCallbacks]
-class Property {
-    use TimestampTrait, SpaceScopeTrait, SoftDeleteTrait;
-
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
-
-    #[ORM\Column(length: 255)]
-    private string $name;
-
-    #[ORM\Column(type: Types::STRING, enumType: PropertyTypeEnum::class)]
-    private PropertyTypeEnum $type;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 15, scale: 2, nullable: true)]
-    private ?string $purchasePrice = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $deletedAt = null;
-}
-```
-
-### Soft Delete
-Always use `deleted_at` NULL check in queries. Use `SoftDeleteListener` to auto-filter.
-
-```php
-// Repository: always filter soft-deleted
-public function findActiveBySpace(Space $space): array {
-    return $this->createQueryBuilder('p')
-        ->where('p.space = :space')
-        ->andWhere('p.deletedAt IS NULL')
-        ->setParameter('space', $space)
-        ->getQuery()
-        ->getResult();
-}
-```
+### Doctrine
+- Mapping via **attributes uniquement** (pas de YAML/XML)
+- Décimal : `precision: 15, scale: 2`
+- Enum : `#[ORM\Column(type: Types::STRING, enumType: XxxEnum::class)]`
+- Toujours filtrer `deletedAt IS NULL` dans les queries (ou utiliser `SoftDeleteListener`)
 
 ---
 
 ## File Organization
 
-### When to Create a New Service
-- Distinct business domain (Finance vs Tax vs RealEstate)
-- Logic used by multiple controllers
-- Complexity > ~30 lines in controller
-- External API interaction (Ollama, S3, email)
+### Quand créer un service
+- Domaine métier distinct (Finance / Tax / RealEstate)
+- Logique utilisée par plusieurs controllers
+- Complexité > ~30 lignes en controller
+- Interaction API externe (Ollama, S3, email)
 
-### Controller Rules
-- Max ~50 lines per action method
-- No business logic — delegate entirely to services
-- Only: validate request, call service, return response/redirect
-- Use `ParamConverter` / entity type-hinting for route params
+### Controllers
+- **Max ~50 lignes par action**
+- Aucune business logic — délégation totale aux services
+- Type-hinting d'entité pour les paramètres de route (ParamConverter implicite)
 
-### Repository Rules
-- Only database queries here
-- No business logic
-- Return typed arrays or single entities
-- Use QueryBuilder for complex filters, DQL for complex joins
+### Repositories
+- Queries uniquement, **pas de business logic**
+- QueryBuilder pour filtres complexes, DQL pour joins complexes
+- Retourner des arrays typés ou entités
 
-```php
-// Good repository method
-public function findDeclarableByYear(Space $space, int $year): array {
-    return $this->createQueryBuilder('t')
-        ->join('t.category', 'c')
-        ->where('t.space = :space')
-        ->andWhere('YEAR(t.date) = :year')
-        ->andWhere('c.isDeclarable = true')
-        ->andWhere('t.deletedAt IS NULL')
-        ->setParameters(['space' => $space, 'year' => $year])
-        ->getQuery()
-        ->getResult();
-}
-```
+### Services
+- Si > 300 lignes → split par use case
 
 ---
 
-## Testing Strategy
+## Testing
 
-### Hierarchy
+### Hiérarchie
 
 ```
 tests/
-├── Unit/          → Business logic isolated (mock deps)
-│   ├── Service/   → OllamaClientTest, TransactionServiceTest
-│   └── Entity/    → CategoryTest (hierarchy validation)
-├── Integration/   → DB + queries (real DB, test fixtures)
-│   ├── Repository/
-│   └── EventListener/
-└── Functional/    → HTTP routes, forms, workflows
-    ├── Controller/
-    └── Workflow/  → ReceiptToTransactionWorkflowTest
+├── Unit/          → Logique isolée (mocks)
+├── Integration/   → DB réelle + fixtures minimales
+└── Functional/    → HTTP, forms, workflows
 ```
 
-### Unit Test Rules
-- Mock all external dependencies (HTTP, DB, Ollama)
-- Test one method per test
-- Name: `test{MethodName}{Scenario}` → `testExtractFromImageReturnsAmount`
-
-```php
-class ReceiptOcrServiceTest extends TestCase {
-    public function testExtractFromImageReturnsStructuredData(): void {
-        $mockResponse = new MockResponse(json_encode([
-            'response' => '{"amount": 42.50, "vendor": "Carrefour", "date": "2025-01-15"}'
-        ]));
-        $client = new MockHttpClient([$mockResponse]);
-        $ollama = new OllamaClient($client, 'http://localhost:11434');
-        $service = new ReceiptOcrService($ollama);
-
-        $result = $service->extractFromImage('/path/to/receipt.jpg');
-
-        $this->assertEquals(42.50, $result->amount);
-        $this->assertEquals('Carrefour', $result->vendor);
-    }
-}
-```
-
-### Integration Test Rules
-- Use separate test DB (`.env.test`: `DATABASE_URL=...sf_flooze_test`)
-- Load minimal fixtures (create only what the test needs)
-- Rollback after each test via transactions
-
-### Functional Test Rules
-- Test happy path + 1 error case per endpoint
-- Use `WebTestCase` for HTTP, assert response codes + redirects
-- Don't test PDF bytes — just assert content-type header
+### Règles
+- **Unit** : mock toutes les dépendances externes. Une méthode = un test. Nommage `test{Method}{Scenario}`.
+- **Integration** : DB de test (`.env.test`), rollback par transaction, fixtures minimales.
+- **Functional** : happy path + 1 cas d'erreur par endpoint. `WebTestCase`. Ne pas tester les bytes PDF — juste le `content-type`.
 
 ---
 
-## ERD is the Authority
+## ERD = autorité
 
-**All entities must match the ERD in `ARCHITECTURE.md` exactly.** Before creating any entity, relation, or pivot table, verify it exists in the ERD. Do not invent tables, junction entities, or extra columns that are not in the schema.
+**Toutes les entités doivent matcher l'ERD de `ARCHITECTURE.md` exactement.**
+Avant de créer une entité, relation ou pivot → vérifier dans `ARCHITECTURE.md → "Entity Map"`. Si la relation n'y est pas → ne pas la créer.
 
-```
-# Before creating an entity: check ARCHITECTURE.md → "Entity Map" → "Entity Relationships (ERD Text)"
-# If a relation is not in the ERD → do not create it.
-```
-
-Examples of forbidden over-engineering:
-- Adding a `SpaceMembership` pivot when the ERD says `User (1) ──── (N) Space` with a plain FK
+Exemples interdits :
+- Ajouter un pivot `SpaceMembership` quand l'ERD dit `User (1) ── (N) Space` avec FK simple
+- Inventer des colonnes hors-schéma
 
 ---
 
-## Using Context7 for Documentation
+## Context7 pour la documentation
 
-When implementing or debugging anything involving a specific library or framework, **always fetch up-to-date docs via context7** before writing code. Training data may be outdated.
+Toujours fetch les docs à jour via context7 avant d'écrire du code utilisant une lib externe. Le training peut être obsolète.
 
-### When to use context7
-
-| Use context7 | Don't use context7 |
+| Use context7 | Don't use |
 |---|---|
-| Symfony component API (forms, security, events…) | Refactoring existing business logic |
-| Doctrine query syntax / mapping options | Writing services from scratch (no external API) |
-| dompdf configuration / options | Code review |
-| Ollama REST API parameters | General PHP patterns |
-| FrankenPHP / Caddy config | Debugging pure business logic |
-| AssetMapper / Stimulus / Turbo | ERD / entity design decisions |
+| Symfony component API | Refactoring de business logic |
+| Doctrine syntax / mapping | Services from scratch sans API externe |
+| dompdf, FrankenPHP, Caddy | Code review |
+| Ollama REST API | Patterns PHP généraux |
+| AssetMapper / Stimulus / Turbo | Décisions ERD / entity design |
+| Twig, Twig Components | Debug pure business logic |
 
-### How to use
-
+### Commandes
 ```bash
-# 1. Resolve library ID
-npx ctx7@latest library <name> "<question>"
-# Example:
-npx ctx7@latest library "Symfony" "how to create a custom voter"
-
-# 2. Fetch docs with the returned ID
-npx ctx7@latest docs /symfony/symfony "how to create a custom voter"
-
-# 3. If result is unsatisfying, add --research flag
-npx ctx7@latest docs /symfony/symfony "how to create a custom voter" --research
+npx ctx7@latest library "<name>" "<question>"
+npx ctx7@latest docs <id> "<question>"
+npx ctx7@latest docs <id> "<question>" --research   # si insatisfaisant
 ```
 
-### Common library IDs for this project
+### IDs courants
 
 | Library | ctx7 ID |
-|---------|---------|
+|---|---|
 | Symfony | `/symfony/symfony` |
 | Doctrine ORM | `/doctrine/orm` |
 | Twig | `/twigphp/twig` |
-| Twig Components (Symfony UX) | `/symfony/ux-twig-component` |
-| Live Components (Symfony UX) | `/symfony/ux-live-component` |
+| UX Twig Component | `/symfony/ux-twig-component` |
+| UX Live Component | `/symfony/ux-live-component` |
 | dompdf | `/dompdf/dompdf` |
 | Stimulus | `/hotwired/stimulus` |
 | Turbo | `/hotwired/turbo` |
 
 ---
 
-## HTML Semantics
+## HTML / CSS / JS
 
-- Use semantic elements: `<nav>`, `<main>`, `<aside>`, `<ul>`/`<li>` for lists, `<details>`/`<summary>` for collapsible UI, `<p>` for text blocks. Reserve `<div>` for non-semantic layout containers.
-- Prefer `<details>`/`<summary>` for toggle/dropdown patterns before reaching for JS.
-- Never use inline `style=""` — use CSS classes or modifiers.
-
-## CSS over JS
-
-- Use CSS for: hover/focus states, transitions, `:has(input:checked)` for radio/checkbox selection styling, `:focus-within` for parent highlighting.
-- Only use JS when truly necessary: localStorage persistence, async data, complex interactions with no CSS equivalent.
-- When you're about to write a JS class-toggle, ask first if `:has()`, `:checked`, `:focus-within`, or `<details>` solves it.
+- **HTML sémantique** : `<nav>`, `<main>`, `<aside>`, `<ul>/<li>`, `<details>/<summary>`. `<div>` réservé au layout non-sémantique.
+- **CSS avant JS** : pour hover/focus, transitions, `:has(input:checked)`, `:focus-within`, `<details>`. JS uniquement si vraiment nécessaire (localStorage, async, interactions sans équivalent CSS).
+- **Jamais `style="..."` inline** — utiliser des classes CSS.
 
 ---
 
-## Twig Templating & UI Factorization
+## Twig — règle de 2
 
-> **Rule of 2** — any HTML/CSS block that appears **twice or more** must be factored into a reusable unit.
-> Three similar lines is fine. A repeated 5+ line fragment is not.
->
-> Do not pre-factor speculatively. Wait for the second occurrence, then extract.
+**Tout bloc HTML/CSS apparaissant ≥ 2 fois doit être factorisé.** Pas de pré-factorisation spéculative — attendre la 2e occurrence puis extraire.
 
-### Decision matrix — which tool to reach for
+### Matrice de décision
 
-| Situation | Use | File location |
+| Situation | Outil | Emplacement |
 |---|---|---|
-| Small inline HTML fragment, no slots, ≤ ~10 lines (button, badge, money cell) | **Macro** | `templates/macros/{topic}.html.twig` |
-| Static partial reused across pages, no surcharge needed (sidebar, page header) | **`{% include %}`** | `templates/{module}/_{name}.html.twig` |
-| Partial with **overridable blocks/slots** (card with custom body, modal) | **`{% embed %}`** | `templates/{module}/_{name}.html.twig` |
-| Complex reusable unit with multiple props, attributes pass-through, defaults, nested blocks | **Twig Component (anonymous)** | `templates/components/{Name}.html.twig` |
-| Component with PHP logic, computed props, dispatched actions | **Twig Component (class-based)** | `src/Twig/Components/{Name}.php` + `templates/components/{Name}.html.twig` |
+| Fragment inline ≤ 10 lignes, pas de slots | **Macro** | `templates/macros/{topic}.html.twig` |
+| Partial statique réutilisé | **`{% include %}`** | `templates/{module}/_{name}.html.twig` |
+| Partial avec blocks/slots overridables | **`{% embed %}`** | `templates/{module}/_{name}.html.twig` |
+| Unité réutilisable avec props, defaults, attrs pass-through | **Twig Component (anonymous)** | `templates/components/{Name}.html.twig` |
+| Component avec logique PHP, computed props | **Twig Component (class-based)** | `src/Twig/Components/{Name}.php` + template |
 
-> **Twig Components require `symfony/ux-twig-component`.** It is *not currently installed*.
-> Before introducing the first component, run `composer require symfony/ux-twig-component`
-> and confirm with the user. Until then, use macros and `embed` only.
+> ⚠️ `symfony/ux-twig-component` **n'est pas installé**. Avant le premier composant : `composer require symfony/ux-twig-component` et confirmation utilisateur. En attendant : macros et `embed` uniquement.
 
-### Naming conventions
+### Conventions de nommage
 
 ```
-templates/macros/forms.html.twig            → grouped macros by topic (forms, money, icons)
-templates/macros/buttons.html.twig
-templates/components/Button.html.twig       → PascalCase, one component per file
-templates/components/Form/Field.html.twig   → namespaced via folder → <twig:Form:Field />
-templates/components/EmptyState.html.twig
-src/Twig/Components/Money.php               → matches template name 1-to-1
+templates/macros/{topic}.html.twig          → groupé par sujet (forms, money, buttons)
+templates/components/{Name}.html.twig       → PascalCase, un composant par fichier
+templates/components/{Group}/{Name}.html.twig → namespacé par dossier → <twig:Group:Name />
+src/Twig/Components/{Name}.php              → matche le template 1-pour-1
 ```
 
-### Macros — pattern
+### Catalogue de patterns à factoriser dès la 2e occurrence
 
-```twig
-{# templates/macros/buttons.html.twig #}
-{% macro primary(label, icon = null, attrs = {}) %}
-    <button type="{{ attrs.type|default('button') }}"
-            class="btn btn--primary {{ attrs.class|default('') }}"
-            {% if attrs.disabled|default(false) %}disabled{% endif %}>
-        {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
-        {{ label }}
-    </button>
-{% endmacro %}
-
-{% macro link(label, href, icon = null, variant = 'secondary') %}
-    <a href="{{ href }}" class="btn btn--{{ variant }}">
-        {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
-        {{ label }}
-    </a>
-{% endmacro %}
-```
-
-```twig
-{# Usage #}
-{% import 'macros/buttons.html.twig' as btn %}
-{{ btn.link('Créer un espace', path('app_space_new'), 'plus', 'primary') }}
-
-{# Or import only what is needed #}
-{% from 'macros/buttons.html.twig' import primary as btn_primary %}
-```
-
-### Embeds — when slots are needed
-
-```twig
-{# templates/space/_card.html.twig #}
-<div class="space-full-card">
-    <div class="space-full-icon space-full-icon--{{ variant }}">
-        <i data-lucide="{{ icon }}"></i>
-    </div>
-    <div class="space-full-body">
-        {% block body %}{% endblock %}
-    </div>
-    <div class="space-full-actions">
-        {% block actions %}{% endblock %}
-    </div>
-</div>
-
-{# Caller #}
-{% embed 'space/_card.html.twig' with {variant: space.type.value, icon: 'user'} %}
-    {% block body %}<div class="space-full-name">{{ space.name }}</div>{% endblock %}
-    {% block actions %}{{ btn.link('Modifier', path('app_space_edit', {id: space.id}), 'pencil') }}{% endblock %}
-{% endembed %}
-```
-
-### Twig Components — pattern (once `ux-twig-component` is installed)
-
-```twig
-{# templates/components/Button.html.twig — anonymous component #}
-{% props label, icon = null, variant = 'primary', as = 'button' %}
-
-<{{ as }} {{ attributes.defaults({class: 'btn btn--' ~ variant}) }}>
-    {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
-    {{ label }}
-</{{ as }}>
-```
-
-```twig
-{# Usage — props are required/optional per defaults; extra HTML attrs pass through #}
-<twig:Button label="Créer un espace" icon="plus" as="a" href="{{ path('app_space_new') }}" />
-```
-
-Use `attributes.defaults({...})` to merge passed attributes; `attributes.nested('header')` to extract `header:*` props; `block(outerBlocks.content)` to forward parent slots when wrapping.
-
-### Component catalogue — extract on second occurrence
-
-These patterns already appear in the codebase. The moment any of them shows up a second time, factor it:
-
-| Pattern | Form | Note |
+| Pattern | Forme | Variantes |
 |---|---|---|
-| `<a/button class="btn btn--{variant}">` + Lucide icon | macro `buttons.html.twig` → `Button` component | Variants: `primary`, `secondary`, `ghost`, `danger` |
-| `<div class="flash flash--{level}">` | macro `flashes.html.twig` rendering all `app.flashes` | One call replaces both `success` + `error` loops |
-| Form field (label + input + error) | macro `forms.html.twig` → `Form:Field` component | Wraps Symfony form rendering |
-| `panel-empty` block (icon + text + hint + CTA) | `EmptyState` component | Slots: icon, text, hint, cta |
-| Page header (title + subtitle + right-action slot) | `PageHeader` component | Slot for `actions` |
-| Money formatting `1 234,56 €` (JetBrains Mono, sign rules) | macro `money.html.twig` → `Money` component | Centralizes FR formatting + negative em-dash |
-| Status/type badge (`space-dot`, role pill) | `Badge` component | Variants from enum value |
-| Card shell (icon + body + actions) | `Card` component (`embed` until then) | Used for spaces, properties, transactions |
+| `<a/button class="btn btn--{variant}">` + icon Lucide | macro `buttons` → `Button` | `primary`, `secondary`, `ghost`, `danger` |
+| `<div class="flash flash--{level}">` | macro `flashes` (loop sur `app.flashes`) | — |
+| Form field (label + input + error) | macro `forms` → `Form:Field` | — |
+| `panel-empty` (icon + texte + hint + CTA) | `EmptyState` (slots) | — |
+| Page header (titre + sous-titre + actions) | `PageHeader` (slot actions) | — |
+| Money `1 234,56 €` (JetBrains Mono, em-dash sur négatif) | macro `money` → `Money` | — |
+| Status / type badge | `Badge` | variantes par enum value |
+| Card shell (icon + body + actions) | `Card` (`embed` en attendant) | — |
 
-### Templating anti-patterns
-
-- **Computation in templates** — no arithmetic, aggregation, or filtering inside `{% set %}` for business values. Compute in the controller, expose via DTO/ViewModel.
-- **Copy-pasted partials > 5 lines** — extract before pasting a third time.
-- **Inline `style="..."`** — already forbidden, repeated here for emphasis.
-- **Macro doing 3+ unrelated things** — split. One macro = one visual concern.
-- **Component with > ~6 props** — split into sub-components or use slots.
-- **Logic duplicated between macro and component** — keep one source of truth; delete the other.
+### Anti-patterns
+- **Computation en template** — pas d'arithmétique/aggregation/filtrage business dans `{% set %}`. Calcul en controller, exposition via DTO/ViewModel.
+- Partial copié-collé > 5 lignes — extraire avant la 3e occurrence.
+- Macro qui fait 3+ choses non-liées — split.
+- Component avec > ~6 props — sous-composants ou slots.
+- Logique dupliquée macro ↔ component — une seule source de vérité.
 
 ---
 
-## CSS Factorization
+## CSS — règle de 2 + composition > override
 
-Same rule of 2: a CSS block (selector body or property group) repeated twice → factor it. Always prefer **composition over override**.
+### Hiérarchie de réutilisation (cheap → cher)
 
-### Hierarchy of reuse (cheapest to most expensive)
+1. **Design tokens** (`--color-*`, `--space-*`, `--radius-*`, `--font-*`) — définis dans `app.css`. Valeurs hardcodées interdites si un token existe.
+2. **Modifiers BEM** (`btn btn--primary`, `space-dot space-dot--sm`) — préférés aux nouveaux composants avec overrides.
+3. **Classe partagée** dans `app.css` — uniquement si pattern utilisé par **3+ modules** non-liés.
+4. **Classe scopée module** dans `templates/{module}/_styles.html.twig`.
 
-1. **Design tokens** (`--color-*`, `--space-*`, `--radius-*`, `--font-*`) — defined once in `app.css`. Hard-coded values are forbidden once a token exists.
-2. **BEM modifiers** (`btn btn--primary`, `space-dot space-dot--sm`) — preferred over creating a new component with overrides.
-3. **Utility composition** for one-off layout (`flex`, `gap-2`, `items-center`) — only if a token-driven utility layer exists; otherwise use BEM.
-4. **Shared component class** in `app.css` — only when a pattern is used by **3+** unrelated modules.
-5. **Module-scoped class** in `templates/{module}/_styles.html.twig` — for anything that belongs to a single module.
-
-### Where each style lives
+### Emplacements
 
 ```
 assets/styles/app.css
-├── tokens             → :root vars, [data-theme="dark"] overrides
-├── reset / base       → element defaults
-├── layout shell       → sidebar, topbar, main, page-header
-└── shared components  → .btn, .flash, .badge, .card, .panel-empty, .space-dot
-                         (only when used in ≥ 3 modules)
+├── tokens (root vars + [data-theme="dark"])
+├── reset / base
+├── layout shell (sidebar, topbar, main, page-header)
+└── shared components (.btn, .flash, .badge, .card, .panel-empty)
+   → uniquement si utilisés dans ≥ 3 modules
 
 templates/{module}/_styles.html.twig
-└── classes prefixed by module → .space-full-card, .quote-line-row
-                                 (do NOT bleed into app.css)
+└── classes préfixées par module (.space-full-card, .quote-line-row)
 ```
 
-### Refactor triggers
+### Triggers de refactor
 
-Any of the following → stop and factor:
+- Même couleur/spacing/radius typée 2× → introduire/utiliser un token
+- 2 sélecteurs avec body identique → merge ou base + modifier
+- Classe d'un module utilisée par un 2e module → promouvoir vers `app.css` (sans préfixe)
+- Classe dans `app.css` utilisée par 1 seul module → demouvoir vers `_styles.html.twig`
 
-- Same color/spacing/radius/font-size value typed twice → introduce or use a token.
-- Two selectors with identical bodies → merge or @extend via shared base class + modifier.
-- A module's `_styles.html.twig` declaration is now used in a second module → promote to `app.css` (and rename without the module prefix).
-- A component's CSS lives in `app.css` but only one module renders it → demote to that module's `_styles.html.twig`.
-
-### CSS anti-patterns
-
-- **Hard-coded colors** when a token exists — every hex must trace to `var(--color-*)`. Exception: tokens themselves.
-- **`!important`** — almost always means the cascade order is wrong; fix the order.
-- **Deep selectors (> 3 levels)** — sign of leaky scope; reach for BEM.
-- **Polluting `app.css` with module-specific classes** — re-read the CLAUDE.md "CSS — règle de séparation".
-- **Duplicated dark-theme rule blocks** — toggle via `[data-theme="dark"] .x { ... }`, never write a parallel `.x-dark` class.
-- **Inline `<style>`** in templates — use `{% block stylesheets %}` + `_styles.html.twig`.
-
-### When in doubt — fetch the docs
-
-Twig is a documented library. Before introducing macros/components/embeds, run:
-
-```bash
-npx ctx7@latest docs /twigphp/twig "<question>"
-npx ctx7@latest docs /symfony/ux-twig-component "<question>"
-```
-
-Twig is in scope for the **Use context7** column of the table above (treat it like Symfony component API).
+### Anti-patterns
+- Couleurs hardcodées si un token existe (sauf dans la définition des tokens)
+- `!important` — quasi toujours un ordre de cascade incorrect
+- Sélecteurs profonds (> 3 niveaux) — fuite de scope, BEM
+- Classes module-specific dans `app.css`
+- Blocs dark-theme dupliqués — toggle via `[data-theme="dark"] .x { ... }`, pas de `.x-dark` parallèle
+- `<style>` inline dans templates — `{% block stylesheets %}` + `_styles.html.twig`
 
 ---
 
-## Anti-Patterns to Avoid
+## Anti-Patterns transverses
 
-- **Inventing entities** : if it's not in the ERD, don't create it
-- **Over-engineering relations** : a simple FK > a pivot table unless the ERD explicitly has one
-- **Fat controllers** : business logic belongs in services
-- **New inside services** : always inject dependencies
-- **Missing space_id** : every entity needs multi-tenant scope
-- **Boolean soft-delete** : use `deleted_at` NOT `is_deleted`
-- **Premature abstraction** : 3 similar lines > abstract class for 1 case
-- **Microservices reflex** : monolith is fine until proven bottleneck
-- **Mock DB in integration tests** : hit real DB or the test is meaningless
-- **Inline SQL** : use Doctrine QueryBuilder/DQL
-- **Untyped arrays** : return typed collections or DTOs from services
-- **God services** : if service > 300 lines, split by use case
+- **Inventer des entités** non présentes dans l'ERD
+- **Pivot inutile** quand une FK simple suffit
+- **Fat controllers** — business logic en service
+- **`new` dans un service** — toujours injecter
+- **Oublier `space_id`** sur une entité multi-tenant
+- **Boolean soft-delete** (`is_deleted`) — utiliser `deleted_at`
+- **Abstraction prématurée** — 3 lignes similaires < classe abstraite pour 1 cas
+- **Microservices reflex** — monolithe jusqu'à preuve de bottleneck
+- **Mock DB en integration test** — DB réelle ou test sans valeur
+- **SQL inline** — QueryBuilder/DQL
+- **Arrays non-typés** retournés par services — DTOs ou collections typées
+- **God service** > 300 lignes — split
 
 ---
 
-## Symfony-Specific Rules
+## Symfony — spécificités
 
 ### Routes
-Use PHP attributes, not YAML routes (except API endpoints in `config/routes/api.yaml`).
-
-```php
-#[Route('/quotes/{id}/pdf', name: 'quote_pdf_download', methods: ['GET'])]
-public function downloadPdf(Quote $quote, QuotePdfGenerator $gen): StreamedResponse {
-    $this->denyAccessUnlessGranted('VIEW', $quote->getSpace());
-    return $gen->downloadAsResponse($quote);
-}
-```
+PHP attributes, pas YAML (sauf API endpoints dans `config/routes/api.yaml`).
 
 ### Security
-Always check space ownership via `SpaceScopeVoter` before accessing entities.
-
+Toujours vérifier l'ownership via `SpaceScopeVoter` :
 ```php
 $this->denyAccessUnlessGranted('VIEW', $entity->getSpace());
-// or
 $this->denyAccessUnlessGranted('EDIT', $entity->getSpace());
 ```
 
 ### Forms
-Use FormType classes, never build forms in controllers. Add CSRF protection (auto with `AbstractType`).
+FormType classes uniquement, jamais en controller. CSRF auto via `AbstractType`.
 
 ### Events
-Use `EventListener` (not `EventSubscriber`) for Doctrine lifecycle hooks. Use `Symfony\Component\EventDispatcher` for domain events.
+- `EventListener` (pas `EventSubscriber`) pour Doctrine lifecycle
+- `Symfony\Component\EventDispatcher` pour domain events
 
 ### Enums
-PHP 8.1+ backed enums. Always use `enumType` in Doctrine column.
-
-```php
-enum InvoiceStatusEnum: string {
-    case Draft = 'draft';
-    case Sent = 'sent';
-    case Paid = 'paid';
-    case Overdue = 'overdue';
-}
-```
+PHP 8.1+ backed enums. Toujours `enumType` dans la column Doctrine.
 
 ### Traits
-Keep traits minimal — only properties + getters/setters. No business logic in traits.
+**Propriétés + getters/setters uniquement.** Pas de business logic. Exemple `SoftDeleteTrait` : `deletedAt`, `getDeletedAt()`, `setDeletedAt()`, `isDeleted()`, `softDelete()`.# rules.md — sf-flooze
 
-```php
-trait SoftDeleteTrait {
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $deletedAt = null;
+Conventions de code PHP/Symfony. Les règles UI/CSS sont dans [`FRONTEND.md`](FRONTEND.md), les règles de test dans [`TESTING.md`](TESTING.md).
 
-    public function getDeletedAt(): ?\DateTimeImmutable { return $this->deletedAt; }
-    public function setDeletedAt(?\DateTimeImmutable $deletedAt): static {
-        $this->deletedAt = $deletedAt;
-        return $this;
-    }
-    public function isDeleted(): bool { return $this->deletedAt !== null; }
-    public function softDelete(): void { $this->deletedAt = new \DateTimeImmutable(); }
-}
-```
+Les **garde-fous critiques** (ERD, multi-tenant, soft-delete, DI, security) sont listés dans [`CLAUDE.md`](CLAUDE.md). Ils sont supposés acquis ici.
+
+---
+
+## Naming
+
+### Classes
+
+| Type | Pattern | Exemple |
+|---|---|---|
+| Entity | `CamelCase` singulier | `Property`, `Transaction` |
+| Repository | `{Entity}Repository` | `TransactionRepository` |
+| Service | `{Verb}{Noun}Service` | `ReceiptOcrService` |
+| Controller | `{Noun}Controller` | `QuoteController` |
+| Form | `{Noun}FormType` | `TransactionFormType` |
+| Enum | `{Noun}{Adj}Enum` | `InvoiceStatusEnum` |
+| Trait | `{Noun}Trait` | `TimestampTrait` |
+| Listener | `{Trigger}Listener` | `AutoCategoryListener` |
+| Command | `{Verb}{Noun}Command` | `GenerateRentPaymentsCommand` |
+| DTO | `{Action}{Noun}Dto` | `CreateTransactionDto` |
+| PDF Generator | `{Noun}PdfGenerator` | `QuotePdfGenerator` |
+| Voter | `{Noun}Voter` | `SpaceScopeVoter` |
+
+### Méthodes
+
+- **Repositories** : descriptifs — `findBySpaceAndDateRange()`, `findOverdueInvoices()`, `sumExpensesByCategory()`.
+- **Services** : verbe d'abord — `createTransaction()`, `reconcileWithBankStatement()`.
+- **Routes** : `{noun}_{action}` — `transaction_index`, `transaction_new`, `transaction_edit`, `transaction_delete`.
+
+### Base de données
+
+- Tables : **singulier, snake_case** — `user`, `tax_year`, `rent_payment`.
+- Pivots : `parent_child` — `lease_tenant`, `document_link`.
+- PK : `id` (int auto-increment). FK : `{entity}_id`.
+- Booléens : `is_{adj}` — `is_deductible`, `is_active`.
+- Audit : `created_at`, `updated_at` (auto via `TimestampListener`).
+
+---
+
+## Architecture
+
+### Controllers
+
+- Max ~50 lignes par action.
+- HTTP only : valider la requête, déléguer au service, retourner la réponse.
+- Type-hinting d'entité pour les paramètres de route (ParamConverter implicite).
+- Routes via PHP attributes, pas YAML (sauf API dans `config/routes/api.yaml`).
+
+### Services
+
+- Créer un service quand : domaine métier distinct, logique partagée par plusieurs controllers, complexité > ~30 lignes en controller, ou interaction API externe.
+- > 300 lignes → split par use case.
+- Retourner DTOs ou entités typées, jamais d'arrays anonymes.
+
+### Repositories
+
+- Queries uniquement, pas de business logic.
+- QueryBuilder pour filtres complexes, DQL pour joins complexes. **Jamais de SQL inline.**
+- Toujours filtrer `space` + `deletedAt IS NULL`.
+
+### Forms
+
+- FormType classes uniquement, jamais de form construit en controller.
+- CSRF auto via `AbstractType`.
+
+### Events
+
+- `EventListener` (pas `EventSubscriber`) pour les hooks Doctrine.
+- `Symfony\Component\EventDispatcher` pour les events domaine.
+
+### Traits
+
+- Propriétés + getters/setters uniquement. **Aucune business logic.**
+- `SpaceScopeTrait` n'ajoute que `space`. `TimestampTrait` n'ajoute que `created_at`/`updated_at`.
+
+---
+
+## Doctrine
+
+- Mapping via **attributes uniquement**.
+- Décimal monétaire : `precision: 15, scale: 2`.
+- Enums : PHP 8.1+ backed enums avec `#[ORM\Column(type: Types::STRING, enumType: XxxEnum::class)]`.
+- Lifecycle callbacks via `#[ORM\HasLifecycleCallbacks]` ou listeners dédiés (préférés).
+
+---
+
+## Anti-patterns
+
+- Inventer une entité/relation hors ERD.
+- Pivot quand une FK simple suffit.
+- Business logic en controller.
+- `new` au lieu d'injection.
+- Oubli de `space_id` ou de `denyAccessUnlessGranted`.
+- `is_deleted` au lieu de `deleted_at`.
+- Abstraction prématurée (3 lignes similaires ne justifient pas une classe abstraite).
+- SQL inline.
+- Array non typé en retour de service.
+- Service > 300 lignes sans découpage.

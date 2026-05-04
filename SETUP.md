@@ -18,7 +18,7 @@ Two paths: **Laragon** (Windows, simple) or **Docker** (full stack, cross-platfo
 | Git | any | `git --version` |
 | Symfony CLI | latest | `symfony version` |
 | Ollama | latest | `ollama --version` |
-| Node.js (optional) | 18+ | `node -v` |
+| Node.js (optional, AssetMapper) | 18+ | `node -v` |
 
 ---
 
@@ -44,28 +44,27 @@ scoop install symfony-cli
 Download from https://ollama.com/download/windows → run installer.
 
 ```bash
-# Verify
 ollama --version
-
-# Start Ollama service
-ollama serve
+ollama serve              # start API server
 ```
 
 ### 4. Download AI Models
 
 ```bash
-# Required: text extraction, category suggestions
-ollama pull neural-chat    # ~5GB — wait for full download
+# Required: text extraction (categories, recommendations)
+ollama pull gemma3                 # ~3.3 GB
 
-# Optional: vision OCR (requires GPU with 8GB VRAM)
-ollama pull llava          # ~47GB
+# Required: vision OCR (receipts, invoices, payslips)
+ollama pull llama3.2-vision:11b    # ~7.9 GB — needs ~8GB RAM/VRAM
 
-# Optional: fast fallback
-ollama pull mistral        # ~5GB
+# Optional: lightweight text fallback
+ollama pull mistral                # ~4.4 GB
 
 # Verify
 ollama list
 ```
+
+> Si la machine n'a pas 8 GB de VRAM/RAM disponibles pour llama3.2-vision, fallback : utiliser `gemma3` aussi pour les images (moins précis sur l'OCR mais fonctionnel) ou désactiver les features vision.
 
 ### 5. Clone the Project
 
@@ -96,8 +95,8 @@ APP_SECRET=your-secret-here-change-me
 DATABASE_URL=mysql://root@127.0.0.1:3306/sf_flooze
 
 OLLAMA_API_URL=http://localhost:11434
-OLLAMA_DEFAULT_MODEL=neural-chat
-OLLAMA_VISION_MODEL=llava
+OLLAMA_DEFAULT_MODEL=gemma3
+OLLAMA_VISION_MODEL=llama3.2-vision:11b
 
 MAILER_DSN=smtp://localhost:1025    # Mailpit if installed
 
@@ -153,9 +152,9 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 ```bash
 ollama serve &     # start in background
-ollama pull neural-chat
-ollama pull mistral   # lighter fallback
-# Optional: ollama pull llava (47GB, GPU required)
+ollama pull gemma3
+ollama pull llama3.2-vision:11b
+ollama pull mistral   # optional fallback
 ```
 
 ### 4. Clone & Configure
@@ -175,7 +174,8 @@ APP_SECRET=change-me-in-production
 DATABASE_URL=mysql://app:app@database:3306/sf_flooze
 
 OLLAMA_API_URL=http://host.docker.internal:11434
-OLLAMA_DEFAULT_MODEL=neural-chat
+OLLAMA_DEFAULT_MODEL=gemma3
+OLLAMA_VISION_MODEL=llama3.2-vision:11b
 
 MAILER_DSN=smtp://mailpit:1025
 ```
@@ -186,7 +186,7 @@ MAILER_DSN=smtp://mailpit:1025
 docker compose up -d
 ```
 
-Services started:
+Services :
 - `php` : FrankenPHP + Symfony app → http://localhost
 - `database` : MySQL 8.0 → localhost:3306
 - `mailpit` : Email testing → http://localhost:8025
@@ -249,6 +249,7 @@ services:
         arguments:
             $baseUrl: '%env(OLLAMA_API_URL)%'
             $defaultModel: '%env(OLLAMA_DEFAULT_MODEL)%'
+            $visionModel: '%env(OLLAMA_VISION_MODEL)%'
 
     App\Service\PDF\QuotePdfGenerator: ~
     App\Service\PDF\InvoicePdfGenerator: ~
@@ -297,31 +298,23 @@ php bin/console doctrine:schema:validate
 curl http://localhost:11434/api/tags
 # Expected: JSON list of installed models
 
-# Test generation
+# Test text generation
 curl http://localhost:11434/api/generate \
-  -d '{"model":"neural-chat","prompt":"Say hello","stream":false}'
+  -d '{"model":"gemma3","prompt":"Say hello","stream":false}'
 ```
 
 ### Test Symfony
 
 ```bash
 php bin/console about
-# Expected: project info without errors
-
 php bin/console debug:router | head -20
-# Expected: list of routes
 ```
 
 ### Run Tests
 
 ```bash
-# Unit tests
 php bin/phpunit tests/Unit/
-
-# Integration tests (requires test DB)
 php bin/phpunit tests/Integration/
-
-# All tests
 php bin/phpunit tests/
 ```
 
@@ -330,7 +323,6 @@ php bin/phpunit tests/
 ## Test Database Setup
 
 ```bash
-# Create test database
 php bin/console doctrine:database:create --env=test
 php bin/console doctrine:migrations:migrate --env=test --no-interaction
 ```
@@ -351,10 +343,9 @@ ollama serve
 
 # Terminal 2: Symfony
 symfony serve
-# or: php bin/console server:start
 
-# Terminal 3: MySQL (Laragon auto-starts, or:)
-# docker compose up -d database
+# Terminal 3: MySQL (Laragon auto-démarre, sinon :)
+docker compose up -d database
 ```
 
 ---
@@ -363,30 +354,30 @@ symfony serve
 
 ```bash
 # Database
-php bin/console doctrine:database:create           # Create DB
-php bin/console doctrine:migrations:diff           # Generate migration
-php bin/console doctrine:migrations:migrate        # Apply migrations
-php bin/console doctrine:migrations:migrate --down # Rollback last
-php bin/console doctrine:fixtures:load             # Load test data
-php bin/console doctrine:schema:validate           # Validate schema
+php bin/console doctrine:database:create
+php bin/console doctrine:migrations:diff
+php bin/console doctrine:migrations:migrate
+php bin/console doctrine:migrations:migrate prev    # rollback last
+php bin/console doctrine:fixtures:load
+php bin/console doctrine:schema:validate
 
 # Dev
-symfony serve                                      # Start server
-php bin/console cache:clear                        # Clear cache
-php bin/console debug:router                       # List routes
-php bin/console debug:container                    # List services
-php bin/console lint:twig templates/               # Validate templates
+symfony serve
+php bin/console cache:clear
+php bin/console debug:router
+php bin/console debug:container
+php bin/console lint:twig templates/
 
 # Tests
-php bin/phpunit tests/                             # All tests
-php bin/phpunit tests/Unit/                        # Unit only
-php bin/phpunit --filter testMethodName            # Single test
-php bin/phpunit --coverage-html var/coverage       # With coverage
+php bin/phpunit tests/
+php bin/phpunit tests/Unit/
+php bin/phpunit --filter testMethodName
+php bin/phpunit --coverage-html var/coverage
 
 # Ollama
-ollama list                                        # Installed models
-ollama pull neural-chat                            # Download model
-ollama serve                                       # Start API server
+ollama list
+ollama pull gemma3
+ollama serve
 ```
 
 ---
@@ -397,7 +388,7 @@ ollama serve                                       # Start API server
 
 ```bash
 # Laragon: ensure MySQL service is started in Laragon tray
-# Docker: ensure database container is running
+# Docker:
 docker compose ps
 docker compose up -d database
 ```
@@ -405,8 +396,9 @@ docker compose up -d database
 ### "Ollama model not found"
 
 ```bash
-ollama list               # check installed models
-ollama pull neural-chat   # download if missing
+ollama list
+ollama pull gemma3
+ollama pull llama3.2-vision:11b
 ```
 
 ### "Class not found" after adding entity
@@ -420,7 +412,7 @@ php bin/console cache:clear
 
 ```bash
 php bin/console doctrine:migrations:diff
-# If diff is empty but schema is wrong:
+# Si diff vide mais schéma faux :
 php bin/console doctrine:schema:update --force --dump-sql
 ```
 
@@ -428,21 +420,17 @@ php bin/console doctrine:schema:update --force --dump-sql
 
 ```bash
 chmod -R 777 var/    # Linux/Mac
-# Windows: ensure laragon user has write access to var/
+# Windows: laragon user must have write access to var/
 ```
 
 ### dompdf: blank PDF or images not loading
 
-- Check `isRemoteEnabled` = true in dompdf Options
-- Image URLs must be absolute paths or base64-encoded
-- Avoid flexbox in PDF templates — use tables
+- Check `isRemoteEnabled` = true in dompdf Options.
+- Image URLs must be absolute paths or base64-encoded.
+- Avoid flexbox in PDF templates — use tables.
 
-### Ollama llava: "CUDA out of memory"
+### llama3.2-vision: "out of memory" or slow
 
-llava requires ~47GB GPU VRAM. Use `neural-chat` (text-only) as fallback for non-image receipts.
-
-```bash
-# Use neural-chat instead of llava for text-based extraction
-ollama pull neural-chat
-# Set OLLAMA_DEFAULT_MODEL=neural-chat in .env.local
-```
+- `llama3.2-vision:11b` requires ~8 GB VRAM (or RAM in CPU mode, much slower).
+- Fallback : use `gemma3` for everything (lower OCR accuracy on images).
+- Or pull a lighter vision model when available.

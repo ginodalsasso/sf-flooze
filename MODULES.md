@@ -4,6 +4,8 @@ Specifications for all 6 functional modules.
 
 See also: [ARCHITECTURE.md](ARCHITECTURE.md) · [CLAUDE.md](CLAUDE.md)
 
+> Toutes les entités, **y compris les pivots et tables polymorphiques**, ont un `space_id` (FK → space) pour la défense en profondeur multi-tenant. Cela évite les bugs de jointure cross-space.
+
 ---
 
 ## Module 1: Finance
@@ -12,20 +14,20 @@ See also: [ARCHITECTURE.md](ARCHITECTURE.md) · [CLAUDE.md](CLAUDE.md)
 
 **Account**
 ```
-id, space_id, name, type (bank|cash|crypto|saving), balance (decimal), currency (EUR), 
+id, space_id, name, type (bank|cash|crypto|saving), balance (decimal), currency (EUR),
 created_at, updated_at, deleted_at
 ```
 
 **Transaction**
 ```
-id, account_id (FK), destination_account_id (FK nullable, transfers), category_id (FK),
+id, space_id, account_id (FK), destination_account_id (FK nullable, transfers), category_id (FK),
 type (income|expense|transfer), amount (decimal), date, description, metadata (JSON),
 created_at, updated_at, deleted_at
 ```
 
 **Category**
 ```
-id, space_id, parent_id (FK self-referential), name, is_deductible (bool), 
+id, space_id, parent_id (FK self-referential), name, is_deductible (bool),
 is_declarable (bool), created_at, updated_at
 ```
 
@@ -37,17 +39,18 @@ type (stock|crypto|etf|bond), created_at, updated_at
 
 ### Use Cases
 
-- Track all financial movements (income, expense, transfer) across accounts
-- Categorize transactions automatically via OCR receipt → Ollama category hint
-- Identify deductible expenses (`is_deductible=true`) and declarable income (`is_declarable=true`)
-- Transfer between accounts (Transaction with `destination_account_id`)
-- Track crypto/stocks portfolio with average acquisition price
+- Track all financial movements (income, expense, transfer) across accounts.
+- Categorize transactions automatically via OCR receipt → Ollama category hint.
+- Identify deductible expenses (`is_deductible=true`) and declarable income (`is_declarable=true`).
+- Transfer between accounts (Transaction with `destination_account_id`).
+- Suivi du portefeuille (actions, crypto, ETF) via `Asset` — quantité et prix moyen d'acquisition. **Pas de tracking automatique de cours en MVP** (intégration future via API broker).
 
 ### Key Relationships
 
 ```
 Space (1) → (N) Account
 Space (1) → (N) Category
+Space (1) → (N) Asset
 Account (1) → (N) Transaction
 Category (1) → (N) Transaction
 Category (0..1) → (N) Category  [parent_id hierarchy]
@@ -60,7 +63,7 @@ Transaction (1) → (0..1) Transaction  [destination for transfers]
 ```
 User fills TransactionFormType (amount, date, category, account)
     ↓
-AutoCategoryListener.prePersist → Ollama neural-chat → category hint (if no category selected)
+AutoCategoryListener.prePersist → Ollama gemma3 → category hint (if no category selected)
     ↓
 Transaction persisted → Account.balance updated (via TransactionService)
     ↓
@@ -72,7 +75,7 @@ Transaction appears in account view and category reports
 User uploads receipt image
     ↓ POST /receipts/upload
 ReceiptOcrService.extractFromImage($path)
-    ↓ OllamaClient.generateWithImage(prompt, imagePath, model: 'llava')
+    ↓ OllamaClient.generateWithImage(prompt, imagePath, model: 'llama3.2-vision:11b')
 Structured extraction: {amount, vendor, date, category_hint, vat, confidence}
     ↓
 Return preview to user (editable form)
@@ -104,43 +107,43 @@ guarantor_name, guarantor_income, created_at, updated_at
 
 **Lease**
 ```
-id, property_id (FK), rent (decimal), charges (decimal), type (meuble|nu|colocation),
+id, space_id, property_id (FK), rent (decimal), charges (decimal), type (meuble|nu|colocation),
 security_deposit (decimal), start_date, end_date, is_active, created_at, updated_at, deleted_at
 ```
 
 **LeaseTenant** (junction)
 ```
-id, lease_id (FK), tenant_id (FK)
+id, space_id, lease_id (FK), tenant_id (FK), created_at
 ```
 
 **RentPayment**
 ```
-id, lease_id (FK), transaction_id (FK nullable), amount, due_date, paid_date, 
+id, space_id, lease_id (FK), transaction_id (FK nullable), amount, due_date, paid_date,
 status (pending|paid|late), created_at
 ```
 
 **Loan**
 ```
-id, property_id (FK), bank_name, amount (decimal), rate (decimal), insurance_rate (decimal),
-start_date, duration_months, created_at
+id, space_id, property_id (FK), bank_name, amount (decimal), rate (decimal),
+insurance_rate (decimal), start_date, duration_months, created_at
 ```
 
 **LoanPayment**
 ```
-id, loan_id (FK), transaction_id (FK nullable), month_number, due_date,
+id, space_id, loan_id (FK), transaction_id (FK nullable), month_number, due_date,
 capital_part (decimal), interest_part (decimal), insurance_part (decimal),
 remaining_capital (decimal), paid_date, created_at
 ```
 
 ### Use Cases
 
-- Track all rental properties (primary, investment, secondary)
-- Manage multiple tenants per property via Lease + LeaseTenant
-- Auto-generate monthly RentPayment records (console command)
-- Link rent payments to Transaction (income) for unified finance view
-- Calculate loan amortization (capital/interest/insurance breakdown per month)
-- Identify tax-deductible expenses: interest payments, insurance, property charges
-- Generate LMNP/micro-BIC annual summary for tax declaration
+- Track all rental properties (primary, investment, secondary).
+- Manage multiple tenants per property via Lease + LeaseTenant.
+- Auto-generate monthly RentPayment records (console command).
+- Link rent payments to Transaction (income) for unified finance view.
+- Calculate loan amortization (capital/interest/insurance breakdown per month).
+- Identify tax-deductible expenses : interest payments, insurance, property charges.
+- Generate LMNP/micro-BIC annual summary for tax declaration.
 
 ### Key Relationships
 
@@ -201,38 +204,38 @@ country, created_at, updated_at
 
 **Quote**
 ```
-id, client_id (FK), number (unique per space), status (draft|sent|accepted|rejected),
+id, space_id, client_id (FK), number, status (draft|sent|accepted|rejected),
 valid_until, note, created_at, updated_at, deleted_at
 ```
 
 **QuoteLine**
 ```
-id, quote_id (FK), description, quantity (decimal), unit_price (decimal), vat_rate (decimal),
-sort_order, created_at
+id, space_id, quote_id (FK), description, quantity (decimal), unit_price (decimal),
+vat_rate (decimal), sort_order, created_at
 ```
 
 **Invoice**
 ```
-id, client_id (FK), quote_id (FK nullable), number (FAC-YYYY-NNN), 
+id, space_id, client_id (FK), quote_id (FK nullable), number (FAC-YYYY-NNN),
 status (draft|sent|paid|overdue), total_ht (decimal), total_ttc (decimal),
 issued_at, due_date, paid_at, note, created_at, updated_at, deleted_at
 ```
 
 **InvoiceLine**
 ```
-id, invoice_id (FK), description, quantity (decimal), unit_price (decimal),
+id, space_id, invoice_id (FK), description, quantity (decimal), unit_price (decimal),
 vat_rate (decimal), total_ht (decimal), total_ttc (decimal), sort_order, created_at
 ```
 
 ### Use Cases
 
-- Create quotes with line items (description, qty, unit price, VAT rate)
-- Manage quote status flow: draft → sent → accepted/rejected
-- Convert accepted quote to invoice (copy lines, generate number)
-- Auto-generate sequential invoice number: `FAC-YYYY-NNN` (per space per year)
-- Track invoice payment status: draft → sent → paid/overdue
-- Generate PDF for quotes and invoices (branding, SIRET, CGV)
-- Link paid invoice to Transaction (income recording)
+- Create quotes with line items (description, qty, unit price, VAT rate).
+- Manage quote status flow : draft → sent → accepted/rejected.
+- Convert accepted quote to invoice (copy lines, generate number).
+- Auto-generate invoice number `FAC-YYYY-NNN` — **séquentiel par space et par année** (le compteur repart à 1 chaque 1er janvier, par space).
+- Track invoice payment status : draft → sent → paid/overdue.
+- Generate PDF for quotes and invoices (branding, SIRET, CGV).
+- Link paid invoice to Transaction (income recording).
 
 ### Key Relationships
 
@@ -279,8 +282,8 @@ Create Transaction(type=income, amount=total_ttc, category=client revenue)
 ```php
 public function generateNumber(Space $space, int $year): string {
     $lastNumber = $this->invoiceRepo->findMaxNumberForSpaceAndYear($space, $year);
-    $sequence = $lastNumber ? (int)substr($lastNumber, -3) + 1 : 1;
-    return sprintf('FAC-%d-%03d', $year, $sequence);
+    $sequence = $lastNumber ? (int) substr($lastNumber, -3) + 1 : 1;
+    return sprintf('FAC-%04d-%03d', $year, $sequence);
 }
 ```
 
@@ -297,20 +300,20 @@ id, space_id (FK), year (int), status (draft|filed|paid), note, created_at, upda
 
 **TaxItem**
 ```
-id, tax_year_id (FK), transaction_id (FK nullable), property_id (FK nullable),
+id, space_id, tax_year_id (FK), transaction_id (FK nullable), property_id (FK nullable),
 kind (to_declare|to_deduct|to_pay), label, amount (decimal nullable), note, done (bool),
 created_at, updated_at
 ```
 
 ### Use Cases
 
-- Create a fiscal year record per year (draft by default)
-- Add items: income to declare, charges to deduct, taxes to pay
-- Link TaxItems to source Transactions or Properties for traceability
-- Calculate estimated tax: `(sum to_declare) - (sum to_deduct)` × rate
-- Track what has been filed (`done=true`) and what remains
-- Generate fiscal summary PDF for 2042, 2042-C-Pro declaration forms
-- Support fiscal regimes: micro-BIC, réel, micro-foncier, LMNP, PEA
+- Create a fiscal year record per year (draft by default).
+- Add items : income to declare, charges to deduct, taxes to pay.
+- Link TaxItems to source Transactions or Properties for traceability.
+- Calculate estimated tax : `(sum to_declare) - (sum to_deduct)` × rate.
+- Track what has been filed (`done=true`) and what remains.
+- Generate fiscal summary PDF for 2042, 2042-C-Pro declaration forms.
+- Support fiscal regimes : micro-BIC, réel, micro-foncier, LMNP, PEA.
 
 ### Key Relationships
 
@@ -359,17 +362,17 @@ file_size, original_name, created_at, updated_at
 
 **DocumentLink** (polymorphic)
 ```
-id, document_id (FK), entity_id (int), entity_type (FQCN string), created_at
+id, space_id, document_id (FK), entity_id (int), entity_type (FQCN string), created_at
 ```
 
 ### Use Cases
 
-- Upload files: receipts (JPG/PNG), payslips (PDF), invoices (PDF), contracts
-- De-duplicate files by `file_hash` (SHA256) — same file won't be stored twice
-- Attach a Document to any entity (Transaction, Property, Lease, Invoice, TaxItem)
-- View all documents in a unified library with search and tags
-- Delete: soft-delete Document + cascade DocumentLinks
-- OCR pipeline: uploaded image → Ollama llava → extract data → propose Transaction
+- Upload files : receipts (JPG/PNG), payslips (PDF), invoices (PDF), contracts.
+- De-duplicate files by `file_hash` (SHA256) — same file won't be stored twice.
+- Attach a Document to any entity (Transaction, Property, Lease, Invoice, TaxItem).
+- View all documents in a unified library with search and tags.
+- Delete : soft-delete Document + cascade DocumentLinks.
+- OCR pipeline : uploaded image → Ollama vision → extract data → propose Transaction.
 
 ### Key Relationships
 
@@ -384,13 +387,15 @@ DocumentLink → {Transaction | Property | Lease | Invoice | TaxItem | any entit
 ```php
 // Attach receipt to transaction
 $link = new DocumentLink();
-$link->setDocument($document)
+$link->setSpace($transaction->getSpace())
+     ->setDocument($document)
      ->setEntityId($transaction->getId())
      ->setEntityType(Transaction::class);
 $em->persist($link);
 
-// Retrieve all documents for an entity
+// Retrieve all documents for an entity (scoped by space for safety)
 $links = $docLinkRepo->findBy([
+    'space' => $activeSpace,
     'entityId' => $transaction->getId(),
     'entityType' => Transaction::class,
 ]);
@@ -407,7 +412,7 @@ ReceiptUploadController → DocumentService.store($uploadedFile, $space)
     → Upload to S3/local → Document persisted
     ↓
 ReceiptOcrService.extractFromImage($document->getFileUrl())
-    → OllamaClient.generateWithImage($prompt, $imagePath, model: 'llava')
+    → OllamaClient.generateWithImage($prompt, $imagePath, model: 'llama3.2-vision:11b')
     → Parse JSON: {amount, vendor, date, category_hint, vat_rate, confidence}
     ↓
 Return ReceiptExtractionDto to view (editable preview)
@@ -433,16 +438,16 @@ priority (low|medium|high), created_at, updated_at
 
 **ReminderLink** (polymorphic)
 ```
-id, reminder_id (FK), entity_id (int), entity_type (FQCN string), created_at
+id, space_id, reminder_id (FK), entity_id (int), entity_type (FQCN string), created_at
 ```
 
 ### Use Cases
 
-- Track administrative deadlines: tax filing (15 mai), tax payment (15 sept), insurance renewals
-- Link reminders to specific entities (Property, Lease, TaxYear)
-- Send email notifications before deadline (configurable: 30/15/7 days before)
-- Dashboard timeline view of upcoming obligations
-- Mark reminders as done or dismissed
+- Track administrative deadlines : tax filing (15 mai), tax payment (15 sept), insurance renewals.
+- Link reminders to specific entities (Property, Lease, TaxYear).
+- Send email notifications before deadline (configurable : 30/15/7 days before).
+- Dashboard timeline view of upcoming obligations.
+- Mark reminders as done or dismissed.
 
 ### Key Relationships
 

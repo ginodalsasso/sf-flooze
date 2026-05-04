@@ -387,26 +387,44 @@ templates/
 ---
 
 ## Database Schema Summary
-
-### Core Tables
-
-| Table | Key Columns |
-|-------|-------------|
-| `user` | id, email, password, roles (JSON) |
-| `space` | id, user_id, name, type |
-| `account` | id, space_id, name, type, balance, currency, deleted_at |
-| `transaction` | id, account_id, dest_account_id, category_id, type, amount, date, metadata (JSON) |
-| `category` | id, space_id, parent_id, name, is_deductible, is_declarable |
-| `property` | id, space_id, name, address, type, purchase_price, deleted_at |
-| `lease` | id, property_id, rent, charges, type, security_deposit, is_active, deleted_at |
-| `loan` | id, property_id, amount, rate, insurance_rate, start_date, duration_months |
-| `client` | id, space_id, name, siret, email, address |
-| `invoice` | id, client_id, number, status, total_ht, total_ttc, issued_at, due_date, quote_id |
-| `tax_year` | id, space_id, year, status, note |
-| `tax_item` | id, tax_year_id, transaction_id, property_id, kind, label, amount, done |
-| `document` | id, space_id, name, file_url, mime_type, file_hash |
-| `document_link` | id, document_id, entity_id, entity_type |
-| `reminder` | id, space_id, title, due_date, status |
+ 
+> **Toutes les tables ont** : `id` (PK auto-increment), `space_id` (FK → space, **y compris les pivots et tables polymorphiques** par défense en profondeur ; sauf `user` et `space` elles-mêmes), `created_at`, `updated_at`, et `deleted_at` (nullable, sur les entités où le soft-delete s'applique — colonne "Soft" ci-dessous).
+> Les colonnes ci-dessous listent uniquement les champs **spécifiques** à chaque table.
+ 
+### Tables
+ 
+| Table | Champs spécifiques | Soft |
+|---|---|:-:|
+| `user` | email, password, roles (JSON) — pas de `space_id` | — |
+| `space` | user_id, name, type — pas de `space_id` (racine) | — |
+| `account` | name, type, balance, currency | ✓ |
+| `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, date, description, metadata (JSON) | ✓ |
+| `category` | parent_id (nullable), name, is_deductible, is_declarable | — |
+| `asset` | ticker, name, quantity, avg_price, currency, type | — |
+| `property` | name, address, type, purchase_price, purchase_date | ✓ |
+| `tenant` | first_name, last_name, email, phone, monthly_income, guarantor_name, guarantor_income | — |
+| `lease` | property_id, rent, charges, type, security_deposit, start_date, end_date, is_active | ✓ |
+| `lease_tenant` | lease_id, tenant_id (pivot) | — |
+| `rent_payment` | lease_id, transaction_id (nullable), amount, due_date, paid_date, status | — |
+| `loan` | property_id, bank_name, amount, rate, insurance_rate, start_date, duration_months | — |
+| `loan_payment` | loan_id, transaction_id (nullable), month_number, due_date, capital_part, interest_part, insurance_part, remaining_capital, paid_date | — |
+| `client` | name, siret, vat_number, email, phone, address, city, postal_code, country | — |
+| `quote` | client_id, number, status, valid_until, note | ✓ |
+| `quote_line` | quote_id, description, quantity, unit_price, vat_rate, sort_order | — |
+| `invoice` | client_id, quote_id (nullable), number (FAC-YYYY-NNN), status, total_ht, total_ttc, issued_at, due_date, paid_at, note | ✓ |
+| `invoice_line` | invoice_id, description, quantity, unit_price, vat_rate, total_ht, total_ttc, sort_order | — |
+| `tax_year` | year, status, note | — |
+| `tax_item` | tax_year_id, transaction_id (nullable), property_id (nullable), kind, label, amount (nullable), note, done | — |
+| `document` | name, file_url, mime_type, file_hash, file_size, original_name | — |
+| `document_link` | document_id, entity_id, entity_type (polymorphic) | — |
+| `reminder` | title, description, due_date, status, priority | — |
+| `reminder_link` | reminder_id, entity_id, entity_type (polymorphic) | — |
+ 
+### Notes
+ 
+- `user` et `space` n'ont pas de `space_id` — `user` est l'entité racine, `space` appartient à un `user` directement.
+- `category`, `tenant`, `client`, `tax_year`, `tax_item`, `document`, `reminder` n'ont pas de `deleted_at` car leur cycle de vie est court ou ils sont conservés pour audit.
+- Les pivots (`lease_tenant`, `document_link`, `reminder_link`) ont `space_id` **par défense en profondeur** — cela évite des bugs de jointure cross-space où un user pourrait accidentellement lier deux entités d'espaces différents.
 
 ### All Tables Have
 
