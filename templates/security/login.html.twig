@@ -1,23 +1,13 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Sign in{% endblock %}
+{% block title %}Connexion — Flooze{% endblock %}
 
 {% block body %}
 <div class="auth-wrapper">
     <div class="auth-card">
-        <h1>Sign in</h1>
+        <h1>Connexion</h1>
 
-        {% for flash in app.flashes('success') %}
-            <div class="flash flash--success">{{ flash }}</div>
-        {% endfor %}
-
-        {% for flash in app.flashes('info') %}
-            <div class="flash flash--info">{{ flash }}</div>
-        {% endfor %}
-
-        {% for flash in app.flashes('error') %}
-            <div class="flash flash--error">{{ flash }}</div>
-        {% endfor %}
+        <twig:Flash />
 
         {% if error %}
             <div class="flash flash--error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
@@ -31,22 +21,22 @@
             </div>
 
             <div class="form-group">
-                <label for="inputPassword">Password</label>
+                <label for="inputPassword">Mot de passe</label>
                 <input type="password" id="inputPassword" name="_password"
                        autocomplete="current-password" required>
             </div>
 
             <div class="form-group form-group--checkbox">
                 <input type="checkbox" id="rememberMe" name="_remember_me">
-                <label for="rememberMe">Remember me for 7 days</label>
+                <label for="rememberMe">Se souvenir de moi 7 jours</label>
             </div>
 
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
-            <button type="submit">Sign in</button>
+            <twig:Button label="Se connecter" type="submit" class="btn--full btn--mt" />
         </form>
 
-        <p class="auth-link">No account yet? <a href="{{ path('app_register') }}">Create one</a></p>
+        <p class="auth-link">Pas encore de compte ? <a href="{{ path('app_register') }}">En créer un</a></p>
     </div>
 </div>
 {% endblock %}

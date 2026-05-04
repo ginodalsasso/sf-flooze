@@ -181,24 +181,6 @@ ul.form-errors li,
   font-size: 12px;
 }
 
-/* ─── Buttons ─────────────────────────────────────────────────── */
-.auth-card button[type="submit"] {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  color: #1A1F18;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: background .15s;
-}
-
 /* ─── Auth link ───────────────────────────────────────────────── */
 .auth-link {
   margin-top: 20px;

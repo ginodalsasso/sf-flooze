@@ -1,62 +1,35 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Create account{% endblock %}
+{% block title %}Créer un compte — Flooze{% endblock %}
 
 {% block body %}
 <div class="auth-wrapper">
     <div class="auth-card">
-        <h1>Create account</h1>
+        <h1>Créer un compte</h1>
 
-        {% for flash in app.flashes('error') %}
-            <div class="flash flash--error">{{ flash }}</div>
-        {% endfor %}
+        <twig:Flash :levels="['error']" />
 
         {{ form_start(registrationForm) }}
 
-            <div class="form-group">
-                {{ form_label(registrationForm.firstName) }}
-                {{ form_widget(registrationForm.firstName) }}
-                {{ form_errors(registrationForm.firstName) }}
-            </div>
-
-            <div class="form-group">
-                {{ form_label(registrationForm.lastName) }}
-                {{ form_widget(registrationForm.lastName) }}
-                {{ form_errors(registrationForm.lastName) }}
-            </div>
-
-            <div class="form-group">
-                {{ form_label(registrationForm.email) }}
-                {{ form_widget(registrationForm.email, { attr: { autocomplete: 'email' } }) }}
-                {{ form_errors(registrationForm.email) }}
-            </div>
-
-            <div class="form-group">
-                {{ form_label(registrationForm.plainPassword.first) }}
-                {{ form_widget(registrationForm.plainPassword.first) }}
-                {{ form_errors(registrationForm.plainPassword.first) }}
-                <small class="form-hint">Min. 12 characters with uppercase, lowercase, digit and special character.</small>
-            </div>
-
-            <div class="form-group">
-                {{ form_label(registrationForm.plainPassword.second) }}
-                {{ form_widget(registrationForm.plainPassword.second) }}
-                {{ form_errors(registrationForm.plainPassword.second) }}
-            </div>
+            <twig:Form:Field :field="registrationForm.firstName" label="Prénom" />
+            <twig:Form:Field :field="registrationForm.lastName" label="Nom" />
+            <twig:Form:Field :field="registrationForm.email" label="Adresse email" />
+            <twig:Form:Field
+                :field="registrationForm.plainPassword.first"
+                label="Mot de passe"
+                hint="Min. 12 caractères avec majuscule, minuscule, chiffre et caractère spécial."
+            />
+            <twig:Form:Field :field="registrationForm.plainPassword.second" label="Confirmer le mot de passe" />
 
             {{ form_errors(registrationForm.plainPassword) }}
 
-            <div class="form-group form-group--checkbox">
-                {{ form_widget(registrationForm.agreeTerms) }}
-                {{ form_label(registrationForm.agreeTerms) }}
-                {{ form_errors(registrationForm.agreeTerms) }}
-            </div>
+            <twig:Form:CheckboxField :field="registrationForm.agreeTerms" label="J'accepte les conditions d'utilisation" />
 
-            <button type="submit">Create account</button>
+            <twig:Button label="Créer mon compte" type="submit" class="btn--full btn--mt" />
 
         {{ form_end(registrationForm) }}
 
-        <p class="auth-link">Already have an account? <a href="{{ path('app_login') }}">Sign in</a></p>
+        <p class="auth-link">Déjà un compte ? <a href="{{ path('app_login') }}">Se connecter</a></p>
     </div>
 </div>
 {% endblock %}
