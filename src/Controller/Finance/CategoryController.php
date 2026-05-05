@@ -19,7 +19,6 @@ use Symfony\Component\Routing\Attribute\Route;
 class CategoryController extends AbstractController
 {
     public function __construct(
-        private readonly Request $request,
         private readonly CategoryService $categoryService,
         private readonly CategoryRepository $categoryRepository,
         private readonly SpaceResolver $spaceResolver,
@@ -44,7 +43,7 @@ class CategoryController extends AbstractController
     }
 
     #[Route('/new', name: 'new')]
-    public function new(): Response
+    public function new(Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -58,7 +57,7 @@ class CategoryController extends AbstractController
 
         $category = new Category();
         $form = $this->createForm(CategoryFormType::class, $category, ['space' => $space]);
-        $form->handleRequest($this->request);
+        $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $category->setSpace($space);
@@ -72,12 +71,12 @@ class CategoryController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'])]
-    public function edit(Category $category): Response
+    public function edit(Request $request, Category $category): Response
     {
         $this->denyAccessUnlessGranted('EDIT', $category->getSpace());
 
         $form = $this->createForm(CategoryFormType::class, $category, ['space' => $category->getSpace()]);
-        $form->handleRequest($this->request);
+        $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->categoryService->save($category);
@@ -93,11 +92,11 @@ class CategoryController extends AbstractController
     }
 
     #[Route('/{id}/delete', name: 'delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Category $category): Response
+    public function delete(Request $request, Category $category): Response
     {
         $this->denyAccessUnlessGranted('EDIT', $category->getSpace());
 
-        if (!$this->isCsrfTokenValid('category_delete_' . $category->getId(), $this->request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('category_delete_' . $category->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 

@@ -18,23 +18,21 @@ use Symfony\Component\Routing\Attribute\Route;
 class SpaceController extends AbstractController
 {
     public function __construct(
-        private readonly Request $request,
         private readonly EntityManagerInterface $em,
-        private readonly Space $space
     ) {}
 
     #[Route('/switch/{id}', name: 'switch', methods: ['POST'])]
-    public function switch(): Response
+    public function switch(Request $request, Space $space): Response
     {
-        if (!$this->isCsrfTokenValid('space_switch', $this->request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('space_switch', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $this->denyAccessUnlessGranted('VIEW', $this->space);
+        $this->denyAccessUnlessGranted('VIEW', $space);
 
-        $this->request->getSession()->set('flooze_active_space_id', $this->space->getId());
+        $request->getSession()->set('flooze_active_space_id', $space->getId());
 
-        return $this->redirect($this->request->headers->get('Referer') ?: $this->generateUrl('app_home'));
+        return $this->redirect($request->headers->get('Referer') ?: $this->generateUrl('app_home'));
     }
 
     #[Route('', name: 'index')]
@@ -49,7 +47,7 @@ class SpaceController extends AbstractController
     }
 
     #[Route('/new', name: 'new')]
-    public function new(): Response
+    public function new(Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -74,7 +72,7 @@ class SpaceController extends AbstractController
         $space->setType($hasPersonal ? SpaceTypeEnum::PROFESSIONAL : SpaceTypeEnum::PERSONAL);
 
         $form = $this->createForm(SpaceFormType::class, $space);
-        $form->handleRequest($this->request);
+        $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             foreach ($user->getSpaces() as $existing) {
@@ -96,7 +94,7 @@ class SpaceController extends AbstractController
             $this->em->persist($space);
             $this->em->flush();
 
-            $this->request->getSession()->set('flooze_active_space_id', $space->getId());
+            $request->getSession()->set('flooze_active_space_id', $space->getId());
             $this->addFlash('success', 'Espace "' . $space->getName() . '" créé avec succès.');
 
             return $this->redirectToRoute('app_home');
@@ -110,43 +108,43 @@ class SpaceController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'])]
-    public function edit(): Response
+    public function edit(Request $request, Space $space): Response
     {
-        $this->denyAccessUnlessGranted('EDIT', $this->space);
+        $this->denyAccessUnlessGranted('EDIT', $space);
 
-        $form = $this->createForm(SpaceFormType::class, $this->space, ['is_edit' => true]);
-        $form->handleRequest($this->request);
+        $form = $this->createForm(SpaceFormType::class, $space, ['is_edit' => true]);
+        $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', 'Espace "' . $this->space->getName() . '" mis à jour.');
+            $this->addFlash('success', 'Espace "' . $space->getName() . '" mis à jour.');
 
             return $this->redirectToRoute('app_space_index');
         }
 
         return $this->render('space/edit.html.twig', [
             'form' => $form,
-            'space' => $this->space,
+            'space' => $space,
         ]);
     }
 
     #[Route('/{id}/delete', name: 'delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(): Response
+    public function delete(Request $request, Space $space): Response
     {
-        $this->denyAccessUnlessGranted('EDIT', $this->space);
+        $this->denyAccessUnlessGranted('EDIT', $space);
 
-        if (!$this->isCsrfTokenValid('space_delete_' . $this->space->getId(), $this->request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('space_delete_' . $space->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $name = $this->space->getName();
+        $name = $space->getName();
 
         // If the deleted space is currently active, remove it from the session to avoid broken references
-        if ($this->request->getSession()->get('flooze_active_space_id') === $this->space->getId()) {
-            $this->request->getSession()->remove('flooze_active_space_id');
+        if ($request->getSession()->get('flooze_active_space_id') === $space->getId()) {
+            $request->getSession()->remove('flooze_active_space_id');
         }
 
-        $this->em->remove($this->space);
+        $this->em->remove($space);
         $this->em->flush();
 
         $this->addFlash('success', 'Espace "' . $name . '" supprimé.');
