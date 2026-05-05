@@ -1,0 +1,69 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/account/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Mes comptes — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Mes comptes"
+    subtitle="Suis tes comptes bancaires, espèces et investissements"
+    ctaLabel="Nouveau compte"
+    ctaHref="{{ path('app_account_new') }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% if accounts|length > 0 %}
+        <div class="acc-grid">
+            {% for account in accounts %}
+                <div class="acc-card">
+                    <div class="acc-card-header">
+                        <div class="acc-card-icon">
+                            <i data-lucide="{{ account.type.icon() }}"></i>
+                        </div>
+                        <twig:Badge
+                            label="{{ account.type.label() }}"
+                            variant="{{ account.type.badgeVariant() }}"
+                        />
+                    </div>
+
+                    <div>
+                        <p class="acc-card-name">{{ account.name }}</p>
+                    </div>
+
+                    <div>
+                        <p class="acc-card-balance{% if account.balance < 0 %} acc-card-balance--negative{% elseif account.balance > 0 %} acc-card-balance--positive{% endif %}">
+                            {{ account.balance|number_format(2) }} {{ account.currency }}
+                        </p>
+                        <p class="acc-card-currency">{{ account.currency }}</p>
+                    </div>
+
+                    <div class="acc-card-footer">
+                        <twig:Button
+                            as="a"
+                            href="{{ path('app_account_edit', {id: account.id}) }}"
+                            icon="pencil"
+                            label="Modifier"
+                            variant="secondary"
+                        />
+                        {% include 'finance/account/forms/_delete.html.twig' with {account: account} %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="landmark"
+            text="Aucun compte"
+            hint="Ajoute un compte pour commencer à suivre tes finances."
+            ctaLabel="Créer un compte"
+            ctaHref="{{ path('app_account_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

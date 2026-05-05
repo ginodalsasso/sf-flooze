@@ -70,7 +70,7 @@
         </a>
 
         <span class="nav-section-label">Finance</span>
-        <a href="#" class="nav-item">
+        <a href="{{ path('app_account_index') }}" class="nav-item{{ _route starts with 'app_account_' ? ' is-active' : '' }}">
             <i data-lucide="landmark"></i>
             Comptes
         </a>

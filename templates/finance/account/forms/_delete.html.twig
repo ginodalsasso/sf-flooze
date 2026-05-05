@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_account_delete', {id: account.id}) }}"
+      onsubmit="return confirm('Supprimer le compte « {{ account.name }} » ?\n\nCette action est irréversible.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('account_delete_' ~ account.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>

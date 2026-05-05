@@ -1,0 +1,21 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.name }}" label="Nom du compte" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.type }}" label="Type de compte" />
+    </div>
+
+    <div class="form-section acc-form-row">
+        <twig:Form:Field field="{{ form.balance }}" label="Solde actuel" />
+        <twig:Form:Field field="{{ form.currency }}" label="Devise" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_account_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

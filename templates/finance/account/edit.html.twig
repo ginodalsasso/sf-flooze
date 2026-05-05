@@ -1,0 +1,19 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/account/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Modifier « {{ account.name }} » — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader title="Modifier le compte" subtitle="{{ account.name }}" />
+
+<div class="page-content">
+    <div class="form-page">
+        <twig:Flash levels="{{ ['error'] }}" />
+        {% include 'finance/account/forms/_form.html.twig' with {submit_label: 'Enregistrer'} %}
+    </div>
+</div>
+{% endblock %}

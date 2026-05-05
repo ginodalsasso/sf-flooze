@@ -1,0 +1,19 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/account/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Nouveau compte — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader title="Nouveau compte" subtitle="Ajoute un compte à suivre dans cet espace" />
+
+<div class="page-content">
+    <div class="form-page">
+        <twig:Flash levels="{{ ['error'] }}" />
+        {% include 'finance/account/forms/_form.html.twig' with {submit_label: 'Créer le compte'} %}
+    </div>
+</div>
+{% endblock %}
