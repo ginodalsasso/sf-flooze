@@ -1,0 +1,73 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/asset/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Mon portefeuille — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Mon portefeuille"
+    subtitle="Suis tes actions, ETF et crypto-monnaies"
+    ctaLabel="Ajouter un actif"
+    ctaHref="{{ path('app_asset_new') }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% if assets|length > 0 %}
+        <div class="asset-grid">
+            {% for asset in assets %}
+                <div class="asset-card">
+                    <div class="asset-card-header">
+                        <div class="asset-card-icon">
+                            <i data-lucide="{{ asset.type.icon() }}"></i>
+                        </div>
+                        <twig:Badge
+                            label="{{ asset.type.label() }}"
+                            variant="{{ asset.type.badgeVariant() }}"
+                        />
+                    </div>
+
+                    <div>
+                        <p class="asset-card-ticker">{{ asset.ticker }}</p>
+                        <p class="asset-card-name">{{ asset.name }}</p>
+                    </div>
+
+                    <div>
+                        <p class="asset-card-qty">{{ asset.quantity|number_format(8, ',', ' ')|replace({',00000000': ''}) }} unités</p>
+                        <p class="asset-card-meta">
+                            PRU : {{ asset.avgPrice|number_format(4, ',', ' ') }} {{ asset.currency }}
+                        </p>
+                        <p class="asset-card-cost">
+                            Coût total : {{ asset.totalCost|number_format(2, ',', ' ') }} {{ asset.currency }}
+                        </p>
+                    </div>
+
+                    <div class="asset-card-footer">
+                        <twig:Button
+                            as="a"
+                            href="{{ path('app_asset_edit', {id: asset.id}) }}"
+                            icon="pencil"
+                            label="Modifier"
+                            variant="secondary"
+                        />
+                        {% include 'finance/asset/forms/_delete.html.twig' with {asset: asset} %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="bar-chart-2"
+            text="Aucun actif"
+            hint="Ajoute tes actions, ETF ou crypto pour suivre ton portefeuille."
+            ctaLabel="Ajouter un actif"
+            ctaHref="{{ path('app_asset_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section asset-form-row">
+        <twig:Form:Field field="{{ form.ticker }}" label="Ticker" />
+        <twig:Form:Field field="{{ form.type }}" label="Type" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.name }}" label="Nom de l'actif" />
+    </div>
+
+    <div class="form-section asset-form-row">
+        <twig:Form:Field field="{{ form.quantity }}" label="Quantité" />
+        <twig:Form:Field field="{{ form.avgPrice }}" label="Prix moyen d'achat" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.currency }}" label="Devise" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_asset_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

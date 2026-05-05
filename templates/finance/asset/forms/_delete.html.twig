@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_asset_delete', {id: asset.id}) }}"
+      onsubmit="return confirm('Supprimer l\'actif « {{ asset.ticker }} » ?\n\nCette action est irréversible.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('asset_delete_' ~ asset.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>

@@ -1,0 +1,19 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/asset/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Nouvel actif — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader title="Nouvel actif" subtitle="Ajoute une position à ton portefeuille" />
+
+<div class="page-content">
+    <div class="form-page">
+        <twig:Flash levels="{{ ['error'] }}" />
+        {% include 'finance/asset/forms/_form.html.twig' with {submit_label: 'Ajouter l\'actif'} %}
+    </div>
+</div>
+{% endblock %}
