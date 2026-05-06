@@ -1,0 +1,118 @@
+<style>
+/* ── Filters ──────────────────────────────────────────── */
+.txn-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.txn-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--fg-2);
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+}
+
+.txn-filter-btn:hover { color: var(--fg-1); border-color: var(--fg-3); }
+.txn-filter-btn--active { background: rgba(200,213,194,.12); border-color: #C8D5C2; color: #C8D5C2; }
+
+/* ── Table ─────────────────────────────────────────────── */
+.txn-table-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.txn-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.txn-table thead th {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--fg-3);
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.txn-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+.txn-table tbody tr:last-child { border-bottom: none; }
+.txn-table tbody tr:hover { background: var(--bg-elevated); }
+
+.txn-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
+/* Date */
+.txn-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+/* Description + category */
+.txn-desc { font-size: 14px; color: var(--fg-1); }
+.txn-cat {
+  font-size: 11px;
+  color: var(--fg-3);
+  margin-top: 2px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Account */
+.txn-account { font-size: 13px; color: var(--fg-2); white-space: nowrap; }
+
+/* Amount */
+.txn-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: right;
+}
+.txn-amount--positive { color: #A8C4A0; }
+.txn-amount--negative { color: #C2A89A; }
+.txn-amount--transfer { color: var(--fg-2); }
+
+/* Actions */
+.txn-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.txn-actions form { margin: 0; }
+
+/* ── Form ──────────────────────────────────────────────── */
+.txn-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.txn-form-full { grid-column: 1 / -1; }
+</style>

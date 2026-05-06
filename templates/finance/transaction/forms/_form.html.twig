@@ -1,0 +1,27 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section txn-form-grid">
+        <twig:Form:Field field="{{ form.type }}" label="Type" />
+        <twig:Form:Field field="{{ form.date }}" label="Date" />
+    </div>
+
+    <div class="form-section txn-form-grid">
+        <twig:Form:Field field="{{ form.account }}" label="Compte" />
+        <twig:Form:Field field="{{ form.amount }}" label="Montant" />
+    </div>
+
+    <div class="form-section txn-form-full">
+        <twig:Form:Field field="{{ form.description }}" label="Description" />
+    </div>
+
+    <div class="form-section txn-form-grid">
+        <twig:Form:Field field="{{ form.category }}" label="Catégorie" />
+        <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_transaction_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

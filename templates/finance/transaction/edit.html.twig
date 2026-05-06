@@ -1,0 +1,22 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/transaction/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Modifier la transaction — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Modifier la transaction"
+    subtitle="{{ transaction.description ?? transaction.date|date('d/m/Y') }}"
+/>
+
+<div class="page-content">
+    <div class="form-page">
+        <twig:Flash levels="{{ ['error'] }}" />
+        {% include 'finance/transaction/forms/_form.html.twig' with {submit_label: 'Enregistrer'} %}
+    </div>
+</div>
+{% endblock %}

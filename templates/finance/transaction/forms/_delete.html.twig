@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_transaction_delete', {id: transaction.id}) }}"
+      onsubmit="return confirm('Supprimer cette transaction ?\n\nLe solde du compte sera recalculé.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('transaction_delete_' ~ transaction.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>
