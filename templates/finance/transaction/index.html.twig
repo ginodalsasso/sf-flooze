@@ -86,7 +86,7 @@
                             </td>
                             <td>
                                 <span class="txn-amount txn-amount--{{ txn.type.value }}">
-                                    {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}−{% endif %}
+                                    {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
                                     {{ txn.amount|number_format(2, ',', ' ') }} {{ txn.account.currency }}
                                 </span>
                             </td>
