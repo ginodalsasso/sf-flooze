@@ -49,10 +49,14 @@ class TransactionService
             $this->applyBalance($oldDestAccount, TransactionTypeEnum::Income, -(float) $oldAmount);
         }
 
+        $type = $transaction->getType();
+        $destAccount = $transaction->getDestinationAccount();
+        $amount = (float) $transaction->getAmount();
+
         // Apply new effect
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), (float) $transaction->getAmount());
-        if ($transaction->getType() === TransactionTypeEnum::Transfer && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::Income, (float) $transaction->getAmount());
+        $this->applyBalance($transaction->getAccount(), $type, $amount);
+        if ($type === TransactionTypeEnum::Transfer && $destAccount !== null) {
+            $this->applyBalance($destAccount, TransactionTypeEnum::Income, $amount);
         }
 
         $this->em->flush();
@@ -63,10 +67,14 @@ class TransactionService
      */
     public function delete(Transaction $transaction): void
     {
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), -(float) $transaction->getAmount());
+        $type = $transaction->getType();
+        $destAccount = $transaction->getDestinationAccount();
+        $amount = (float) $transaction->getAmount();
 
-        if ($transaction->getType() === TransactionTypeEnum::Transfer && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::Income, -(float) $transaction->getAmount());
+        $this->applyBalance($transaction->getAccount(), $type, -$amount);
+
+        if ($type === TransactionTypeEnum::Transfer && $destAccount !== null) {
+            $this->applyBalance($destAccount, TransactionTypeEnum::Income, -$amount);
         }
 
         $transaction->softDelete();
