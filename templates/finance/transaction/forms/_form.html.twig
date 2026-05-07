@@ -20,7 +20,7 @@
     </div>
 
     <div class="form-actions">
-        <twig:Button as="a" href="{{ path('app_transaction_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button as="a" href="{{ redirect_to ?? path('app_transaction_index') }}" label="Annuler" variant="secondary" />
         <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
     </div>
 

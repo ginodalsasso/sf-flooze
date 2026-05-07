@@ -14,6 +14,30 @@
   flex-direction: column;
   gap: 16px;
   box-shadow: var(--shadow-card);
+  position: relative;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.acc-card:hover {
+  border-color: var(--fg-3);
+  box-shadow: var(--shadow-card), 0 0 0 3px rgba(200,213,194,.08);
+}
+
+.acc-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.acc-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+}
+
+.acc-card-footer {
+  position: relative;
+  z-index: 1;
 }
 
 .acc-card-header {
@@ -80,5 +104,44 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* ── Show ──────────────────────────────────────────────── */
+.acc-show-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 28px;
+}
+
+.acc-show-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.acc-show-balance { text-align: center; }
+
+.acc-show-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.acc-show-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-2);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
 }
 </style>

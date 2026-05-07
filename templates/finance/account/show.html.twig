@@ -1,0 +1,130 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/account/_styles.html.twig' %}
+    {% include 'finance/transaction/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}{{ account.name }} — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="{{ account.name }}"
+    subtitle="Détail du compte et historique des mouvements"
+    ctaLabel="Nouvelle transaction"
+    ctaHref="{{ path('app_transaction_new') }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {# Account summary card #}
+    <div class="acc-show-summary">
+        <div class="acc-show-meta">
+            <div class="acc-card-icon">
+                <i data-lucide="{{ account.type.icon() }}"></i>
+            </div>
+            <div>
+                <p class="acc-card-name">{{ account.name }}</p>
+                <twig:Badge
+                    label="{{ account.type.label() }}"
+                    variant="{{ account.type.badgeVariant() }}"
+                />
+            </div>
+        </div>
+        <div class="acc-show-balance">
+            <p class="acc-card-balance{% if account.balance < 0 %} acc-card-balance--negative{% elseif account.balance > 0 %} acc-card-balance--positive{% endif %}">
+                {{ account.balance|number_format(2, ',', ' ') }} {{ account.currency }}
+            </p>
+            <p class="acc-card-currency">Solde actuel</p>
+        </div>
+        <div class="acc-show-actions">
+            <twig:Button
+                as="a"
+                href="{{ path('app_account_edit', {id: account.id}) }}"
+                icon="pencil"
+                label="Modifier le compte"
+                variant="secondary"
+            />
+        </div>
+    </div>
+
+    {# Transactions list #}
+    <h2 class="acc-show-section-title">Mouvements</h2>
+
+    {% if transactions|length > 0 %}
+        <div class="txn-table-wrap">
+            <table class="txn-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Catégorie</th>
+                        <th>Type</th>
+                        <th style="text-align:right">Montant</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in transactions %}
+                        <tr>
+                            <td>
+                                <span class="txn-date">{{ txn.date|date('d/m/Y') }}</span>
+                            </td>
+                            <td>
+                                <div class="txn-desc">{{ txn.description ?? '—' }}</div>
+                                {% if txn.destinationAccount %}
+                                    <div class="txn-cat">→ {{ txn.destinationAccount.name }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if txn.category %}
+                                    <span class="txn-account">{{ txn.category.name }}</span>
+                                {% else %}
+                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <twig:Badge
+                                    label="{{ txn.type.label() }}"
+                                    variant="{{ txn.type.badgeVariant() }}"
+                                />
+                            </td>
+                            <td>
+                                <span class="txn-amount txn-amount--{{ txn.type.value }}">
+                                    {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
+                                    {{ txn.amount|number_format(2, ',', ' ') }} {{ account.currency }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="txn-actions">
+                                    <twig:Button
+                                        as="a"
+                                        href="{{ path('app_transaction_edit', {id: txn.id, redirect_to: path('app_account_show', {id: account.id})}) }}"
+                                        icon="pencil"
+                                        label="Modifier"
+                                        variant="secondary"
+                                    />
+                                    {% include 'finance/transaction/forms/_delete.html.twig' with {
+                                        transaction: txn,
+                                        redirect_to: path('app_account_show', {id: account.id})
+                                    } %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="arrow-left-right"
+            text="Aucun mouvement"
+            hint="Ce compte n'a pas encore de transactions enregistrées."
+            ctaLabel="Nouvelle transaction"
+            ctaHref="{{ path('app_transaction_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

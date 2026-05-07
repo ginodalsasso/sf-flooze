@@ -106,13 +106,17 @@ class TransactionController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->transactionService->update($transaction, $oldAccount, $oldType, $oldAmount, $oldDestAccount);
             $this->addFlash('success', 'Transaction mise à jour.');
+            $redirectTo = $request->query->get('redirect_to');
 
-            return $this->redirectToRoute('app_transaction_index');
+            return $redirectTo
+                ? $this->redirect($redirectTo)
+                : $this->redirectToRoute('app_transaction_index');
         }
 
         return $this->render('finance/transaction/edit.html.twig', [
             'form'        => $form,
             'transaction' => $transaction,
+            'redirect_to' => $request->query->get('redirect_to'),
         ]);
     }
 
@@ -128,6 +132,10 @@ class TransactionController extends AbstractController
         $this->transactionService->delete($transaction);
         $this->addFlash('success', 'Transaction supprimée.');
 
-        return $this->redirectToRoute('app_transaction_index');
+        $redirectTo = $request->request->get('redirect_to');
+
+        return $redirectTo
+            ? $this->redirect($redirectTo)
+            : $this->redirectToRoute('app_transaction_index');
     }
 }

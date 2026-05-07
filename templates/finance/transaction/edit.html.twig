@@ -16,7 +16,7 @@
 <div class="page-content">
     <div class="form-page">
         <twig:Flash levels="{{ ['error'] }}" />
-        {% include 'finance/transaction/forms/_form.html.twig' with {submit_label: 'Enregistrer'} %}
+        {% include 'finance/transaction/forms/_form.html.twig' with {submit_label: 'Enregistrer', redirect_to: redirect_to} %}
     </div>
 </div>
 {% endblock %}

@@ -8,6 +8,7 @@ use App\Entity\Account;
 use App\Entity\User;
 use App\Form\Finance\AccountFormType;
 use App\Repository\AccountRepository;
+use App\Repository\TransactionRepository;
 use App\Service\Finance\AccountService;
 use App\Service\Space\SpaceResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +22,7 @@ class AccountController extends AbstractController
     public function __construct(
         private readonly AccountService $accountService,
         private readonly AccountRepository $accountRepository,
+        private readonly TransactionRepository $transactionRepository,
         private readonly SpaceResolver $spaceResolver,
     ) {}
 
@@ -39,6 +41,17 @@ class AccountController extends AbstractController
 
         return $this->render('finance/account/index.html.twig', [
             'accounts' => $this->accountRepository->findBySpace($space),
+        ]);
+    }
+
+    #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'])]
+    public function show(Account $account): Response
+    {
+        $this->denyAccessUnlessGranted('VIEW', $account->getSpace());
+
+        return $this->render('finance/account/show.html.twig', [
+            'account'      => $account,
+            'transactions' => $this->transactionRepository->findBySpace($account->getSpace(), null, $account),
         ]);
     }
 

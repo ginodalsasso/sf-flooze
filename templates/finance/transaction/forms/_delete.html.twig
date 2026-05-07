@@ -1,5 +1,8 @@
 <form method="post" action="{{ path('app_transaction_delete', {id: transaction.id}) }}"
       onsubmit="return confirm('Supprimer cette transaction ?\n\nLe solde du compte sera recalculé.')">
     <input type="hidden" name="_token" value="{{ csrf_token('transaction_delete_' ~ transaction.id) }}">
+    {% if redirect_to is defined and redirect_to %}
+        <input type="hidden" name="redirect_to" value="{{ redirect_to }}">
+    {% endif %}
     <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
 </form>

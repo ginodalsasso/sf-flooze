@@ -33,7 +33,9 @@
                     </div>
 
                     <div>
-                        <p class="acc-card-name">{{ account.name }}</p>
+                        <a class="acc-card-link" href="{{ path('app_account_show', {id: account.id}) }}">
+                            <p class="acc-card-name">{{ account.name }}</p>
+                        </a>
                     </div>
 
                     <div>
