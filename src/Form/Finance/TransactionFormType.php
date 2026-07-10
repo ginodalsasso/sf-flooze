@@ -35,7 +35,7 @@ class TransactionFormType extends AbstractType
             ])
             ->add('account', EntityType::class, [
                 'class' => Account::class,
-                'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getCurrency() . ')',
+                'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getCurrency()->display() . ')',
                 'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
                     ->where('a.space = :space')
                     ->andWhere('a.deletedAt IS NULL')
@@ -82,7 +82,7 @@ class TransactionFormType extends AbstractType
                     ->andWhere('a.deletedAt IS NULL')
                     ->setParameter('space', $space)
                     ->orderBy('a.name', 'ASC'),
-                'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getCurrency() . ')',
+                'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getCurrency()->display() . ')',
             ]);
     }
 

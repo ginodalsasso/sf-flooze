@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\AccountTypeEnum;
+use App\Enum\CurrencyEnum;
 use App\Repository\AccountRepository;
 use App\Trait\SoftDeleteTrait;
 use App\Trait\SpaceScopeTrait;
@@ -34,8 +35,8 @@ class Account
     #[ORM\Column(type: 'decimal', precision: 15, scale: 2)]
     private string $balance = '0.00';
 
-    #[ORM\Column(length: 3)]
-    private string $currency = 'EUR';
+    #[ORM\Column(type: 'string', enumType: CurrencyEnum::class)]
+    private CurrencyEnum $currency;
 
     public function getId(): ?int
     {
@@ -78,12 +79,12 @@ class Account
         return $this;
     }
 
-    public function getCurrency(): string
+    public function getCurrency(): CurrencyEnum
     {
         return $this->currency;
     }
 
-    public function setCurrency(string $currency): static
+    public function setCurrency(CurrencyEnum $currency): static
     {
         $this->currency = $currency;
 

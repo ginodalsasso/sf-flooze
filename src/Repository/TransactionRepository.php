@@ -22,15 +22,18 @@ class TransactionRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return Transaction[] active transactions for the space, most recent first
+     * @return Transaction[] active transactions for the space, most recent first.
+     *         Excludes transactions whose account has been soft-deleted.
      */
     public function findBySpace(Space $space, ?TransactionTypeEnum $type = null, ?Account $account = null): array
     {
         $qb = $this->createQueryBuilder('t')
             ->join('t.account', 'a')
             ->leftJoin('t.category', 'c')
+            ->leftJoin('t.destinationAccount', 'da')
             ->where('t.space = :space')
             ->andWhere('t.deletedAt IS NULL')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('space', $space)
             ->orderBy('t.date', 'DESC')
             ->addOrderBy('t.createdAt', 'DESC');
@@ -46,12 +49,16 @@ class TransactionRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    /** @return Transaction[] most recent N transactions for dashboard widget */
+    /** @return Transaction[] most recent N transactions for dashboard widget.
+     *          Excludes transactions whose account has been soft-deleted.
+     */
     public function findRecentBySpace(Space $space, int $limit = 10): array
     {
         return $this->createQueryBuilder('t')
+            ->join('t.account', 'a')
             ->where('t.space = :space')
             ->andWhere('t.deletedAt IS NULL')
+            ->andWhere('a.deletedAt IS NULL')
             ->setParameter('space', $space)
             ->orderBy('t.date', 'DESC')
             ->addOrderBy('t.createdAt', 'DESC')

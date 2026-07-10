@@ -6,8 +6,8 @@ namespace App\Form\Finance;
 
 use App\Entity\Account;
 use App\Enum\AccountTypeEnum;
+use App\Enum\CurrencyEnum;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -39,9 +39,9 @@ class AccountFormType extends AbstractType
                     new Assert\NotNull(message: 'Le solde ne peut pas être vide.'),
                 ],
             ])
-            ->add('currency', ChoiceType::class, [
-                'choices' => ['EUR €' => 'EUR', 'USD $' => 'USD', 'GBP £' => 'GBP', 'CHF' => 'CHF'],
-                'constraints' => [new Assert\NotBlank()],
+            ->add('currency', EnumType::class, [
+                'class' => CurrencyEnum::class,
+                'choice_label' => fn(CurrencyEnum $c) => $c->display(),
             ]);
     }
 

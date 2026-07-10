@@ -15,26 +15,37 @@ class TransactionService
 
     /**
      * Persist a new transaction and update account balance(s).
+     * Rejects negative amounts as a defense-in-depth measure.
+     *
+     * @throws \InvalidArgumentException if amount is not strictly positive
      */
     public function save(Transaction $transaction): void
     {
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), (float) $transaction->getAmount());
+        $amount = (float) $transaction->getAmount();
+        if ($amount <= 0.0) {
+            throw new \InvalidArgumentException('Transaction amount must be strictly positive.');
+        }
+
+        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $amount);
 
         if ($transaction->getType() === TransactionTypeEnum::Transfer && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::Income, (float) $transaction->getAmount());
+            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::Income, $amount);
         }
 
         $this->em->persist($transaction);
         $this->em->flush();
     }
-
+    
     /**
      * Update an edited transaction: reverse old balance effect, apply new one.
+     * Rejects non-positive amounts as a defense-in-depth measure.
      *
      * @param Account              $oldAccount      Account before edit
      * @param TransactionTypeEnum  $oldType         Type before edit
      * @param string               $oldAmount       Amount before edit
      * @param Account|null         $oldDestAccount  Destination account before edit (transfers)
+     *
+     * @throws \InvalidArgumentException if new amount is not strictly positive
      */
     public function update(
         Transaction $transaction,
@@ -43,6 +54,11 @@ class TransactionService
         string $oldAmount,
         ?Account $oldDestAccount,
     ): void {
+        $amount = (float) $transaction->getAmount();
+        if ($amount <= 0.0) {
+            throw new \InvalidArgumentException('Transaction amount must be strictly positive.');
+        }
+
         // Reverse old effect
         $this->applyBalance($oldAccount, $oldType, -(float) $oldAmount);
         if ($oldType === TransactionTypeEnum::Transfer && $oldDestAccount !== null) {
@@ -51,7 +67,6 @@ class TransactionService
 
         $type = $transaction->getType();
         $destAccount = $transaction->getDestinationAccount();
-        $amount = (float) $transaction->getAmount();
 
         // Apply new effect
         $this->applyBalance($transaction->getAccount(), $type, $amount);

@@ -46,8 +46,8 @@ class TransactionController extends AbstractController
         $type    = $typeFilter    ? TransactionTypeEnum::tryFrom($typeFilter) : null;
         $account = $accountFilter ? $this->accountRepository->find($accountFilter) : null;
 
-        // Ensure the filtered account belongs to the current space
-        if ($account !== null && $account->getSpace() !== $space) {
+        // Ensure the filtered account belongs to the current space (compare IDs, not object identity)
+        if ($account !== null && $account->getSpace()->getId() !== $space->getId()) {
             $account = null;
         }
 
@@ -94,6 +94,11 @@ class TransactionController extends AbstractController
     {
         $this->denyAccessUnlessGranted('EDIT', $transaction->getSpace());
 
+        // Prevent editing transactions linked to a soft-deleted account
+        if ($transaction->getAccount()->isDeleted()) {
+            throw $this->createAccessDeniedException('Cannot modify a transaction linked to a deleted account.');
+        }
+
         // Snapshot before form binding
         $oldAccount     = $transaction->getAccount();
         $oldType        = $transaction->getType();
@@ -127,6 +132,11 @@ class TransactionController extends AbstractController
 
         if (!$this->isCsrfTokenValid('transaction_delete_' . $transaction->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        // Prevent deletion of transactions linked to a soft-deleted account
+        if ($transaction->getAccount()->isDeleted()) {
+            throw $this->createAccessDeniedException('Cannot modify a transaction linked to a deleted account.');
         }
 
         $this->transactionService->delete($transaction);
