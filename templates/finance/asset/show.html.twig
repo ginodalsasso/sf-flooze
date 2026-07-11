@@ -1,0 +1,197 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/asset/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}{{ asset.ticker }} — Mon portefeuille — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="{{ asset.ticker }}"
+    subtitle="{{ asset.name }}"
+    ctaLabel="Vendre"
+    ctaHref="{{ path('app_asset_sell', {id: asset.id}) }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {# Asset summary #}
+    <div class="asset-show-summary">
+        <div class="asset-show-meta">
+            <div class="asset-card-icon">
+                <i data-lucide="{{ asset.type.icon() }}"></i>
+            </div>
+            <div>
+                <p class="asset-card-ticker">{{ asset.ticker }}</p>
+                <twig:Badge
+                    label="{{ asset.type.label() }}"
+                    variant="{{ asset.type.badgeVariant() }}"
+                />
+            </div>
+        </div>
+        <div class="asset-show-metrics">
+            <div class="asset-show-metric">
+                <span class="asset-show-metric-label">Quantité</span>
+                <span class="asset-show-metric-value">
+                    {% set qty = asset.totalQuantity %}
+                    {% if qty > 0 %}
+                        {{ qty|number_format(8, ',', ' ')|replace({',00000000': ''}) }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </span>
+            </div>
+            <div class="asset-show-metric">
+                <span class="asset-show-metric-label" title="Prix de Revient Unitaire en devise d'achat (prix facturé par le broker)">PRU brut ({{ asset.currency.value }})</span>
+                <span class="asset-show-metric-value">
+                    {% set avgPrice = asset.avgPrice %}
+                    {% if avgPrice %}
+                        {{ avgPrice|number_format(4, ',', ' ') }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </span>
+            </div>
+            <div class="asset-show-metric">
+                <span class="asset-show-metric-label" title="Prix de Revient Unitaire en euros, avec le taux de change historique au moment de chaque achat. Utilisé pour la fiscalité.">PRU fiscal (EUR)</span>
+                <span class="asset-show-metric-value">
+                    {% set avgPriceEur = asset.avgPriceInSpaceCurrency %}
+                    {% if avgPriceEur %}
+                        {{ avgPriceEur|number_format(4, ',', ' ') }} €
+                    {% else %}
+                        —
+                    {% endif %}
+                </span>
+            </div>
+            <div class="asset-show-metric">
+                <span class="asset-show-metric-label" title="Somme de tous les achats convertis en euros avec les taux de change historiques">Coût total investi</span>
+                <span class="asset-show-metric-value">
+                    {{ asset.totalCostInSpaceCurrency|number_format(2, ',', ' ') }} €
+                </span>
+            </div>
+            <div class="asset-show-metric">
+                <span class="asset-show-metric-label" title="Total des dividendes perçus, nets de frais, convertis en euros">Dividendes perçus</span>
+                <span class="asset-show-metric-value">
+                    {{ asset.totalDividends|number_format(2, ',', ' ') }} €
+                </span>
+            </div>
+            <div class="asset-show-metric">
+                <span class="asset-show-metric-label" title="Total des frais de transaction (courtage, taxes, conversion...)">Frais de transaction</span>
+                <span class="asset-show-metric-value">
+                    {{ asset.totalFees|number_format(2, ',', ' ') }} €
+                </span>
+            </div>
+        </div>
+        <div class="asset-show-actions">
+            <twig:Button
+                as="a"
+                href="{{ path('app_asset_sell', {id: asset.id}) }}"
+                icon="arrow-up-right"
+                label="Vendre"
+                variant="secondary"
+            />
+            {% if asset.type.supportsDividend %}
+                <twig:Button
+                    as="a"
+                    href="{{ path('app_asset_dividend', {id: asset.id}) }}"
+                    icon="banknote"
+                    label="Dividende"
+                    variant="secondary"
+                />
+            {% endif %}
+            <twig:Button
+                as="a"
+                href="{{ path('app_asset_edit', {id: asset.id}) }}"
+                icon="pencil"
+                label="Modifier"
+                variant="secondary"
+            />
+        </div>
+    </div>
+
+    {# Entries table #}
+    <h2 class="asset-show-section-title">Historique des opérations</h2>
+
+    {% if entries|length > 0 %}
+        <div class="txn-table-wrap">
+            <table class="txn-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Quantité</th>
+                        <th>Prix unitaire</th>
+                        <th>Taux FX</th>
+                        <th>Frais</th>
+                        <th style="text-align:right">Montant</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td>
+                                <span class="txn-date">{{ entry.date|date('d/m/Y') }}</span>
+                            </td>
+                            <td>
+                                <twig:Badge
+                                    label="{{ entry.kind.label() }}"
+                                    variant="{{ entry.kind.badgeVariant() }}"
+                                />
+                            </td>
+                            <td>
+                                {% if entry.kind.affectsQuantity %}
+                                    <span class="txn-account">{{ entry.quantity|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</span>
+                                {% else %}
+                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.kind != 'dividend' %}
+                                    <span class="txn-account">{{ entry.unitPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}</span>
+                                {% else %}
+                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="txn-account">{{ entry.fxRate|number_format(6, ',', ' ') }}</span>
+                            </td>
+                            <td>
+                                <span class="txn-account">{{ entry.fees|number_format(2, ',', ' ') }} €</span>
+                            </td>
+                            <td>
+                                <span class="txn-amount{% if entry.kind.isCashInflow %} txn-amount--positive{% else %} txn-amount--negative{% endif %}">
+                                    {% if entry.kind.isCashInflow %}+{% endif %}
+                                    {{ entry.totalAmountInSpaceCurrency|number_format(2, ',', ' ') }} €
+                                </span>
+                            </td>
+                            <td>
+                                <div class="txn-actions">
+                                    <form method="post" action="{{ path('app_asset_entry_delete', {assetId: asset.id, entryId: entry.id}) }}"
+                                          onsubmit="return confirm('Supprimer cette opération ?')">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('asset_entry_delete_' ~ entry.id) }}">
+                                        <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="bar-chart-2"
+            text="Aucune opération"
+            hint="Ce portefeuille n'a pas encore d'opérations enregistrées."
+        />
+    {% endif %}
+
+    <div class="asset-show-actions-bottom">
+        {% include 'finance/asset/forms/_delete.html.twig' with {asset: asset} %}
+    </div>
+</div>
+{% endblock %}

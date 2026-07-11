@@ -33,18 +33,26 @@
                     </div>
 
                     <div>
-                        <p class="asset-card-ticker">{{ asset.ticker }}</p>
-                        <p class="asset-card-name">{{ asset.name }}</p>
+                        <a class="asset-card-link" href="{{ path('app_asset_show', {id: asset.id}) }}">
+                            <p class="asset-card-ticker">{{ asset.ticker }}</p>
+                            <p class="asset-card-name">{{ asset.name }}</p>
+                        </a>
                     </div>
 
                     <div>
-                        <p class="asset-card-qty">{{ asset.quantity|number_format(8, ',', ' ')|replace({',00000000': ''}) }} unités</p>
-                        <p class="asset-card-meta">
-                            PRU : {{ asset.avgPrice|number_format(4, ',', ' ') }} {{ asset.currency }}
-                        </p>
-                        <p class="asset-card-cost">
-                            Coût total : {{ asset.totalCost|number_format(2, ',', ' ') }} {{ asset.currency }}
-                        </p>
+                        {% set qty = asset.totalQuantity %}
+                        {% if qty > 0 %}
+                            <p class="asset-card-qty">{{ qty|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</p>
+                            <p class="asset-card-meta">unités détenues</p>
+                        {% else %}
+                            <p class="asset-card-qty">Position fermée</p>
+                        {% endif %}
+                        {% set avgPrice = asset.avgPrice %}
+                        {% if avgPrice %}
+                            <p class="asset-card-cost">
+                                PRU : {{ avgPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}
+                            </p>
+                        {% endif %}
                     </div>
 
                     <div class="asset-card-footer">

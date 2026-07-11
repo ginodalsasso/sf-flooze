@@ -1,5 +1,5 @@
 {# Checkbox field: horizontal layout, widget before label. field = FormView object. label = string. #}
-{% props field, label %}
+{% props field, label, hint = null %}
 
 <div {{ attributes.defaults({class: 'form-group form-group--checkbox'}) }}>
     {{ form_widget(field) }}
@@ -7,4 +7,7 @@
     {% for error in field.vars.errors %}
         <span class="form-error">{{ error.message }}</span>
     {% endfor %}
+    {% if hint %}
+        <span class="form-hint">{{ hint }}</span>
+    {% endif %}
 </div>

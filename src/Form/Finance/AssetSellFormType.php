@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Form\Finance;
 
 use App\Entity\Asset;
-use App\Enum\AssetTypeEnum;
-use App\Enum\CurrencyEnum;
+use App\Entity\Space;
+use App\Repository\AccountRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -17,58 +17,37 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Form for creating a new Asset with its initial buy entry.
- * The quantity, avgPrice, date, fxRate and fees fields are mapped to the
- * 'entry' option and used by AssetEntryService to create the first buy.
+ * Form for recording a sell entry on an existing asset.
  */
-class AssetFormType extends AbstractType
+class AssetSellFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        /** @var Space $space */
+        $space = $options['space'];
+        /** @var Asset $asset */
+        $asset = $options['asset'];
+
         $builder
-            // Asset fields
-            ->add('ticker', TextType::class, [
-                'attr' => ['placeholder' => 'Ex. : AAPL, BTC, MSSP.PA…'],
-                'constraints' => [
-                    new Assert\NotBlank(message: 'Le ticker ne peut pas être vide.'),
-                    new Assert\Length(max: 20, maxMessage: 'Maximum {{ limit }} caractères.'),
-                ],
-            ])
-            ->add('name', TextType::class, [
-                'attr' => ['placeholder' => 'Ex. : Apple Inc., Bitcoin…'],
-                'constraints' => [
-                    new Assert\NotBlank(message: 'Le nom ne peut pas être vide.'),
-                    new Assert\Length(max: 100, maxMessage: 'Maximum {{ limit }} caractères.'),
-                ],
-            ])
-            ->add('type', EnumType::class, [
-                'class' => AssetTypeEnum::class,
-                'choice_label' => fn(AssetTypeEnum $t) => $t->label(),
-            ])
-            ->add('currency', EnumType::class, [
-                'class' => CurrencyEnum::class,
-                'choice_label' => fn(CurrencyEnum $c) => $c->display(),
-            ])
-            // Initial buy entry fields (not mapped to Asset)
-            ->add('entryDate', DateType::class, [
-                'mapped' => false,
+            ->add('date', DateType::class, [
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
                 'data' => new \DateTimeImmutable(),
                 'constraints' => [new Assert\NotNull(message: 'La date est obligatoire.')],
             ])
-            ->add('entryQuantity', NumberType::class, [
-                'mapped' => false,
+            ->add('quantity', NumberType::class, [
                 'scale' => 8,
                 'html5' => false,
-                'attr' => ['placeholder' => '0,00000000'],
+                'attr' => [
+                    'placeholder' => '0,00000000',
+                    'max' => $asset->getTotalQuantity(),
+                ],
                 'constraints' => [
                     new Assert\NotNull(message: 'La quantité ne peut pas être vide.'),
                     new Assert\GreaterThan(value: 0, message: 'La quantité doit être supérieure à 0.'),
                 ],
             ])
-            ->add('entryUnitPrice', NumberType::class, [
-                'mapped' => false,
+            ->add('unitPrice', NumberType::class, [
                 'scale' => 4,
                 'html5' => false,
                 'attr' => ['placeholder' => '0,0000'],
@@ -77,8 +56,7 @@ class AssetFormType extends AbstractType
                     new Assert\GreaterThan(value: 0, message: 'Le prix doit être supérieur à 0.'),
                 ],
             ])
-            ->add('entryFxRate', NumberType::class, [
-                'mapped' => false,
+            ->add('fxRate', NumberType::class, [
                 'scale' => 6,
                 'html5' => false,
                 'attr' => ['placeholder' => '1,000000'],
@@ -88,8 +66,7 @@ class AssetFormType extends AbstractType
                     new Assert\GreaterThan(value: 0, message: 'Le taux doit être supérieur à 0.'),
                 ],
             ])
-            ->add('entryFees', NumberType::class, [
-                'mapped' => false,
+            ->add('fees', NumberType::class, [
                 'scale' => 2,
                 'html5' => false,
                 'attr' => ['placeholder' => '0,00'],
@@ -98,11 +75,32 @@ class AssetFormType extends AbstractType
                     new Assert\NotNull(message: 'Les frais ne peuvent pas être vides.'),
                     new Assert\GreaterThanOrEqual(value: 0, message: 'Les frais ne peuvent pas être négatifs.'),
                 ],
+            ])
+            ->add('account', EntityType::class, [
+                'class' => \App\Entity\Account::class,
+                'required' => false,
+                'placeholder' => 'Aucun compte',
+                'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
+                    ->where('a.space = :space')
+                    ->andWhere('a.deletedAt IS NULL')
+                    ->setParameter('space', $space)
+                    ->orderBy('a.name', 'ASC'),
+                'choice_label' => fn(\App\Entity\Account $a) => $a->getName() . ' (' . $a->getCurrency()->value . ')',
+            ])
+            ->add('note', TextType::class, [
+                'required' => false,
+                'attr' => ['placeholder' => 'Note optionnelle…'],
+                'constraints' => [
+                    new Assert\Length(max: 255, maxMessage: 'Maximum {{ limit }} caractères.'),
+                ],
             ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => Asset::class]);
+        $resolver->setDefaults([]);
+        $resolver->setRequired(['space', 'asset']);
+        $resolver->setAllowedTypes('space', Space::class);
+        $resolver->setAllowedTypes('asset', Asset::class);
     }
 }

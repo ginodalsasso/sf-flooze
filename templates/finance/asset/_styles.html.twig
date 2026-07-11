@@ -1,10 +1,12 @@
 <style>
+/* ── Grid ──────────────────────────────────────────────── */
 .asset-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
 
+/* ── Card ──────────────────────────────────────────────── */
 .asset-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
@@ -14,6 +16,25 @@
   flex-direction: column;
   gap: 16px;
   box-shadow: var(--shadow-card);
+  position: relative;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.asset-card:hover {
+  border-color: var(--fg-3);
+  box-shadow: var(--shadow-card), 0 0 0 3px rgba(200,213,194,.08);
+}
+
+.asset-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.asset-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
 }
 
 .asset-card-header {
@@ -73,6 +94,7 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   color: var(--fg-2);
+  margin-top: 4px;
 }
 
 .asset-card-footer {
@@ -82,14 +104,111 @@
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
 }
 
 .asset-card-footer form { margin: 0; }
 
-/* ── Form ──────────────────────────────────────────────── */
+/* ── Show ──────────────────────────────────────────────── */
+.asset-show-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 28px;
+}
+
+.asset-show-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.asset-show-metrics {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.asset-show-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.asset-show-metric-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--fg-3);
+}
+
+.asset-show-metric-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-1);
+}
+
+.asset-show-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.asset-show-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-2);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.asset-show-actions-bottom {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Tooltip cursor on metric labels */
+.asset-show-metric-label[title] {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--fg-3);
+}
 .asset-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+.form-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0 16px;
+}
+
+.form-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-2);
+  margin: 0 0 12px;
 }
 </style>

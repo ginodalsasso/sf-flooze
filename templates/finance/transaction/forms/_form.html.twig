@@ -1,7 +1,7 @@
 {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
 
     <div class="form-section txn-form-grid">
-        <twig:Form:Field field="{{ form.type }}" label="Type" />
+        <twig:Form:Field field="{{ form.type }}" label="Type de transaction" />
         <twig:Form:Field field="{{ form.date }}" label="Date" />
     </div>
 
@@ -16,7 +16,8 @@
 
     <div class="form-section txn-form-grid">
         <twig:Form:Field field="{{ form.category }}" label="Catégorie" />
-        <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire" />
+        <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire"
+                         hint="Uniquement pour les virements entre comptes" />
     </div>
 
     <div class="form-actions">

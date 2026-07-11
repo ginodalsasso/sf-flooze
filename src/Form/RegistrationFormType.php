@@ -29,48 +29,48 @@ class RegistrationFormType extends AbstractType
         $builder
             ->add('firstName', TextType::class, [
                 'constraints' => [
-                    new NotBlank(message: 'Please enter your first name.'),
+                    new NotBlank(message: 'Veuillez saisir votre prénom.'),
                     new Length(min: 2, max: 100),
                     new Regex(
                         pattern: '/^[\p{L}\p{M}\s\'\-\.]+$/u',
-                        message: 'First name may only contain letters, spaces, hyphens, apostrophes or dots.',
+                        message: 'Le prénom ne peut contenir que des lettres, espaces, tirets, apostrophes ou points.',
                     ),
                 ],
             ])
             ->add('lastName', TextType::class, [
                 'constraints' => [
-                    new NotBlank(message: 'Please enter your last name.'),
+                    new NotBlank(message: 'Veuillez saisir votre nom.'),
                     new Length(min: 2, max: 100),
                     new Regex(
                         pattern: '/^[\p{L}\p{M}\s\'\-\.]+$/u',
-                        message: 'Last name may only contain letters, spaces, hyphens, apostrophes or dots.',
+                        message: 'Le nom ne peut contenir que des lettres, espaces, tirets, apostrophes ou points.',
                     ),
                 ],
             ])
             ->add('email', EmailType::class, [
                 'constraints' => [
-                    new NotBlank(message: 'Please enter your email.'),
+                    new NotBlank(message: 'Veuillez saisir votre adresse email.'),
                     new Email(mode: Email::VALIDATION_MODE_STRICT),
                 ],
             ])
             ->add('plainPassword', RepeatedType::class, [
                 'type' => PasswordType::class,
                 'mapped' => false,
-                'invalid_message' => 'The password fields must match.',
+                'invalid_message' => 'Les deux mots de passe doivent correspondre.',
                 'options' => ['attr' => ['autocomplete' => 'new-password']],
-                'first_options' => ['label' => 'Password'],
-                'second_options' => ['label' => 'Repeat password'],
+                'first_options' => ['label' => 'Mot de passe'],
+                'second_options' => ['label' => 'Confirmer le mot de passe'],
                 'constraints' => [
-                    new NotBlank(message: 'Please enter a password.'),
+                    new NotBlank(message: 'Veuillez saisir un mot de passe.'),
                     new Length(
                         min: 12,
                         max: 4096,
-                        minMessage: 'Your password must be at least {{ limit }} characters.',
-                        maxMessage: 'Your password cannot be longer than {{ limit }} characters.',
+                        minMessage: 'Votre mot de passe doit contenir au moins {{ limit }} caractères.',
+                        maxMessage: 'Votre mot de passe ne peut pas dépasser {{ limit }} caractères.',
                     ),
                     new Regex(
                         pattern: '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d\s])/',
-                        message: 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+                        message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
                     ),
                     new PasswordStrength(minScore: PasswordStrength::STRENGTH_MEDIUM),
                 ],
@@ -78,7 +78,7 @@ class RegistrationFormType extends AbstractType
             ->add('agreeTerms', CheckboxType::class, [
                 'mapped' => false,
                 'constraints' => [
-                    new IsTrue(message: 'You must agree to the terms of service.'),
+                    new IsTrue(message: 'Vous devez accepter les conditions d\'utilisation.'),
                 ],
             ])
         ;

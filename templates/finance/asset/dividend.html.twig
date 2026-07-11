@@ -1,0 +1,55 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/asset/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Dividende {{ asset.ticker }} — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Dividende {{ asset.ticker }}"
+    subtitle="Enregistrer un dividende perçu sur {{ asset.name }}"
+    ctaLabel="Annuler"
+    ctaHref="{{ path('app_asset_show', {id: asset.id}) }}"
+/>
+
+<div class="page-content">
+    <div class="form-page">
+        <twig:Flash levels="{{ ['error'] }}" />
+
+        {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+            <div class="form-section acc-form-row">
+                <twig:Form:Field field="{{ form.date }}" label="Date du dividende" />
+                <twig:Form:Field field="{{ form.amount }}" label="Montant brut" />
+            </div>
+            <div class="form-section acc-form-row">
+                <twig:Form:Field field="{{ form.fxRate }}" label="Taux de change" />
+                <twig:Form:Field field="{{ form.fees }}" label="Frais / retenues" />
+            </div>
+
+            <div class="form-section" style="margin-bottom: 8px;">
+                <p style="color: var(--fg-3); font-size: 12px; line-height: 1.5;">
+                    <strong>Taux de change</strong> : prix de 1 {{ asset.currency.value }} en euros au moment du versement.
+                    {% if asset.currency.value == 'EUR' %}
+                        Laissez 1,000000 car le dividende est en euros.
+                    {% else %}
+                        Exemple : si 1 {{ asset.currency.value }} = 0,92 €, saisissez <strong>0,920000</strong>.
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="form-section acc-form-row">
+                <twig:Form:Field field="{{ form.account }}" label="Compte de crédit" />
+                <twig:Form:Field field="{{ form.note }}" label="Note" />
+            </div>
+
+            <div class="form-actions">
+                <twig:Button as="a" href="{{ path('app_asset_show', {id: asset.id}) }}" label="Annuler" variant="secondary" />
+                <twig:Button type="submit" icon="check" label="Enregistrer le dividende" />
+            </div>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

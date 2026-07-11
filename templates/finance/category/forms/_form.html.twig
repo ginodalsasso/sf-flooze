@@ -10,12 +10,14 @@
     </div>
 
     <div class="form-section">
-        <p class="form-section-label">Flags fiscaux</p>
+        <p class="form-section-label" title="Indiquez si cette catégorie a un impact fiscal sur vos déclarations">Flags fiscaux</p>
         <div class="cat-form-flags">
             <twig:Form:CheckboxField field="{{ form.isDeductible }}"
-                                     label="Déductible (charges déductibles des revenus)" />
+                                     label="Charge déductible"
+                                     hint="Cette charge réduit votre revenu imposable (ex : frais pro, cotisations)" />
             <twig:Form:CheckboxField field="{{ form.isDeclarable }}"
-                                     label="Déclarable (revenus à déclarer aux impôts)" />
+                                     label="Revenu déclarable"
+                                     hint="Ce revenu doit être déclaré aux impôts (ex : salaire, loyer perçu)" />
         </div>
     </div>
 

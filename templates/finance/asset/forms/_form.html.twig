@@ -1,21 +1,34 @@
 {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
 
-    <div class="form-section asset-form-row">
-        <twig:Form:Field field="{{ form.ticker }}" label="Ticker" />
-        <twig:Form:Field field="{{ form.type }}" label="Type" />
+    <div class="form-section acc-form-row">
+        <twig:Form:Field field="{{ form.ticker }}" label="Ticker"
+                         hint="Code boursier de l'actif : AAPL, BTC, MSFT, EURUSD…" />
+        <twig:Form:Field field="{{ form.type }}" label="Type d'actif" />
     </div>
 
     <div class="form-section">
         <twig:Form:Field field="{{ form.name }}" label="Nom de l'actif" />
     </div>
 
-    <div class="form-section asset-form-row">
-        <twig:Form:Field field="{{ form.quantity }}" label="Quantité" />
-        <twig:Form:Field field="{{ form.avgPrice }}" label="Prix moyen d'achat" />
+    <div class="form-section acc-form-row">
+        <twig:Form:Field field="{{ form.currency }}" label="Devise de l'actif" />
     </div>
 
-    <div class="form-section">
-        <twig:Form:Field field="{{ form.currency }}" label="Devise" />
+    <hr class="form-divider">
+    <h3 class="form-section-title">Achat initial</h3>
+
+    <div class="form-section acc-form-row">
+        <twig:Form:Field field="{{ form.entryDate }}" label="Date d'achat" />
+        <twig:Form:Field field="{{ form.entryQuantity }}" label="Quantité achetée" />
+    </div>
+
+    <div class="form-section acc-form-row">
+        <twig:Form:Field field="{{ form.entryUnitPrice }}" label="Prix unitaire" />
+        <twig:Form:Field field="{{ form.entryFxRate }}" label="Taux de change" hint="Si la devise de l’actif diffère de l’euro, renseignez le taux de change (ex. : 0,920000) ; sinon, indiquez 1,000000." />
+    </div>
+
+    <div class="form-section acc-form-row">
+        <twig:Form:Field field="{{ form.entryFees }}" label="Frais de transaction" />
     </div>
 
     <div class="form-actions">

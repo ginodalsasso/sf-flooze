@@ -35,7 +35,7 @@
         </div>
         <div class="acc-show-balance">
             <p class="acc-card-balance{% if account.balance < 0 %} acc-card-balance--negative{% elseif account.balance > 0 %} acc-card-balance--positive{% endif %}">
-                {{ account.balance|number_format(2, ',', ' ') }} {{ account.currency }}
+                {{ account.balance|number_format(2, ',', ' ') }} {{ account.currency.value }}
             </p>
             <p class="acc-card-currency">Solde actuel</p>
         </div>
@@ -94,7 +94,7 @@
                             <td>
                                 <span class="txn-amount txn-amount--{{ txn.type.value }}">
                                     {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
-                                    {{ txn.amount|number_format(2, ',', ' ') }} {{ account.currency }}
+                                    {{ txn.amount|number_format(2, ',', ' ') }} {{ account.currency.value }}
                                 </span>
                             </td>
                             <td>

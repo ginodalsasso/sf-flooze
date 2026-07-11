@@ -36,4 +36,40 @@ enum AssetTypeEnum: string
             self::Etf    => 'positive',
         };
     }
+
+    /** Whether this asset type pays dividends */
+    public function supportsDividend(): bool
+    {
+        return match($this) {
+            self::Stock  => true,
+            self::Crypto => false,
+            self::Etf    => true,
+        };
+    }
+
+    /** Whether this asset type has a unit price (crypto does, stocks do) */
+    public function hasUnitPrice(): bool
+    {
+        return match($this) {
+            self::Stock  => true,
+            self::Crypto => true,
+            self::Etf    => true,
+        };
+    }
+
+    /** Whether FX rate is relevant (always true, but crypto often quoted in EUR/USD) */
+    public function fxRateRelevant(): bool
+    {
+        return true;
+    }
+
+    /** Human-readable description of what this asset type represents */
+    public function description(): string
+    {
+        return match($this) {
+            self::Stock  => 'Action individuelle (dividendes possibles)',
+            self::Crypto => 'Crypto-monnaie (pas de dividende, staking possible)',
+            self::Etf    => 'ETF (dividendes ou capitalisation)',
+        };
+    }
 }
