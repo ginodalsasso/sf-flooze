@@ -32,6 +32,18 @@ class AccountRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /** Count active accounts for the space. */
+    public function countBySpace(Space $space): int
+    {
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->where('a.space = :space')
+            ->andWhere('a.deletedAt IS NULL')
+            ->setParameter('space', $space)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /** @return Account[] active accounts of the given type for the space, ordered by name */
     public function findBySpaceAndType(Space $space, AccountTypeEnum $type): array
     {

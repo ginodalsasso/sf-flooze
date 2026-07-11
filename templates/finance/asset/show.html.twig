@@ -42,7 +42,7 @@
             <div class="asset-show-metric">
                 <span class="asset-show-metric-label">Quantité</span>
                 <span class="asset-show-metric-value">
-                    {% set qty = asset.totalQuantity %}
+                    {% set qty = metrics.totalQuantity %}
                     {% if qty > 0 %}
                         {{ qty|number_format(8, ',', ' ')|replace({',00000000': ''}) }}
                     {% else %}
@@ -53,7 +53,7 @@
             <div class="asset-show-metric">
                 <span class="asset-show-metric-label" title="Prix de Revient Unitaire en devise d'achat (prix facturé par le broker)">PRU brut ({{ asset.currency.value }})</span>
                 <span class="asset-show-metric-value">
-                    {% set avgPrice = asset.avgPrice %}
+                    {% set avgPrice = metrics.averagePrice %}
                     {% if avgPrice %}
                         {{ avgPrice|number_format(4, ',', ' ') }}
                     {% else %}
@@ -64,7 +64,7 @@
             <div class="asset-show-metric">
                 <span class="asset-show-metric-label" title="Prix de Revient Unitaire en euros, avec le taux de change historique au moment de chaque achat. Utilisé pour la fiscalité.">PRU fiscal (EUR)</span>
                 <span class="asset-show-metric-value">
-                    {% set avgPriceEur = asset.avgPriceInSpaceCurrency %}
+                    {% set avgPriceEur = metrics.averagePriceInSpaceCurrency %}
                     {% if avgPriceEur %}
                         {{ avgPriceEur|number_format(4, ',', ' ') }} €
                     {% else %}
@@ -75,19 +75,19 @@
             <div class="asset-show-metric">
                 <span class="asset-show-metric-label" title="Somme de tous les achats convertis en euros avec les taux de change historiques">Coût total investi</span>
                 <span class="asset-show-metric-value">
-                    {{ asset.totalCostInSpaceCurrency|number_format(2, ',', ' ') }} €
+                    {{ metrics.totalCostInSpaceCurrency|number_format(2, ',', ' ') }} €
                 </span>
             </div>
             <div class="asset-show-metric">
                 <span class="asset-show-metric-label" title="Total des dividendes perçus, nets de frais, convertis en euros">Dividendes perçus</span>
                 <span class="asset-show-metric-value">
-                    {{ asset.totalDividends|number_format(2, ',', ' ') }} €
+                    {{ metrics.totalDividends|number_format(2, ',', ' ') }} €
                 </span>
             </div>
             <div class="asset-show-metric">
                 <span class="asset-show-metric-label" title="Total des frais de transaction (courtage, taxes, conversion...)">Frais de transaction</span>
                 <span class="asset-show-metric-value">
-                    {{ asset.totalFees|number_format(2, ',', ' ') }} €
+                    {{ metrics.totalFees|number_format(2, ',', ' ') }} €
                 </span>
             </div>
         </div>

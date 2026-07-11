@@ -80,4 +80,91 @@ class AssetEntryRepository extends ServiceEntityRepository
 
         return $result ?? '0';
     }
+
+    /** Sum of fees paid across all entries for the asset */
+    public function getTotalFees(Asset $asset): string
+    {
+        $result = $this->createQueryBuilder('e')
+            ->select('SUM(e.fees)')
+            ->where('e.asset = :asset')
+            ->setParameter('asset', $asset)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ?? '0';
+    }
+
+    /** Total cost basis in asset currency */
+    public function getTotalCost(Asset $asset): string
+    {
+        $result = $this->createQueryBuilder('e')
+            ->select('SUM(e.quantity * e.unitPrice)')
+            ->where('e.asset = :asset')
+            ->andWhere('e.kind = :kind')
+            ->setParameter('asset', $asset)
+            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ?? '0';
+    }
+
+    /** Total cost basis in space currency (with historical FX) */
+    public function getTotalCostInSpaceCurrency(Asset $asset): string
+    {
+        $result = $this->createQueryBuilder('e')
+            ->select('SUM(e.quantity * e.unitPrice * e.fxRate)')
+            ->where('e.asset = :asset')
+            ->andWhere('e.kind = :kind')
+            ->setParameter('asset', $asset)
+            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ?? '0';
+    }
+
+    /** Weighted average purchase price in asset currency */
+    public function getAveragePrice(Asset $asset): ?string
+    {
+        $result = $this->createQueryBuilder('e')
+            ->select('SUM(e.quantity * e.unitPrice) AS totalCost', 'SUM(e.quantity) AS totalQty')
+            ->where('e.asset = :asset')
+            ->andWhere('e.kind = :kind')
+            ->setParameter('asset', $asset)
+            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        $totalQty = $result['totalQty'] ?? '0';
+        $totalCost = $result['totalCost'] ?? '0';
+
+        if ((float) $totalQty <= 0.0) {
+            return null;
+        }
+
+        return (string) round((float) $totalCost / (float) $totalQty, 4);
+    }
+
+    /** Weighted average purchase price in space currency (with historical FX) */
+    public function getAveragePriceInSpaceCurrency(Asset $asset): ?string
+    {
+        $result = $this->createQueryBuilder('e')
+            ->select('SUM(e.quantity * e.unitPrice * e.fxRate) AS totalCost', 'SUM(e.quantity) AS totalQty')
+            ->where('e.asset = :asset')
+            ->andWhere('e.kind = :kind')
+            ->setParameter('asset', $asset)
+            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        $totalQty = $result['totalQty'] ?? '0';
+        $totalCost = $result['totalCost'] ?? '0';
+
+        if ((float) $totalQty <= 0.0) {
+            return null;
+        }
+
+        return (string) round((float) $totalCost / (float) $totalQty, 4);
+    }
 }

@@ -97,7 +97,7 @@ class AssetEntryService
             throw new \InvalidArgumentException('Sell unit price must be strictly positive.');
         }
 
-        $heldQty = $asset->getTotalQuantity();
+        $heldQty = (float) $this->entryRepository->getTotalQuantity($asset);
         if ($qty > $heldQty) {
             throw new \RuntimeException(sprintf(
                 'Cannot sell %.8f units: only %.8f held.',

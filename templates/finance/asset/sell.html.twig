@@ -21,7 +21,7 @@
 
         <div class="form-section" style="margin-bottom: 20px;">
             <p style="color: var(--fg-3); font-size: 13px;">
-                Quantité détenue : <strong style="color: var(--fg-1);">{{ asset.totalQuantity|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</strong> unités
+                Quantité détenue : <strong style="color: var(--fg-1);">{{ metrics.totalQuantity|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</strong> unités
             </p>
         </div>
 

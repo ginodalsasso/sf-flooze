@@ -21,6 +21,7 @@
     {% if assets|length > 0 %}
         <div class="asset-grid">
             {% for asset in assets %}
+                {% set metrics = assetsMetrics[asset.id] %}
                 <div class="asset-card">
                     <div class="asset-card-header">
                         <div class="asset-card-icon">
@@ -44,21 +45,21 @@
                     </div>
 
                     <div>
-                        {% set qty = asset.totalQuantity %}
+                        {% set qty = metrics.totalQuantity %}
                         {% if qty > 0 %}
                             <p class="asset-card-qty">{{ qty|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</p>
                             <p class="asset-card-meta">unités détenues</p>
                         {% else %}
                             <p class="asset-card-qty">Position fermée</p>
                         {% endif %}
-                        {% set avgPrice = asset.avgPrice %}
+                        {% set avgPrice = metrics.averagePrice %}
                         {% if avgPrice %}
                             <p class="asset-card-cost">
                                 PRU : {{ avgPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}
                             </p>
                         {% endif %}
                         <p class="asset-card-cost">
-                            Investi : {{ asset.totalCostInSpaceCurrency|number_format(2, ',', ' ') }} €
+                            Investi : {{ metrics.totalCostInSpaceCurrency|number_format(2, ',', ' ') }} €
                         </p>
                     </div>
 

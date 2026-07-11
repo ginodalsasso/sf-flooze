@@ -8,6 +8,7 @@ use App\Entity\Account;
 use App\Entity\Asset;
 use App\Entity\Space;
 use App\Repository\AccountRepository;
+use App\Repository\AssetEntryRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -22,6 +23,10 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 class AssetSellFormType extends AbstractType
 {
+    public function __construct(
+        private readonly AssetEntryRepository $entryRepository,
+    ) {}
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         /** @var Space $space */
@@ -42,7 +47,7 @@ class AssetSellFormType extends AbstractType
                 'html5' => false,
                 'attr' => [
                     'placeholder' => '0,00000000',
-                    'max' => $asset->getTotalQuantity(),
+                    'max' => (float) $this->entryRepository->getTotalQuantity($asset),
                 ],
                 'constraints' => [
                     new Assert\NotNull(message: 'La quantité ne peut pas être vide.'),

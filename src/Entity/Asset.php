@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\AssetEntryKindEnum;
 use App\Enum\AssetTypeEnum;
 use App\Enum\CurrencyEnum;
 use App\Repository\AssetRepository;
@@ -123,115 +122,6 @@ class Asset
         $this->entries->removeElement($entry);
 
         return $this;
-    }
-
-    /** Total quantity held: sum(buy) - sum(sell) */
-    public function getTotalQuantity(): float
-    {
-        $total = 0.0;
-        foreach ($this->entries as $entry) {
-            $total += (float) $entry->getQuantity() * $entry->getKind()->quantitySign();
-        }
-
-        return $total;
-    }
-
-    /** Weighted average purchase price in asset currency */
-    public function getAvgPrice(): ?string
-    {
-        $totalQty = 0.0;
-        $totalCost = 0.0;
-
-        foreach ($this->entries as $entry) {
-            if ($entry->getKind() === AssetEntryKindEnum::Buy) {
-                $qty = (float) $entry->getQuantity();
-                $totalQty += $qty;
-                $totalCost += $qty * (float) $entry->getUnitPrice();
-            }
-        }
-
-        if ($totalQty <= 0.0) {
-            return null;
-        }
-
-        return (string) round($totalCost / $totalQty, 4);
-    }
-
-    /** Weighted average purchase price in space currency (with historical FX) */
-    public function getAvgPriceInSpaceCurrency(): ?string
-    {
-        $totalQty = 0.0;
-        $totalCost = 0.0;
-
-        foreach ($this->entries as $entry) {
-            if ($entry->getKind() === AssetEntryKindEnum::Buy) {
-                $qty = (float) $entry->getQuantity();
-                $totalQty += $qty;
-                $totalCost += $qty * (float) $entry->getUnitPrice() * (float) $entry->getFxRate();
-            }
-        }
-
-        if ($totalQty <= 0.0) {
-            return null;
-        }
-
-        return (string) round($totalCost / $totalQty, 4);
-    }
-
-    /** Total cost basis in asset currency */
-    public function getTotalCost(): float
-    {
-        $total = 0.0;
-        foreach ($this->entries as $entry) {
-            if ($entry->getKind() === AssetEntryKindEnum::Buy) {
-                $total += (float) $entry->getQuantity() * (float) $entry->getUnitPrice();
-            }
-        }
-
-        return $total;
-    }
-
-    /** Total cost basis in space currency (with historical FX) */
-    public function getTotalCostInSpaceCurrency(): float
-    {
-        $total = 0.0;
-        foreach ($this->entries as $entry) {
-            if ($entry->getKind() === AssetEntryKindEnum::Buy) {
-                $total += (float) $entry->getQuantity() * (float) $entry->getUnitPrice() * (float) $entry->getFxRate();
-            }
-        }
-
-        return $total;
-    }
-
-    /** Total dividends received in space currency */
-    public function getTotalDividends(): float
-    {
-        $total = 0.0;
-        foreach ($this->entries as $entry) {
-            if ($entry->getKind() === AssetEntryKindEnum::Dividend) {
-                $total += (float) $entry->getQuantity() * (float) $entry->getUnitPrice() * (float) $entry->getFxRate();
-            }
-        }
-
-        return $total;
-    }
-
-    /** Total fees paid across all entries in space currency */
-    public function getTotalFees(): float
-    {
-        $total = 0.0;
-        foreach ($this->entries as $entry) {
-            $total += (float) $entry->getFees();
-        }
-
-        return $total;
-    }
-
-    /** Whether the asset has any buy entries (used to check if it's a tracked position) */
-    public function hasPosition(): bool
-    {
-        return $this->getTotalQuantity() > 0.0;
     }
 
     /** All distinct accounts linked to this asset's entries. */

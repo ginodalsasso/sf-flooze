@@ -353,7 +353,8 @@ Les **garde-fous critiques** (ERD, multi-tenant, soft-delete, DI, security) sont
 - Queries uniquement, pas de business logic.
 - QueryBuilder pour filtres complexes, DQL pour joins complexes. **Jamais de SQL inline.**
 - Toujours filtrer `space` + `deletedAt IS NULL`.
-- **Calculs mathématiques côté DB :** si une opération (somme, moyenne, agrégation, etc.) peut s'exprimer en DQL ou SQL, l'y faire plutôt que de ramener des entités en PHP pour les calculer.
+- **Calculs mathématiques côté DB :** si une opération (somme, moyenne, agrégation, etc.) peut s'exprimer en requête, la faire côté base de données. Ordre de priorité : **DQL d'abord**, **SQL natif si DQL insuffisant**, **PHP uniquement en dernier recours**.
+- **Entités sans calcul :** une entité ne doit pas agréger sa propre collection. Déporter les calculs vers un service ou le repository ; l'entité expose des getters/setters, pas de logique d'agrégation.
 
 ### Forms
 

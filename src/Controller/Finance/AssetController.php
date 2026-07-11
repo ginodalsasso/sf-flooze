@@ -13,6 +13,7 @@ use App\Repository\AccountRepository;
 use App\Repository\AssetEntryRepository;
 use App\Repository\AssetRepository;
 use App\Service\Finance\AssetEntryService;
+use App\Service\Finance\AssetMetricsService;
 use App\Service\Finance\AssetService;
 use App\Service\Space\SpaceResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,6 +27,7 @@ class AssetController extends AbstractController
     public function __construct(
         private readonly AssetService $assetService,
         private readonly AssetEntryService $assetEntryService,
+        private readonly AssetMetricsService $assetMetricsService,
         private readonly AssetRepository $assetRepository,
         private readonly AssetEntryRepository $assetEntryRepository,
         private readonly AccountRepository $accountRepository,
@@ -45,8 +47,15 @@ class AssetController extends AbstractController
 
         $this->denyAccessUnlessGranted('VIEW', $space);
 
+        $assets = $this->assetRepository->findBySpace($space);
+        $assetsMetrics = [];
+        foreach ($assets as $asset) {
+            $assetsMetrics[$asset->getId()] = $this->assetMetricsService->compute($asset);
+        }
+
         return $this->render('finance/asset/index.html.twig', [
-            'assets' => $this->assetRepository->findBySpace($space),
+            'assets' => $assets,
+            'assetsMetrics' => $assetsMetrics,
         ]);
     }
 
@@ -58,6 +67,7 @@ class AssetController extends AbstractController
         return $this->render('finance/asset/show.html.twig', [
             'asset'   => $asset,
             'entries' => $this->assetEntryRepository->findByAsset($asset),
+            'metrics' => $this->assetMetricsService->compute($asset),
         ]);
     }
 
@@ -76,7 +86,7 @@ class AssetController extends AbstractController
 
         // An asset must be linked to an account. If the space has no account at
         // all, redirect to account creation before allowing any asset creation.
-        if (count($this->accountRepository->findBySpace($space)) === 0) {
+        if ($this->accountRepository->countBySpace($space) === 0) {
             $this->addFlash('error', 'Tu dois d\'abord créer un compte avant d\'ajouter un actif.');
 
             return $this->redirectToRoute('app_account_new');
@@ -171,8 +181,9 @@ class AssetController extends AbstractController
         }
 
         return $this->render('finance/asset/sell.html.twig', [
-            'form'  => $form,
-            'asset' => $asset,
+            'form'    => $form,
+            'asset'   => $asset,
+            'metrics' => $this->assetMetricsService->compute($asset),
         ]);
     }
 
