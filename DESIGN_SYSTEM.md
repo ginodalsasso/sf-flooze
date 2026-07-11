@@ -232,7 +232,7 @@ border-radius: 6px;
 
 ## Icônes
 
-Source : **Lucide Icons** — `https://unpkg.com/lucide@latest/dist/umd/lucide.min.js`
+Source : **Lucide Icons** — fichier local `public/vendor/lucide/lucide.min.js` (hébergé sans dépendance CDN).
 
 - Taille : 14px ou 16px — jamais autre chose
 - `stroke-width: 1.5` (défaut Lucide)

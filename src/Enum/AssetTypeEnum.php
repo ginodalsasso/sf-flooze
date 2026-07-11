@@ -72,4 +72,13 @@ enum AssetTypeEnum: string
             self::Etf    => 'ETF (dividendes ou capitalisation)',
         };
     }
+
+    /** Account type that must exist to hold assets of this type */
+    public function requiredAccountType(): AccountTypeEnum
+    {
+        return match($this) {
+            self::Stock, self::Etf => AccountTypeEnum::Stock,
+            self::Crypto => AccountTypeEnum::Crypto,
+        };
+    }
 }
