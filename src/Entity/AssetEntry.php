@@ -8,6 +8,8 @@ use App\Enum\AssetEntryKindEnum;
 use App\Repository\AssetEntryRepository;
 use App\Trait\SpaceScopeTrait;
 use App\Trait\TimestampTrait;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: AssetEntryRepository::class)]
@@ -53,8 +55,17 @@ class AssetEntry
     #[ORM\JoinColumn(name: 'funding_account_id', nullable: true)]
     private ?Account $fundingAccount = null;
 
+    /** @var Collection<int, Transaction> */
+    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'assetEntry', cascade: ['persist'])]
+    private Collection $transactions;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $note = null;
+
+    public function __construct()
+    {
+        $this->transactions = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -177,6 +188,33 @@ class AssetEntry
     public function setNote(?string $note): static
     {
         $this->note = $note;
+
+        return $this;
+    }
+
+    /** @return Collection<int, Transaction> */
+    public function getTransactions(): Collection
+    {
+        return $this->transactions;
+    }
+
+    public function addTransaction(Transaction $transaction): static
+    {
+        if (!$this->transactions->contains($transaction)) {
+            $this->transactions->add($transaction);
+            $transaction->setAssetEntry($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTransaction(Transaction $transaction): static
+    {
+        if ($this->transactions->removeElement($transaction)) {
+            if ($transaction->getAssetEntry() === $this) {
+                $transaction->setAssetEntry(null);
+            }
+        }
 
         return $this;
     }

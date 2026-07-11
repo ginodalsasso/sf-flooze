@@ -94,6 +94,17 @@ class TransactionController extends AbstractController
     {
         $this->denyAccessUnlessGranted('EDIT', $transaction->getSpace());
 
+        // Asset-linked transactions are managed from the asset page.
+        if ($transaction->isLinkedToAsset()) {
+            $asset = $transaction->getAssetEntry()->getAsset();
+            $this->addFlash('error', sprintf(
+                'Cette transaction est liée à l\'actif %s. Modifiez l\'opération depuis la fiche de l\'actif.',
+                $asset->getTicker()
+            ));
+
+            return $this->redirectToRoute('app_asset_show', ['id' => $asset->getId()]);
+        }
+
         // Prevent editing transactions linked to a soft-deleted account
         if ($transaction->getAccount()->isDeleted()) {
             throw $this->createAccessDeniedException('Cannot modify a transaction linked to a deleted account.');
@@ -129,6 +140,17 @@ class TransactionController extends AbstractController
     public function delete(Request $request, Transaction $transaction): Response
     {
         $this->denyAccessUnlessGranted('EDIT', $transaction->getSpace());
+
+        // Asset-linked transactions are managed from the asset page.
+        if ($transaction->isLinkedToAsset()) {
+            $asset = $transaction->getAssetEntry()->getAsset();
+            $this->addFlash('error', sprintf(
+                'Cette transaction est liée à l\'actif %s. Supprimez l\'opération depuis la fiche de l\'actif.',
+                $asset->getTicker()
+            ));
+
+            return $this->redirectToRoute('app_asset_show', ['id' => $asset->getId()]);
+        }
 
         if (!$this->isCsrfTokenValid('transaction_delete_' . $transaction->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');

@@ -33,6 +33,10 @@ class Transaction
     #[ORM\JoinColumn(name: 'destination_account_id', nullable: true)]
     private ?Account $destinationAccount = null;
 
+    #[ORM\ManyToOne(targetEntity: AssetEntry::class, inversedBy: 'transactions')]
+    #[ORM\JoinColumn(name: 'asset_entry_id', nullable: true, onDelete: 'SET NULL')]
+    private ?AssetEntry $assetEntry = null;
+
     #[ORM\ManyToOne(targetEntity: Category::class)]
     #[ORM\JoinColumn(name: 'category_id', nullable: true)]
     private ?Category $category = null;
@@ -79,6 +83,23 @@ class Transaction
         $this->destinationAccount = $destinationAccount;
 
         return $this;
+    }
+
+    public function getAssetEntry(): ?AssetEntry
+    {
+        return $this->assetEntry;
+    }
+
+    public function setAssetEntry(?AssetEntry $assetEntry): static
+    {
+        $this->assetEntry = $assetEntry;
+
+        return $this;
+    }
+
+    public function isLinkedToAsset(): bool
+    {
+        return $this->assetEntry !== null;
     }
 
     public function getCategory(): ?Category

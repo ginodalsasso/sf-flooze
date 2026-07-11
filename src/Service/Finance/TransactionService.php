@@ -54,6 +54,8 @@ class TransactionService
         string $oldAmount,
         ?Account $oldDestAccount,
     ): void {
+        $this->guardNotLinkedToAsset($transaction);
+
         $amount = (float) $transaction->getAmount();
         if ($amount <= 0.0) {
             throw new \InvalidArgumentException('Transaction amount must be strictly positive.');
@@ -82,6 +84,8 @@ class TransactionService
      */
     public function delete(Transaction $transaction): void
     {
+        $this->guardNotLinkedToAsset($transaction);
+
         $type = $transaction->getType();
         $destAccount = $transaction->getDestinationAccount();
         $amount = (float) $transaction->getAmount();
@@ -101,5 +105,16 @@ class TransactionService
         $delta = $amount * $type->balanceSign();
         $newBalance = (float) $account->getBalance() + $delta;
         $account->setBalance((string) round($newBalance, 2));
+    }
+
+    private function guardNotLinkedToAsset(Transaction $transaction): void
+    {
+        if ($transaction->isLinkedToAsset()) {
+            throw new \RuntimeException(sprintf(
+                'Transaction %d is linked to asset "%s" and must be managed from the asset page.',
+                $transaction->getId(),
+                $transaction->getAssetEntry()->getAsset()->getTicker()
+            ));
+        }
     }
 }
