@@ -233,4 +233,29 @@ class Asset
     {
         return $this->getTotalQuantity() > 0.0;
     }
+
+    /** All distinct accounts linked to this asset's entries. */
+    public function getAccounts(): array
+    {
+        $accounts = [];
+        foreach ($this->entries as $entry) {
+            $account = $entry->getAccount();
+            if ($account !== null && !in_array($account, $accounts, true)) {
+                $accounts[] = $account;
+            }
+        }
+
+        return $accounts;
+    }
+
+    /** The account of the first entry, used as the asset's primary display account. */
+    public function getPrimaryAccount(): ?Account
+    {
+        $entries = $this->entries->toArray();
+        if ($entries === []) {
+            return null;
+        }
+
+        return $entries[0]->getAccount();
+    }
 }

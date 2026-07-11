@@ -30,6 +30,12 @@
                     label="{{ asset.type.label() }}"
                     variant="{{ asset.type.badgeVariant() }}"
                 />
+                {% set primaryAccount = asset.primaryAccount %}
+                {% if primaryAccount %}
+                    <p class="asset-card-name" style="margin-top:0.25rem">
+                        {{ primaryAccount.name }} <span class="asset-card-meta">({{ primaryAccount.type.label() }})</span>
+                    </p>
+                {% endif %}
             </div>
         </div>
         <div class="asset-show-metrics">
@@ -122,6 +128,8 @@
                     <tr>
                         <th>Date</th>
                         <th>Type</th>
+                        <th>Compte de détention</th>
+                        <th>Compte de paiement / destination</th>
                         <th>Quantité</th>
                         <th>Prix unitaire</th>
                         <th>Taux FX</th>
@@ -141,6 +149,20 @@
                                     label="{{ entry.kind.label() }}"
                                     variant="{{ entry.kind.badgeVariant() }}"
                                 />
+                            </td>
+                            <td>
+                                {% if entry.account %}
+                                    <span class="txn-account">{{ entry.account.name }}</span>
+                                {% else %}
+                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.fundingAccount %}
+                                    <span class="txn-account">{{ entry.fundingAccount.name }}</span>
+                                {% else %}
+                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if entry.kind.affectsQuantity %}

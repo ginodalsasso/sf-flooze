@@ -20,9 +20,11 @@ class AssetEntryService
     ) {}
 
     /**
-     * Record a buy entry. Creates the AssetEntry and links it to the asset.
+     * Record a buy entry. Creates the AssetEntry, links it to the asset and
+     * decreases the linked account balance by the entry value
+     * (quantity × unit price × FX rate). An account is mandatory.
      *
-     * @throws \InvalidArgumentException if quantity or unitPrice is not positive
+     * @throws \InvalidArgumentException if quantity, unitPrice is not positive or account is missing
      */
     public function recordBuy(
         Asset $asset,
@@ -32,7 +34,8 @@ class AssetEntryService
         string $unitPrice,
         string $fxRate,
         string $fees,
-        ?Account $account = null,
+        Account $account,
+        Account $fundingAccount,
         ?string $note = null,
     ): AssetEntry {
         $qty = (float) $quantity;
@@ -55,6 +58,7 @@ class AssetEntryService
             ->setFxRate($fxRate)
             ->setFees($fees)
             ->setAccount($account)
+            ->setFundingAccount($fundingAccount)
             ->setNote($note);
 
         $this->em->persist($entry);
@@ -64,7 +68,9 @@ class AssetEntryService
     }
 
     /**
-     * Record a sell entry. Validates that sufficient quantity is available.
+     * Record a sell entry. Validates that sufficient quantity is available and
+     * increases the account balance by the entry value
+     * (quantity × unit price × FX rate).
      *
      * @throws \InvalidArgumentException if quantity or unitPrice is not positive
      * @throws \RuntimeException if sell quantity exceeds held quantity
@@ -77,7 +83,8 @@ class AssetEntryService
         string $unitPrice,
         string $fxRate,
         string $fees,
-        ?Account $account = null,
+        Account $account,
+        Account $fundingAccount,
         ?string $note = null,
     ): AssetEntry {
         $qty = (float) $quantity;
@@ -109,6 +116,7 @@ class AssetEntryService
             ->setFxRate($fxRate)
             ->setFees($fees)
             ->setAccount($account)
+            ->setFundingAccount($fundingAccount)
             ->setNote($note);
 
         $this->em->persist($entry);
@@ -120,6 +128,7 @@ class AssetEntryService
     /**
      * Record a dividend entry. Quantity here represents the dividend amount per share
      * or total dividend depending on convention. We use it as total dividend in asset currency.
+     * When an account is provided, the net dividend is added to the account balance.
      *
      * @throws \InvalidArgumentException if dividend amount is not positive
      */
@@ -130,7 +139,8 @@ class AssetEntryService
         string $amount,
         string $fxRate,
         string $fees,
-        ?Account $account = null,
+        Account $account,
+        Account $fundingAccount,
         ?string $note = null,
     ): AssetEntry {
         $divAmount = (float) $amount;
@@ -149,6 +159,7 @@ class AssetEntryService
             ->setFxRate($fxRate)
             ->setFees($fees)
             ->setAccount($account)
+            ->setFundingAccount($fundingAccount)
             ->setNote($note);
 
         $this->em->persist($entry);
@@ -157,7 +168,7 @@ class AssetEntryService
         return $entry;
     }
 
-    /** Delete an entry and flush. */
+    /** Delete an entry. The linked account balance is restored by the entity listener. */
     public function delete(AssetEntry $entry): void
     {
         $this->em->remove($entry);

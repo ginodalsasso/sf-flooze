@@ -37,6 +37,10 @@
                             <p class="asset-card-ticker">{{ asset.ticker }}</p>
                             <p class="asset-card-name">{{ asset.name }}</p>
                         </a>
+                        {% set primaryAccount = asset.primaryAccount %}
+                        {% if primaryAccount %}
+                            <p class="asset-card-meta">{{ primaryAccount.name }} ({{ primaryAccount.type.label() }})</p>
+                        {% endif %}
                     </div>
 
                     <div>
@@ -53,6 +57,9 @@
                                 PRU : {{ avgPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}
                             </p>
                         {% endif %}
+                        <p class="asset-card-cost">
+                            Investi : {{ asset.totalCostInSpaceCurrency|number_format(2, ',', ' ') }} €
+                        </p>
                     </div>
 
                     <div class="asset-card-footer">

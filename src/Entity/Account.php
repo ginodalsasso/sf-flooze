@@ -90,4 +90,12 @@ class Account
 
         return $this;
     }
+
+    /** Add an amount (positive or negative) to the current balance, keeping 2 decimal places */
+    public function adjustBalance(float $amount): static
+    {
+        $this->balance = bcadd($this->balance, (string) $amount, 2);
+
+        return $this;
+    }
 }

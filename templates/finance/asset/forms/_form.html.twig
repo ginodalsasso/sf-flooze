@@ -12,6 +12,13 @@
 
     <div class="form-section acc-form-row">
         <twig:Form:Field field="{{ form.currency }}" label="Devise de l'actif" />
+        <twig:Form:Field field="{{ form.account }}" label="Compte de détention"
+                         hint="Le compte doit correspondre au type d'actif (crypto, actions/ETF...)." />
+    </div>
+
+    <div class="form-section acc-form-row">
+        <twig:Form:Field field="{{ form.fundingAccount }}" label="Compte de paiement"
+                         hint="Compte débité pour financer cet achat." />
     </div>
 
     <hr class="form-divider">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Form\Finance;
 
+use App\Entity\Account;
 use App\Entity\Asset;
 use App\Entity\Space;
 use App\Repository\AccountRepository;
@@ -25,6 +26,9 @@ class AssetDividendFormType extends AbstractType
     {
         /** @var Space $space */
         $space = $options['space'];
+        /** @var Asset $asset */
+        $asset = $options['asset'];
+        $requiredAccountType = $asset->getType()->requiredAccountType();
 
         $builder
             ->add('date', DateType::class, [
@@ -64,14 +68,33 @@ class AssetDividendFormType extends AbstractType
             ])
             ->add('account', EntityType::class, [
                 'class' => \App\Entity\Account::class,
-                'required' => false,
-                'placeholder' => 'Aucun compte',
+                'required' => true,
+                'placeholder' => 'Choisir un compte de détention',
+                'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
+                    ->where('a.space = :space')
+                    ->andWhere('a.type = :type')
+                    ->andWhere('a.deletedAt IS NULL')
+                    ->setParameter('space', $space)
+                    ->setParameter('type', $requiredAccountType)
+                    ->orderBy('a.name', 'ASC'),
+                'choice_label' => fn(\App\Entity\Account $a) => $a->getName() . ' (' . $a->getCurrency()->value . ')',
+                'constraints' => [
+                    new Assert\NotNull(message: 'Un compte de détention est obligatoire.'),
+                ],
+            ])
+            ->add('fundingAccount', EntityType::class, [
+                'class' => \App\Entity\Account::class,
+                'required' => true,
+                'placeholder' => 'Choisir un compte de destination',
                 'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
                     ->where('a.space = :space')
                     ->andWhere('a.deletedAt IS NULL')
                     ->setParameter('space', $space)
                     ->orderBy('a.name', 'ASC'),
                 'choice_label' => fn(\App\Entity\Account $a) => $a->getName() . ' (' . $a->getCurrency()->value . ')',
+                'constraints' => [
+                    new Assert\NotNull(message: 'Un compte de destination est obligatoire.'),
+                ],
             ])
             ->add('note', TextType::class, [
                 'required' => false,
@@ -84,8 +107,30 @@ class AssetDividendFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([]);
-        $resolver->setRequired('space');
+        $resolver->setDefaults([
+            'constraints' => [
+                new Assert\Callback([$this, 'validateAccounts']),
+            ],
+        ]);
+        $resolver->setRequired(['space', 'asset']);
         $resolver->setAllowedTypes('space', Space::class);
+        $resolver->setAllowedTypes('asset', Asset::class);
+    }
+
+    public function validateAccounts(mixed $data, \Symfony\Component\Validator\Context\ExecutionContextInterface $context): void
+    {
+        $form = $context->getRoot();
+        if (!$form instanceof \Symfony\Component\Form\FormInterface) {
+            return;
+        }
+
+        $account = $form->get('account')->getData();
+        $fundingAccount = $form->get('fundingAccount')->getData();
+
+        if ($account instanceof Account && $fundingAccount instanceof Account && $account->getId() === $fundingAccount->getId()) {
+            $context->buildViolation('Le compte de détention et le compte de destination doivent être différents.')
+                ->atPath('fundingAccount')
+                ->addViolation();
+        }
     }
 }

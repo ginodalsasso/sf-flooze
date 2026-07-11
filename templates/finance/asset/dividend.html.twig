@@ -41,7 +41,10 @@
             </div>
 
             <div class="form-section acc-form-row">
-                <twig:Form:Field field="{{ form.account }}" label="Compte de crédit" />
+                <twig:Form:Field field="{{ form.account }}" label="Compte de détention" />
+                <twig:Form:Field field="{{ form.fundingAccount }}" label="Compte de destination" />
+            </div>
+            <div class="form-section">
                 <twig:Form:Field field="{{ form.note }}" label="Note" />
             </div>
 

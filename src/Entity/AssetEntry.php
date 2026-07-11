@@ -49,6 +49,10 @@ class AssetEntry
     #[ORM\JoinColumn(name: 'account_id', nullable: true)]
     private ?Account $account = null;
 
+    #[ORM\ManyToOne(targetEntity: Account::class)]
+    #[ORM\JoinColumn(name: 'funding_account_id', nullable: true)]
+    private ?Account $fundingAccount = null;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $note = null;
 
@@ -149,6 +153,18 @@ class AssetEntry
     public function setAccount(?Account $account): static
     {
         $this->account = $account;
+
+        return $this;
+    }
+
+    public function getFundingAccount(): ?Account
+    {
+        return $this->fundingAccount;
+    }
+
+    public function setFundingAccount(?Account $fundingAccount): static
+    {
+        $this->fundingAccount = $fundingAccount;
 
         return $this;
     }

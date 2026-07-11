@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Form\Finance\AssetDividendFormType;
 use App\Form\Finance\AssetFormType;
 use App\Form\Finance\AssetSellFormType;
+use App\Repository\AccountRepository;
 use App\Repository\AssetEntryRepository;
 use App\Repository\AssetRepository;
 use App\Service\Finance\AssetEntryService;
@@ -27,6 +28,7 @@ class AssetController extends AbstractController
         private readonly AssetEntryService $assetEntryService,
         private readonly AssetRepository $assetRepository,
         private readonly AssetEntryRepository $assetEntryRepository,
+        private readonly AccountRepository $accountRepository,
         private readonly SpaceResolver $spaceResolver,
     ) {}
 
@@ -72,15 +74,23 @@ class AssetController extends AbstractController
 
         $this->denyAccessUnlessGranted('EDIT', $space);
 
+        // An asset must be linked to an account. If the space has no account at
+        // all, redirect to account creation before allowing any asset creation.
+        if (count($this->accountRepository->findBySpace($space)) === 0) {
+            $this->addFlash('error', 'Tu dois d\'abord créer un compte avant d\'ajouter un actif.');
+
+            return $this->redirectToRoute('app_account_new');
+        }
+
         $asset = new Asset();
-        $form = $this->createForm(AssetFormType::class, $asset);
+        $form = $this->createForm(AssetFormType::class, $asset, ['space' => $space]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $asset->setSpace($space);
             $this->assetService->save($asset);
 
-            // Create initial buy entry from the form data
+            // Create initial buy entry from the form data, linked to the selected accounts
             $this->assetEntryService->recordBuy(
                 asset: $asset,
                 space: $space,
@@ -89,6 +99,8 @@ class AssetController extends AbstractController
                 unitPrice: (string) $form->get('entryUnitPrice')->getData(),
                 fxRate: (string) $form->get('entryFxRate')->getData(),
                 fees: (string) $form->get('entryFees')->getData(),
+                account: $form->get('account')->getData(),
+                fundingAccount: $form->get('fundingAccount')->getData(),
             );
 
             $this->addFlash('success', 'Actif "' . $asset->getTicker() . '" ajouté avec position d\'achat initiale.');
@@ -104,7 +116,7 @@ class AssetController extends AbstractController
     {
         $this->denyAccessUnlessGranted('EDIT', $asset->getSpace());
 
-        $form = $this->createForm(AssetFormType::class, $asset);
+        $form = $this->createForm(AssetFormType::class, $asset, ['space' => $asset->getSpace()]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -140,6 +152,7 @@ class AssetController extends AbstractController
                     fxRate: (string) $form->get('fxRate')->getData(),
                     fees: (string) $form->get('fees')->getData(),
                     account: $form->get('account')->getData(),
+                    fundingAccount: $form->get('fundingAccount')->getData(),
                     note: $form->get('note')->getData(),
                 );
 
@@ -178,7 +191,7 @@ class AssetController extends AbstractController
         }
 
         $space = $asset->getSpace();
-        $form = $this->createForm(AssetDividendFormType::class, null, ['space' => $space]);
+        $form = $this->createForm(AssetDividendFormType::class, null, ['space' => $space, 'asset' => $asset]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -190,6 +203,7 @@ class AssetController extends AbstractController
                 fxRate: (string) $form->get('fxRate')->getData(),
                 fees: (string) $form->get('fees')->getData(),
                 account: $form->get('account')->getData(),
+                fundingAccount: $form->get('fundingAccount')->getData(),
                 note: $form->get('note')->getData(),
             );
 

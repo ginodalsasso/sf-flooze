@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Form\Finance;
 
+use App\Entity\Account;
 use App\Entity\Asset;
+use App\Entity\Space;
 use App\Enum\AssetTypeEnum;
 use App\Enum\CurrencyEnum;
+use App\Repository\AccountRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
@@ -15,6 +19,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Form for creating a new Asset with its initial buy entry.
@@ -25,6 +30,9 @@ class AssetFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        /** @var Space $space */
+        $space = $options['space'];
+
         $builder
             // Asset fields
             ->add('ticker', TextType::class, [
@@ -48,6 +56,38 @@ class AssetFormType extends AbstractType
             ->add('currency', EnumType::class, [
                 'class' => CurrencyEnum::class,
                 'choice_label' => fn(CurrencyEnum $c) => $c->display(),
+            ])
+            // Account that will hold the asset
+            ->add('account', EntityType::class, [
+                'class' => Account::class,
+                'mapped' => false,
+                'required' => true,
+                'placeholder' => 'Choisir un compte',
+                'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
+                    ->where('a.space = :space')
+                    ->andWhere('a.deletedAt IS NULL')
+                    ->setParameter('space', $space)
+                    ->orderBy('a.name', 'ASC'),
+                'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getType()->label() . ', ' . $a->getCurrency()->value . ')',
+                'constraints' => [
+                    new Assert\NotNull(message: 'Un compte de détention est obligatoire.'),
+                ],
+            ])
+            // Account used to pay for the asset
+            ->add('fundingAccount', EntityType::class, [
+                'class' => Account::class,
+                'mapped' => false,
+                'required' => true,
+                'placeholder' => 'Choisir un compte de paiement',
+                'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
+                    ->where('a.space = :space')
+                    ->andWhere('a.deletedAt IS NULL')
+                    ->setParameter('space', $space)
+                    ->orderBy('a.name', 'ASC'),
+                'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getType()->label() . ', ' . $a->getCurrency()->value . ')',
+                'constraints' => [
+                    new Assert\NotNull(message: 'Un compte de paiement est obligatoire.'),
+                ],
             ])
             // Initial buy entry fields (not mapped to Asset)
             ->add('entryDate', DateType::class, [
@@ -103,6 +143,48 @@ class AssetFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => Asset::class]);
+        $resolver->setDefaults([
+            'data_class' => Asset::class,
+            'constraints' => [
+                new Assert\Callback([$this, 'validateAccountType']),
+            ],
+        ]);
+        $resolver->setRequired('space');
+        $resolver->setAllowedTypes('space', Space::class);
+    }
+
+    public function validateAccountType(Asset $asset, ExecutionContextInterface $context): void
+    {
+        $form = $context->getRoot();
+        if (!$form instanceof \Symfony\Component\Form\FormInterface) {
+            return;
+        }
+
+        $account = $form->get('account')->getData();
+        $fundingAccount = $form->get('fundingAccount')->getData();
+
+        if ($account instanceof Account && $fundingAccount instanceof Account && $account->getId() === $fundingAccount->getId()) {
+            $context->buildViolation('Le compte de détention et le compte de paiement doivent être différents.')
+                ->atPath('fundingAccount')
+                ->addViolation();
+        }
+
+        if (!$account instanceof Account) {
+            return;
+        }
+
+        $requiredType = $asset->getType()->requiredAccountType();
+        if ($account->getType() !== $requiredType) {
+            $context->buildViolation(
+                'Ce compte est de type {{ accountType }}. Un compte de type {{ requiredType }} est requis pour un actif de type {{ assetType }}.',
+                [
+                    '{{ accountType }}' => $account->getType()->label(),
+                    '{{ requiredType }}' => $requiredType->label(),
+                    '{{ assetType }}' => $asset->getType()->label(),
+                ]
+            )
+                ->atPath('account')
+                ->addViolation();
+        }
     }
 }
