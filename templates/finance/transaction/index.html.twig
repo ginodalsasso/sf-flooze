@@ -68,8 +68,9 @@
                             </td>
                             <td>
                                 <div class="txn-desc">{{ txn.description ?? '—' }}</div>
-                                {% if txn.category %}
-                                    <div class="txn-cat">{{ txn.category.name }}</div>
+                                {% set categoryLabel = txn.categoryLabel %}
+                                {% if categoryLabel %}
+                                    <div class="txn-cat">{{ categoryLabel }}</div>
                                 {% endif %}
                                 {% if txn.linkedToAsset %}
                                     <div class="txn-cat">

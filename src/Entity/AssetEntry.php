@@ -231,13 +231,4 @@ class AssetEntry
         return $this->getTotalAmount() * (float) $this->fxRate;
     }
 
-    /** Net amount after fees in space currency */
-    public function getNetAmount(): float
-    {
-        $total = $this->getTotalAmountInSpaceCurrency();
-
-        return $this->kind->isCashInflow()
-            ? $total - (float) $this->fees
-            : $total + (float) $this->fees;
-    }
 }

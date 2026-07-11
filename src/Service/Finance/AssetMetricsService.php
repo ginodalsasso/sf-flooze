@@ -26,14 +26,4 @@ final readonly class AssetMetricsService
             totalFees: $this->entryRepository->getTotalFees($asset),
         );
     }
-
-    public function getTotalQuantity(Asset $asset): string
-    {
-        return $this->entryRepository->getTotalQuantity($asset);
-    }
-
-    public function hasPosition(Asset $asset): bool
-    {
-        return (float) $this->entryRepository->getTotalQuantity($asset) > 0.0;
-    }
 }

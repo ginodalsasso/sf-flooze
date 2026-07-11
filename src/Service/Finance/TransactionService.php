@@ -15,16 +15,14 @@ class TransactionService
 
     /**
      * Persist a new transaction and update account balance(s).
-     * Rejects negative amounts as a defense-in-depth measure.
+     * Rejects non-positive amounts as a defense-in-depth measure.
      *
      * @throws \InvalidArgumentException if amount is not strictly positive
      */
     public function save(Transaction $transaction): void
     {
-        $amount = (float) $transaction->getAmount();
-        if ($amount <= 0.0) {
-            throw new \InvalidArgumentException('Transaction amount must be strictly positive.');
-        }
+        $amount = $transaction->getAmount();
+        $this->guardStrictlyPositive($amount);
 
         $this->applyBalance($transaction->getAccount(), $transaction->getType(), $amount);
 
@@ -35,7 +33,7 @@ class TransactionService
         $this->em->persist($transaction);
         $this->em->flush();
     }
-    
+
     /**
      * Update an edited transaction: reverse old balance effect, apply new one.
      * Rejects non-positive amounts as a defense-in-depth measure.
@@ -56,15 +54,13 @@ class TransactionService
     ): void {
         $this->guardNotLinkedToAsset($transaction);
 
-        $amount = (float) $transaction->getAmount();
-        if ($amount <= 0.0) {
-            throw new \InvalidArgumentException('Transaction amount must be strictly positive.');
-        }
+        $amount = $transaction->getAmount();
+        $this->guardStrictlyPositive($amount);
 
         // Reverse old effect
-        $this->applyBalance($oldAccount, $oldType, -(float) $oldAmount);
+        $this->applyBalance($oldAccount, $oldType, $this->negate($oldAmount));
         if ($oldType === TransactionTypeEnum::Transfer && $oldDestAccount !== null) {
-            $this->applyBalance($oldDestAccount, TransactionTypeEnum::Income, -(float) $oldAmount);
+            $this->applyBalance($oldDestAccount, TransactionTypeEnum::Income, $this->negate($oldAmount));
         }
 
         $type = $transaction->getType();
@@ -88,23 +84,37 @@ class TransactionService
 
         $type = $transaction->getType();
         $destAccount = $transaction->getDestinationAccount();
-        $amount = (float) $transaction->getAmount();
+        $amount = $transaction->getAmount();
 
-        $this->applyBalance($transaction->getAccount(), $type, -$amount);
+        $this->applyBalance($transaction->getAccount(), $type, $this->negate($amount));
 
         if ($type === TransactionTypeEnum::Transfer && $destAccount !== null) {
-            $this->applyBalance($destAccount, TransactionTypeEnum::Income, -$amount);
+            $this->applyBalance($destAccount, TransactionTypeEnum::Income, $this->negate($amount));
         }
 
         $transaction->softDelete();
         $this->em->flush();
     }
 
-    private function applyBalance(Account $account, TransactionTypeEnum $type, float $amount): void
+    private function applyBalance(Account $account, TransactionTypeEnum $type, string $amount): void
     {
-        $delta = $amount * $type->balanceSign();
-        $newBalance = (float) $account->getBalance() + $delta;
-        $account->setBalance((string) round($newBalance, 2));
+        // bcmul: multiply numeric strings, scale 2 keeps cents precision.
+        $delta = bcmul($amount, (string) $type->balanceSign(), 2);
+        $account->adjustBalance($delta);
+    }
+
+    private function negate(string $amount): string
+    {
+        // Multiply by -1 to flip the sign without float rounding.
+        return bcmul('-1', $amount, 2);
+    }
+
+    private function guardStrictlyPositive(string $amount): void
+    {
+        // bccomp: compare numeric strings (-1 if less, 0 if equal, 1 if greater).
+        if (bccomp($amount, '0', 2) <= 0) {
+            throw new \InvalidArgumentException('Transaction amount must be strictly positive.');
+        }
     }
 
     private function guardNotLinkedToAsset(Transaction $transaction): void

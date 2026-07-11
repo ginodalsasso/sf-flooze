@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\AssetEntryKindEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\TransactionRepository;
 use App\Trait\SoftDeleteTrait;
@@ -112,6 +113,28 @@ class Transaction
         $this->category = $category;
 
         return $this;
+    }
+
+    /**
+     * Returns the category name to display in transaction lists.
+     * Falls back to a generic asset label when the transaction was generated
+     * from an AssetEntry and no manual category was set.
+     */
+    public function getCategoryLabel(): ?string
+    {
+        if ($this->category !== null) {
+            return $this->category->getName();
+        }
+
+        if ($this->assetEntry !== null) {
+            return match ($this->assetEntry->getKind()) {
+                AssetEntryKindEnum::Buy => 'Investissement',
+                AssetEntryKindEnum::Sell => 'Vente d\'actif',
+                AssetEntryKindEnum::Dividend => 'Dividende',
+            };
+        }
+
+        return null;
     }
 
     public function getType(): TransactionTypeEnum

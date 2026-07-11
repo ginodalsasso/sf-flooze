@@ -139,11 +139,12 @@ class AssetEntryRepository extends ServiceEntityRepository
         $totalQty = $result['totalQty'] ?? '0';
         $totalCost = $result['totalCost'] ?? '0';
 
-        if ((float) $totalQty <= 0.0) {
+        if (bccomp($totalQty, '0', 8) <= 0) {
             return null;
         }
 
-        return (string) round((float) $totalCost / (float) $totalQty, 4);
+        // bcdiv: divide numeric strings, scale 4 for average price precision.
+        return bcdiv($totalCost, $totalQty, 4);
     }
 
     /** Weighted average purchase price in space currency (with historical FX) */
@@ -161,10 +162,11 @@ class AssetEntryRepository extends ServiceEntityRepository
         $totalQty = $result['totalQty'] ?? '0';
         $totalCost = $result['totalCost'] ?? '0';
 
-        if ((float) $totalQty <= 0.0) {
+        if (bccomp($totalQty, '0', 8) <= 0) {
             return null;
         }
 
-        return (string) round((float) $totalCost / (float) $totalQty, 4);
+        // bcdiv: divide numeric strings, scale 4 for average price precision.
+        return bcdiv($totalCost, $totalQty, 4);
     }
 }

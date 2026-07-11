@@ -18,6 +18,7 @@ final readonly class AssetMetricsDto
 
     public function hasPosition(): bool
     {
-        return (float) $this->totalQuantity > 0.0;
+        // bccomp: compare numeric strings without float rounding.
+        return bccomp($this->totalQuantity, '0', 8) > 0;
     }
 }

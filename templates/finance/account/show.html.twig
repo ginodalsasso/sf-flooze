@@ -79,8 +79,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if txn.category %}
-                                    <span class="txn-account">{{ txn.category.name }}</span>
+                                {% set categoryLabel = txn.categoryLabel %}
+                                {% if categoryLabel %}
+                                    <span class="txn-account">{{ categoryLabel }}</span>
                                 {% else %}
                                     <span class="txn-account" style="color:var(--fg-3)">—</span>
                                 {% endif %}

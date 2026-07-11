@@ -91,10 +91,16 @@ class Account
         return $this;
     }
 
-    /** Add an amount (positive or negative) to the current balance, keeping 2 decimal places */
-    public function adjustBalance(float $amount): static
+    /**
+     * Add an amount (positive or negative) to the current balance.
+     *
+     * The amount must be a numeric string so that BC math keeps 2-decimal
+     * precision. This is the single source of truth for balance updates.
+     */
+    public function adjustBalance(string $amount): static
     {
-        $this->balance = bcadd($this->balance, (string) $amount, 2);
+        // bcadd: add numeric strings, scale 2 keeps cents precision.
+        $this->balance = bcadd($this->balance, $amount, 2);
 
         return $this;
     }

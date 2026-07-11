@@ -149,7 +149,7 @@ final readonly class AssetEntryTransactionService
 
         $entry->addTransaction($transaction);
         $this->em->persist($transaction);
-        $this->applyBalanceEffect($transaction);
+        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
     }
 
     /**
@@ -159,7 +159,7 @@ final readonly class AssetEntryTransactionService
     {
         $oldAccount = $transaction->getAccount();
         $oldType = $transaction->getType();
-        $oldAmount = (float) $transaction->getAmount();
+        $oldAmount = $transaction->getAmount();
 
         $transaction
             ->setAccount($expected['account'])
@@ -168,8 +168,8 @@ final readonly class AssetEntryTransactionService
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry));
 
-        $this->reverseBalance($oldAccount, $oldType, $oldAmount);
-        $this->applyBalanceEffect($transaction);
+        $this->applyBalance($oldAccount, $oldType, $this->negate($oldAmount));
+        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
     }
 
     private function createHoldingTransaction(AssetEntry $entry): void
@@ -242,43 +242,25 @@ final readonly class AssetEntryTransactionService
         return (string) round($amount, 2);
     }
 
-    private function applyBalanceEffect(Transaction $transaction): void
-    {
-        $amount = (float) $transaction->getAmount();
-        if ($amount <= 0.0) {
-            return;
-        }
-
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $amount);
-
-        if ($transaction->getType() === TransactionTypeEnum::Transfer && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::Income, $amount);
-        }
-    }
-
     private function reverseBalanceEffect(Transaction $transaction): void
     {
-        $amount = (float) $transaction->getAmount();
-        if ($amount <= 0.0) {
-            return;
-        }
-
-        $this->reverseBalance($transaction->getAccount(), $transaction->getType(), $amount);
-
-        if ($transaction->getType() === TransactionTypeEnum::Transfer && $transaction->getDestinationAccount() !== null) {
-            $this->reverseBalance($transaction->getDestinationAccount(), TransactionTypeEnum::Income, $amount);
-        }
+        $this->applyBalance(
+            $transaction->getAccount(),
+            $transaction->getType(),
+            $this->negate($transaction->getAmount())
+        );
     }
 
-    private function applyBalance(Account $account, TransactionTypeEnum $type, float $amount): void
+    private function applyBalance(Account $account, TransactionTypeEnum $type, string $amount): void
     {
-        $delta = $amount * $type->balanceSign();
-        $newBalance = (float) $account->getBalance() + $delta;
-        $account->setBalance((string) round($newBalance, 2));
+        // bcmul: multiply numeric strings, scale 2 keeps cents precision.
+        $delta = bcmul($amount, (string) $type->balanceSign(), 2);
+        $account->adjustBalance($delta);
     }
 
-    private function reverseBalance(Account $account, TransactionTypeEnum $type, float $amount): void
+    private function negate(string $amount): string
     {
-        $this->applyBalance($account, $type, -$amount);
+        // Multiply by -1 to flip the sign without float rounding.
+        return bcmul('-1', $amount, 2);
     }
 }

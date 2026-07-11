@@ -38,15 +38,8 @@ class AssetEntryService
         Account $fundingAccount,
         ?string $note = null,
     ): AssetEntry {
-        $qty = (float) $quantity;
-        $price = (float) $unitPrice;
-
-        if ($qty <= 0.0) {
-            throw new \InvalidArgumentException('Buy quantity must be strictly positive.');
-        }
-        if ($price <= 0.0) {
-            throw new \InvalidArgumentException('Buy unit price must be strictly positive.');
-        }
+        $this->guardStrictlyPositive($quantity, 'Buy quantity');
+        $this->guardStrictlyPositive($unitPrice, 'Buy unit price');
 
         $entry = new AssetEntry();
         $entry->setAsset($asset)
@@ -87,22 +80,15 @@ class AssetEntryService
         Account $fundingAccount,
         ?string $note = null,
     ): AssetEntry {
-        $qty = (float) $quantity;
-        $price = (float) $unitPrice;
+        $this->guardStrictlyPositive($quantity, 'Sell quantity');
+        $this->guardStrictlyPositive($unitPrice, 'Sell unit price');
 
-        if ($qty <= 0.0) {
-            throw new \InvalidArgumentException('Sell quantity must be strictly positive.');
-        }
-        if ($price <= 0.0) {
-            throw new \InvalidArgumentException('Sell unit price must be strictly positive.');
-        }
-
-        $heldQty = (float) $this->entryRepository->getTotalQuantity($asset);
-        if ($qty > $heldQty) {
+        $heldQty = $this->entryRepository->getTotalQuantity($asset);
+        if (bccomp($quantity, $heldQty, 8) > 0) {
             throw new \RuntimeException(sprintf(
                 'Cannot sell %.8f units: only %.8f held.',
-                $qty,
-                $heldQty
+                (float) $quantity,
+                (float) $heldQty
             ));
         }
 
@@ -143,11 +129,7 @@ class AssetEntryService
         Account $fundingAccount,
         ?string $note = null,
     ): AssetEntry {
-        $divAmount = (float) $amount;
-
-        if ($divAmount <= 0.0) {
-            throw new \InvalidArgumentException('Dividend amount must be strictly positive.');
-        }
+        $this->guardStrictlyPositive($amount, 'Dividend amount');
 
         $entry = new AssetEntry();
         $entry->setAsset($asset)
@@ -230,5 +212,12 @@ class AssetEntryService
         }
 
         return $total;
+    }
+
+    private function guardStrictlyPositive(string $value, string $fieldName): void
+    {
+        if ((float) $value <= 0.0) {
+            throw new \InvalidArgumentException(sprintf('%s must be strictly positive.', $fieldName));
+        }
     }
 }
