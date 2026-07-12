@@ -8,7 +8,7 @@
 
 - **HTML sémantique** : `<nav>`, `<main>`, `<aside>`, `<ul>/<li>`, `<details>/<summary>`. `<div>` réservé au layout non-sémantique.
 - **CSS avant JS** : pour hover/focus, transitions, `:has(input:checked)`, `:focus-within`, `<details>`. JS uniquement si vraiment nécessaire (localStorage, async, interactions sans équivalent CSS).
-- **Jamais `style="..."` inline.** Toujours classe CSS.
+- **Aucun style inline dans Twig.** `style="..."` est interdit dans les templates ; le CSS va dans des fichiers dédiés (`assets/styles/app.css` ou `templates/{module}/_styles.html.twig`) avec des noms de classes propres, cohérents et réutilisables. Toujours privilégier une classe existante avant d'en créer une nouvelle.
 - **Pas de logique métier en template.** Pas d'arithmétique/aggregation/filtrage business dans `{% set %}`. Calcul en controller, exposition via DTO/ViewModel.
 
 ---

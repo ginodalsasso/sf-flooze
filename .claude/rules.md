@@ -159,7 +159,7 @@ npx ctx7@latest docs <id> "<question>" --research   # si insatisfaisant
 
 - **HTML sémantique** : `<nav>`, `<main>`, `<aside>`, `<ul>/<li>`, `<details>/<summary>`. `<div>` réservé au layout non-sémantique.
 - **CSS avant JS** : pour hover/focus, transitions, `:has(input:checked)`, `:focus-within`, `<details>`. JS uniquement si vraiment nécessaire (localStorage, async, interactions sans équivalent CSS).
-- **Jamais `style="..."` inline** — utiliser des classes CSS.
+- **Aucun style inline dans Twig.** `style="..."` est interdit dans les templates ; le CSS va dans des fichiers dédiés (`assets/styles/app.css` ou `templates/{module}/_styles.html.twig`) avec des noms de classes propres, cohérents et réutilisables. Toujours privilégier une classe existante avant d'en créer une nouvelle.
 
 ---
 

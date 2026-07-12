@@ -32,7 +32,7 @@
                 />
                 {% set primaryAccount = asset.primaryAccount %}
                 {% if primaryAccount %}
-                    <p class="asset-card-name" style="margin-top:0.25rem">
+                    <p class="asset-card-name asset-card-name--spaced">
                         {{ primaryAccount.name }} <span class="asset-card-meta">({{ primaryAccount.type.label() }})</span>
                     </p>
                 {% endif %}
@@ -134,7 +134,7 @@
                         <th>Prix unitaire</th>
                         <th>Taux FX</th>
                         <th>Frais</th>
-                        <th style="text-align:right">Montant</th>
+                        <th class="txn-table__amount-header">Montant</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -154,28 +154,28 @@
                                 {% if entry.account %}
                                     <span class="txn-account">{{ entry.account.name }}</span>
                                 {% else %}
-                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                    <span class="txn-account txn-account--muted">—</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if entry.fundingAccount %}
                                     <span class="txn-account">{{ entry.fundingAccount.name }}</span>
                                 {% else %}
-                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                    <span class="txn-account txn-account--muted">—</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if entry.kind.affectsQuantity %}
                                     <span class="txn-account">{{ entry.quantity|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</span>
                                 {% else %}
-                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                    <span class="txn-account txn-account--muted">—</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if entry.kind != 'dividend' %}
                                     <span class="txn-account">{{ entry.unitPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}</span>
                                 {% else %}
-                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                    <span class="txn-account txn-account--muted">—</span>
                                 {% endif %}
                             </td>
                             <td>

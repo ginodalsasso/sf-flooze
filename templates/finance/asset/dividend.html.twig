@@ -29,8 +29,8 @@
                 <twig:Form:Field field="{{ form.fees }}" label="Frais / retenues" />
             </div>
 
-            <div class="form-section" style="margin-bottom: 8px;">
-                <p style="color: var(--fg-3); font-size: 12px; line-height: 1.5;">
+            <div class="form-section form-section--sm">
+                <p class="form-hint">
                     <strong>Taux de change</strong> : prix de 1 {{ asset.currency.value }} en euros au moment du versement.
                     {% if asset.currency.value == 'EUR' %}
                         Laissez 1,000000 car le dividende est en euros.

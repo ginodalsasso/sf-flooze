@@ -85,8 +85,10 @@
 
 /* Account */
 .txn-account { font-size: 13px; color: var(--fg-2); white-space: nowrap; }
+.txn-account--muted { color: var(--fg-3); }
 
 /* Amount */
+.txn-table__amount-header { text-align: right; }
 .txn-amount {
   font-family: 'JetBrains Mono', monospace;
   font-size: 14px;
@@ -106,6 +108,9 @@
   gap: 6px;
 }
 .txn-actions form { margin: 0; }
+
+/* Inline lock icon in tables */
+.txn-icon-lock { width: 12px; height: 12px; display: inline; vertical-align: -2px; }
 
 /* ── Form ──────────────────────────────────────────────── */
 .txn-form-grid {

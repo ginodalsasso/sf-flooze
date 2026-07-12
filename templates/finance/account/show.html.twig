@@ -82,7 +82,7 @@
                         <th>Description</th>
                         <th>Catégorie</th>
                         <th>Type</th>
-                        <th style="text-align:right">Montant</th>
+                        <th class="txn-table__amount-header">Montant</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -103,7 +103,7 @@
                                 {% if categoryLabel %}
                                     <span class="txn-account">{{ categoryLabel }}</span>
                                 {% else %}
-                                    <span class="txn-account" style="color:var(--fg-3)">—</span>
+                                    <span class="txn-account txn-account--muted">—</span>
                                 {% endif %}
                             </td>
                             <td>
