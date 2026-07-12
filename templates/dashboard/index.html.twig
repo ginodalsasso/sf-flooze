@@ -18,15 +18,23 @@
     <ul class="kpi-grid">
         <li class="kpi-card">
             <span class="kpi-label">Balance totale</span>
-            <span class="kpi-value kpi-value--empty">—</span>
-            <div class="kpi-trend">
-                <i data-lucide="landmark"></i>
-                Aucun compte
-            </div>
+            {% if summary.hasAccounts %}
+                <span class="kpi-value">{{ summary.totalBalance|number_format(2, ',', ' ') }}</span>
+                <div class="kpi-trend">
+                    <i data-lucide="landmark"></i>
+                    <span>Solde total</span>
+                </div>
+            {% else %}
+                <span class="kpi-value kpi-value--empty">—</span>
+                <div class="kpi-trend">
+                    <i data-lucide="landmark"></i>
+                    Aucun compte
+                </div>
+            {% endif %}
         </li>
         <li class="kpi-card">
             <span class="kpi-label">Revenus du mois</span>
-            <span class="kpi-value kpi-value--empty">—</span>
+            <span class="kpi-value kpi-value--positive">{{ summary.monthlyIncome|number_format(2, ',', ' ') }}</span>
             <div class="kpi-trend">
                 <i data-lucide="arrow-down-left" class="icon--positive"></i>
                 <span>Ce mois-ci</span>
@@ -34,7 +42,7 @@
         </li>
         <li class="kpi-card">
             <span class="kpi-label">Dépenses du mois</span>
-            <span class="kpi-value kpi-value--empty">—</span>
+            <span class="kpi-value kpi-value--negative">{{ summary.monthlyExpense|number_format(2, ',', ' ') }}</span>
             <div class="kpi-trend">
                 <i data-lucide="arrow-up-right" class="icon--negative"></i>
                 <span>Ce mois-ci</span>
@@ -42,10 +50,11 @@
         </li>
         <li class="kpi-card">
             <span class="kpi-label">Flux net</span>
-            <span class="kpi-value kpi-value--empty">—</span>
+            {% set netFlowClass = summary.netFlow starts with '-' ? 'kpi-value--negative' : 'kpi-value--positive' %}
+            <span class="kpi-value {{ netFlowClass }}">{{ summary.netFlow|number_format(2, ',', ' ') }}</span>
             <div class="kpi-trend">
                 <i data-lucide="activity"></i>
-                Revenus − Dépenses
+                <span>Revenus − Dépenses</span>
             </div>
         </li>
     </ul>
@@ -133,11 +142,28 @@
             <div>
                 <h2 class="section-title">Activité récente</h2>
                 <div class="panel-card">
-                    <twig:EmptyState
-                        icon="clock"
-                        text="Aucune activité récente"
-                        hint="Les transactions et événements apparaîtront ici"
-                    />
+                    {% if summary.hasRecentActivity %}
+                        <ul class="dashboard-recent-list">
+                            {% for txn in summary.recentTransactions %}
+                                <li class="dashboard-recent-item">
+                                    <div class="dashboard-recent-main">
+                                        <span class="dashboard-recent-date">{{ txn.date|date('d/m/Y') }}</span>
+                                        <span class="dashboard-recent-desc">{{ txn.description ?? '—' }}</span>
+                                    </div>
+                                    <span class="dashboard-recent-amount dashboard-recent-amount--{{ txn.type.value }}">
+                                        {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
+                                        {{ txn.amount|number_format(2, ',', ' ') }} {{ txn.account.currency.value }}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <twig:EmptyState
+                            icon="clock"
+                            text="Aucune activité récente"
+                            hint="Les transactions et événements apparaîtront ici"
+                        />
+                    {% endif %}
                 </div>
             </div>
 

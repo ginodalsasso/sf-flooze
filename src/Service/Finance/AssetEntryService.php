@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service\Finance;
 
-use App\Entity\Account;
+use App\Dto\Finance\AssetEntryInputDto;
 use App\Entity\Asset;
 use App\Entity\AssetEntry;
-use App\Entity\Space;
 use App\Enum\AssetEntryKindEnum;
 use App\Repository\AssetEntryRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,129 +19,31 @@ class AssetEntryService
     ) {}
 
     /**
-     * Record a buy entry. Creates the AssetEntry, links it to the asset and
-     * decreases the linked account balance by the entry value
-     * (quantity × unit price × FX rate). An account is mandatory.
+     * Record a buy, sell or dividend entry.
      *
-     * @throws \InvalidArgumentException if quantity, unitPrice is not positive or account is missing
+     * Validation is kind-specific: buy/sell require quantity and unit price,
+     * dividend requires an amount. The linked account balances are updated by
+     * the Doctrine entity listener.
+     *
+     * @throws \InvalidArgumentException if a required amount/quantity/price is not positive
+     * @throws \RuntimeException if a sell quantity exceeds the held quantity
      */
-    public function recordBuy(
-        Asset $asset,
-        Space $space,
-        \DateTimeImmutable $date,
-        string $quantity,
-        string $unitPrice,
-        string $fxRate,
-        string $fees,
-        Account $account,
-        Account $fundingAccount,
-        ?string $note = null,
-    ): AssetEntry {
-        $this->guardStrictlyPositive($quantity, 'Buy quantity');
-        $this->guardStrictlyPositive($unitPrice, 'Buy unit price');
+    public function recordEntry(AssetEntryInputDto $input): AssetEntry
+    {
+        $this->validate($input);
 
         $entry = new AssetEntry();
-        $entry->setAsset($asset)
-            ->setSpace($space)
-            ->setDate($date)
-            ->setKind(AssetEntryKindEnum::BUY)
-            ->setQuantity($quantity)
-            ->setUnitPrice($unitPrice)
-            ->setFxRate($fxRate)
-            ->setFees($fees)
-            ->setAccount($account)
-            ->setFundingAccount($fundingAccount)
-            ->setNote($note);
-
-        $this->em->persist($entry);
-        $this->em->flush();
-
-        return $entry;
-    }
-
-    /**
-     * Record a sell entry. Validates that sufficient quantity is available and
-     * increases the account balance by the entry value
-     * (quantity × unit price × FX rate).
-     *
-     * @throws \InvalidArgumentException if quantity or unitPrice is not positive
-     * @throws \RuntimeException if sell quantity exceeds held quantity
-     */
-    public function recordSell(
-        Asset $asset,
-        Space $space,
-        \DateTimeImmutable $date,
-        string $quantity,
-        string $unitPrice,
-        string $fxRate,
-        string $fees,
-        Account $account,
-        Account $fundingAccount,
-        ?string $note = null,
-    ): AssetEntry {
-        $this->guardStrictlyPositive($quantity, 'Sell quantity');
-        $this->guardStrictlyPositive($unitPrice, 'Sell unit price');
-
-        $heldQty = $this->entryRepository->getTotalQuantity($asset);
-        if (bccomp($quantity, $heldQty, 8) > 0) {
-            throw new \RuntimeException(sprintf(
-                'Cannot sell %.8f units: only %.8f held.',
-                (float) $quantity,
-                (float) $heldQty
-            ));
-        }
-
-        $entry = new AssetEntry();
-        $entry->setAsset($asset)
-            ->setSpace($space)
-            ->setDate($date)
-            ->setKind(AssetEntryKindEnum::SELL)
-            ->setQuantity($quantity)
-            ->setUnitPrice($unitPrice)
-            ->setFxRate($fxRate)
-            ->setFees($fees)
-            ->setAccount($account)
-            ->setFundingAccount($fundingAccount)
-            ->setNote($note);
-
-        $this->em->persist($entry);
-        $this->em->flush();
-
-        return $entry;
-    }
-
-    /**
-     * Record a dividend entry. Quantity here represents the dividend amount per share
-     * or total dividend depending on convention. We use it as total dividend in asset currency.
-     * When an account is provided, the net dividend is added to the account balance.
-     *
-     * @throws \InvalidArgumentException if dividend amount is not positive
-     */
-    public function recordDividend(
-        Asset $asset,
-        Space $space,
-        \DateTimeImmutable $date,
-        string $amount,
-        string $fxRate,
-        string $fees,
-        Account $account,
-        Account $fundingAccount,
-        ?string $note = null,
-    ): AssetEntry {
-        $this->guardStrictlyPositive($amount, 'Dividend amount');
-
-        $entry = new AssetEntry();
-        $entry->setAsset($asset)
-            ->setSpace($space)
-            ->setDate($date)
-            ->setKind(AssetEntryKindEnum::DIVIDEND)
-            ->setQuantity($amount)
-            ->setUnitPrice('1')
-            ->setFxRate($fxRate)
-            ->setFees($fees)
-            ->setAccount($account)
-            ->setFundingAccount($fundingAccount)
-            ->setNote($note);
+        $entry->setAsset($input->asset)
+            ->setSpace($input->space)
+            ->setDate($input->date)
+            ->setKind($input->kind)
+            ->setQuantity($input->quantity ?? $input->amount ?? '0')
+            ->setUnitPrice($input->unitPrice ?? '1')
+            ->setFxRate($input->fxRate)
+            ->setFees($input->fees)
+            ->setAccount($input->account)
+            ->setFundingAccount($input->fundingAccount)
+            ->setNote($input->note);
 
         $this->em->persist($entry);
         $this->em->flush();
@@ -214,9 +115,34 @@ class AssetEntryService
         return $total;
     }
 
-    private function guardStrictlyPositive(string $value, string $fieldName): void
+    private function validate(AssetEntryInputDto $input): void
     {
-        if ((float) $value <= 0.0) {
+        switch ($input->kind) {
+            case AssetEntryKindEnum::BUY:
+            case AssetEntryKindEnum::SELL:
+                $this->guardStrictlyPositive($input->quantity, sprintf('%s quantity', ucfirst($input->kind->value)));
+                $this->guardStrictlyPositive($input->unitPrice, sprintf('%s unit price', ucfirst($input->kind->value)));
+                break;
+            case AssetEntryKindEnum::DIVIDEND:
+                $this->guardStrictlyPositive($input->amount, 'Dividend amount');
+                break;
+        }
+
+        if ($input->kind === AssetEntryKindEnum::SELL && $input->quantity !== null) {
+            $heldQty = $this->entryRepository->getTotalQuantity($input->asset);
+            if (bccomp($input->quantity, $heldQty, 8) > 0) {
+                throw new \RuntimeException(sprintf(
+                    'Cannot sell %.8f units: only %.8f held.',
+                    (float) $input->quantity,
+                    (float) $heldQty
+                ));
+            }
+        }
+    }
+
+    private function guardStrictlyPositive(?string $value, string $fieldName): void
+    {
+        if ($value === null || (float) $value <= 0.0) {
             throw new \InvalidArgumentException(sprintf('%s must be strictly positive.', $fieldName));
         }
     }

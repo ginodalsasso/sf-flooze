@@ -66,4 +66,30 @@ class TransactionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /** Total amount for a transaction type within a date range. */
+    public function sumBySpaceAndTypeAndDateRange(
+        Space $space,
+        TransactionTypeEnum $type,
+        \DateTimeImmutable $start,
+        \DateTimeImmutable $end,
+    ): string {
+        $result = $this->createQueryBuilder('t')
+            ->select('SUM(t.amount)')
+            ->join('t.account', 'a')
+            ->where('t.space = :space')
+            ->andWhere('t.type = :type')
+            ->andWhere('t.date >= :start')
+            ->andWhere('t.date < :end')
+            ->andWhere('t.deletedAt IS NULL')
+            ->andWhere('a.deletedAt IS NULL')
+            ->setParameter('space', $space)
+            ->setParameter('type', $type)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ?? '0';
+    }
 }

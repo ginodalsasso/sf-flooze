@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Finance;
 
+use App\Dto\Finance\AssetEntryInputDto;
 use App\Entity\Asset;
 use App\Entity\User;
 use App\Form\Finance\AssetDividendFormType;
@@ -101,7 +102,7 @@ class AssetController extends AbstractController
             $this->assetService->save($asset);
 
             // Create initial buy entry from the form data, linked to the selected accounts
-            $this->assetEntryService->recordBuy(
+            $this->assetEntryService->recordEntry(AssetEntryInputDto::buy(
                 asset: $asset,
                 space: $space,
                 date: $form->get('entryDate')->getData(),
@@ -111,7 +112,7 @@ class AssetController extends AbstractController
                 fees: (string) $form->get('entryFees')->getData(),
                 account: $form->get('account')->getData(),
                 fundingAccount: $form->get('fundingAccount')->getData(),
-            );
+            ));
 
             $this->addFlash('success', 'Actif "' . $asset->getTicker() . '" ajouté avec position d\'achat initiale.');
 
@@ -153,7 +154,7 @@ class AssetController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             try {
-                $entry = $this->assetEntryService->recordSell(
+                $entry = $this->assetEntryService->recordEntry(AssetEntryInputDto::sell(
                     asset: $asset,
                     space: $space,
                     date: $form->get('date')->getData(),
@@ -164,7 +165,7 @@ class AssetController extends AbstractController
                     account: $form->get('account')->getData(),
                     fundingAccount: $form->get('fundingAccount')->getData(),
                     note: $form->get('note')->getData(),
-                );
+                ));
 
                 $pnl = $this->assetEntryService->calculateRealizedPnL($entry);
                 $msg = 'Vente enregistrée.';
@@ -206,7 +207,7 @@ class AssetController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->assetEntryService->recordDividend(
+            $this->assetEntryService->recordEntry(AssetEntryInputDto::dividend(
                 asset: $asset,
                 space: $space,
                 date: $form->get('date')->getData(),
@@ -216,7 +217,7 @@ class AssetController extends AbstractController
                 account: $form->get('account')->getData(),
                 fundingAccount: $form->get('fundingAccount')->getData(),
                 note: $form->get('note')->getData(),
-            );
+            ));
 
             $this->addFlash('success', 'Dividende enregistré pour "' . $asset->getTicker() . '".');
 
