@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Form\Finance;
 
+use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Space;
-use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
@@ -88,7 +88,7 @@ class TransactionFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => Transaction::class]);
+        $resolver->setDefaults(['data_class' => TransactionInputDto::class]);
         $resolver->setRequired('space');
         $resolver->setAllowedTypes('space', Space::class);
     }

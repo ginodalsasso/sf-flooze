@@ -92,4 +92,28 @@ class TransactionRepository extends ServiceEntityRepository
 
         return $result ?? '0';
     }
+
+    /** Total amount for a transaction type on a given account within a date range. */
+    public function sumByAccountAndTypeAndDateRange(
+        Account $account,
+        TransactionTypeEnum $type,
+        \DateTimeImmutable $start,
+        \DateTimeImmutable $end,
+    ): string {
+        $result = $this->createQueryBuilder('t')
+            ->select('SUM(t.amount)')
+            ->where('t.account = :account')
+            ->andWhere('t.type = :type')
+            ->andWhere('t.date >= :start')
+            ->andWhere('t.date < :end')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('account', $account)
+            ->setParameter('type', $type)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ?? '0';
+    }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Finance;
 
+use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Transaction;
 use App\Entity\User;
 use App\Enum\TransactionTypeEnum;
@@ -72,15 +73,15 @@ class TransactionController extends AbstractController
 
         $this->denyAccessUnlessGranted('EDIT', $space);
 
-        $transaction = new Transaction();
-        $transaction->setDate(new \DateTimeImmutable());
+        $input = new TransactionInputDto();
+        $input->space = $space;
+        $input->date = new \DateTimeImmutable();
 
-        $form = $this->createForm(TransactionFormType::class, $transaction, ['space' => $space]);
+        $form = $this->createForm(TransactionFormType::class, $input, ['space' => $space]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $transaction->setSpace($space);
-            $this->transactionService->save($transaction);
+            $this->transactionService->save($input);
             $this->addFlash('success', 'Transaction enregistrée.');
 
             return $this->redirectToRoute('app_transaction_index');
@@ -110,17 +111,13 @@ class TransactionController extends AbstractController
             throw $this->createAccessDeniedException('Cannot modify a transaction linked to a deleted account.');
         }
 
-        // Snapshot before form binding
-        $oldAccount     = $transaction->getAccount();
-        $oldType        = $transaction->getType();
-        $oldAmount      = $transaction->getAmount();
-        $oldDestAccount = $transaction->getDestinationAccount();
+        $input = TransactionInputDto::fromTransaction($transaction, $transaction->getSpace());
 
-        $form = $this->createForm(TransactionFormType::class, $transaction, ['space' => $transaction->getSpace()]);
+        $form = $this->createForm(TransactionFormType::class, $input, ['space' => $transaction->getSpace()]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->transactionService->update($transaction, $oldAccount, $oldType, $oldAmount, $oldDestAccount);
+            $this->transactionService->update($transaction, $input);
             $this->addFlash('success', 'Transaction mise à jour.');
             $redirectTo = $request->query->get('redirect_to');
 

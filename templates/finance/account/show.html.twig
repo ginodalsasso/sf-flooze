@@ -6,11 +6,11 @@
     {% include 'finance/transaction/_styles.html.twig' %}
 {% endblock %}
 
-{% block title %}{{ account.name }} — Flooze{% endblock %}
+{% block title %}{{ detail.account.name }} — Flooze{% endblock %}
 
 {% block content %}
 <twig:PageHeader
-    title="{{ account.name }}"
+    title="{{ detail.account.name }}"
     subtitle="Détail du compte et historique des mouvements"
     ctaLabel="Nouvelle transaction"
     ctaHref="{{ path('app_transaction_new') }}"
@@ -23,26 +23,27 @@
     <div class="acc-show-summary">
         <div class="acc-show-meta">
             <div class="acc-card-icon">
-                <i data-lucide="{{ account.type.icon() }}"></i>
+                <i data-lucide="{{ detail.account.type.icon() }}"></i>
             </div>
             <div>
-                <p class="acc-card-name">{{ account.name }}</p>
+                <p class="acc-card-name">{{ detail.account.name }}</p>
                 <twig:Badge
-                    label="{{ account.type.label() }}"
-                    variant="{{ account.type.badgeVariant() }}"
+                    label="{{ detail.account.type.label() }}"
+                    variant="{{ detail.account.type.badgeVariant() }}"
                 />
             </div>
         </div>
         <div class="acc-show-balance">
-            <p class="acc-card-balance{% if account.balance < 0 %} acc-card-balance--negative{% elseif account.balance > 0 %} acc-card-balance--positive{% endif %}">
-                {{ account.balance|number_format(2, ',', ' ') }} {{ account.currency.value }}
+            {% set balance = detail.account.balance %}
+            <p class="acc-card-balance{% if balance < 0 %} acc-card-balance--negative{% elseif balance > 0 %} acc-card-balance--positive{% endif %}">
+                {{ balance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
             </p>
             <p class="acc-card-currency">Solde actuel</p>
         </div>
         <div class="acc-show-actions">
             <twig:Button
                 as="a"
-                href="{{ path('app_account_edit', {id: account.id}) }}"
+                href="{{ path('app_account_edit', {id: detail.account.id}) }}"
                 icon="pencil"
                 label="Modifier le compte"
                 variant="secondary"
@@ -50,10 +51,29 @@
         </div>
     </div>
 
+    {# Monthly summary #}
+    <div class="acc-show-monthly">
+        <div class="acc-show-monthly-item">
+            <span class="acc-show-monthly-label">Revenus ce mois</span>
+            <span class="acc-show-monthly-value acc-show-monthly-value--positive">+{{ detail.monthlyIncome|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}</span>
+        </div>
+        <div class="acc-show-monthly-item">
+            <span class="acc-show-monthly-label">Dépenses ce mois</span>
+            <span class="acc-show-monthly-value acc-show-monthly-value--negative">-{{ detail.monthlyExpense|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}</span>
+        </div>
+        <div class="acc-show-monthly-item">
+            <span class="acc-show-monthly-label">Flux net</span>
+            {% set netFlow = detail.monthlyNetFlow %}
+            <span class="acc-show-monthly-value {{ netFlow starts with '-' ? 'acc-show-monthly-value--negative' : 'acc-show-monthly-value--positive' }}">
+                {{ netFlow|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+            </span>
+        </div>
+    </div>
+
     {# Transactions list #}
     <h2 class="acc-show-section-title">Mouvements</h2>
 
-    {% if transactions|length > 0 %}
+    {% if detail.hasTransactions %}
         <div class="txn-table-wrap">
             <table class="txn-table">
                 <thead>
@@ -67,7 +87,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for txn in transactions %}
+                    {% for txn in detail.transactions %}
                         <tr>
                             <td>
                                 <span class="txn-date">{{ txn.date|date('d/m/Y') }}</span>
@@ -95,21 +115,21 @@
                             <td>
                                 <span class="txn-amount txn-amount--{{ txn.type.value }}">
                                     {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
-                                    {{ txn.amount|number_format(2, ',', ' ') }} {{ account.currency.value }}
+                                    {{ txn.amount|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
                                 </span>
                             </td>
                             <td>
                                 <div class="txn-actions">
                                     <twig:Button
                                         as="a"
-                                        href="{{ path('app_transaction_edit', {id: txn.id, redirect_to: path('app_account_show', {id: account.id})}) }}"
+                                        href="{{ path('app_transaction_edit', {id: txn.id, redirect_to: path('app_account_show', {id: detail.account.id})}) }}"
                                         icon="pencil"
                                         label="Modifier"
                                         variant="secondary"
                                     />
                                     {% include 'finance/transaction/forms/_delete.html.twig' with {
                                         transaction: txn,
-                                        redirect_to: path('app_account_show', {id: account.id})
+                                        redirect_to: path('app_account_show', {id: detail.account.id})
                                     } %}
                                 </div>
                             </td>

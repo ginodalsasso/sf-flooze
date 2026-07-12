@@ -18,10 +18,11 @@
 <div class="page-content">
     <twig:Flash />
 
-    {% if assets|length > 0 %}
+    {% if assetItems|length > 0 %}
         <div class="asset-grid">
-            {% for asset in assets %}
-                {% set metrics = assetsMetrics[asset.id] %}
+            {% for item in assetItems %}
+                {% set asset = item.asset %}
+                {% set metrics = item.metrics %}
                 <div class="asset-card">
                     <div class="asset-card-header">
                         <div class="asset-card-icon">
@@ -46,7 +47,7 @@
 
                     <div>
                         {% set qty = metrics.totalQuantity %}
-                        {% if qty > 0 %}
+                        {% if item.hasPosition %}
                             <p class="asset-card-qty">{{ qty|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</p>
                             <p class="asset-card-meta">unités détenues</p>
                         {% else %}

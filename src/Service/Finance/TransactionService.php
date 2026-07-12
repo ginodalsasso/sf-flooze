@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Finance;
 
+use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
@@ -19,43 +20,41 @@ class TransactionService
      *
      * @throws \InvalidArgumentException if amount is not strictly positive
      */
-    public function save(Transaction $transaction): void
+    public function save(TransactionInputDto $input): Transaction
     {
-        $amount = $transaction->getAmount();
-        $this->guardStrictlyPositive($amount);
+        $this->guardStrictlyPositive($input->amount);
 
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $amount);
+        $transaction = new Transaction();
+        $this->applyFromDto($transaction, $input);
+
+        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
 
         if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::INCOME, $amount);
+            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::INCOME, $transaction->getAmount());
         }
 
         $this->em->persist($transaction);
         $this->em->flush();
+
+        return $transaction;
     }
 
     /**
      * Update an edited transaction: reverse old balance effect, apply new one.
      * Rejects non-positive amounts as a defense-in-depth measure.
      *
-     * @param Account              $oldAccount      Account before edit
-     * @param TransactionTypeEnum  $oldType         Type before edit
-     * @param string               $oldAmount       Amount before edit
-     * @param Account|null         $oldDestAccount  Destination account before edit (transfers)
-     *
      * @throws \InvalidArgumentException if new amount is not strictly positive
      */
-    public function update(
-        Transaction $transaction,
-        Account $oldAccount,
-        TransactionTypeEnum $oldType,
-        string $oldAmount,
-        ?Account $oldDestAccount,
-    ): void {
+    public function update(Transaction $transaction, TransactionInputDto $input): void
+    {
         $this->guardNotLinkedToAsset($transaction);
+        $this->guardStrictlyPositive($input->amount);
 
-        $amount = $transaction->getAmount();
-        $this->guardStrictlyPositive($amount);
+        // Snapshot old state before applying the DTO.
+        $oldAccount = $transaction->getAccount();
+        $oldType = $transaction->getType();
+        $oldAmount = $transaction->getAmount();
+        $oldDestAccount = $transaction->getDestinationAccount();
 
         // Reverse old effect
         $this->applyBalance($oldAccount, $oldType, $this->negate($oldAmount));
@@ -63,13 +62,13 @@ class TransactionService
             $this->applyBalance($oldDestAccount, TransactionTypeEnum::INCOME, $this->negate($oldAmount));
         }
 
-        $type = $transaction->getType();
-        $destAccount = $transaction->getDestinationAccount();
+        // Apply new data
+        $this->applyFromDto($transaction, $input);
 
         // Apply new effect
-        $this->applyBalance($transaction->getAccount(), $type, $amount);
-        if ($type === TransactionTypeEnum::TRANSFER && $destAccount !== null) {
-            $this->applyBalance($destAccount, TransactionTypeEnum::INCOME, $amount);
+        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
+            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::INCOME, $transaction->getAmount());
         }
 
         $this->em->flush();
@@ -94,6 +93,19 @@ class TransactionService
 
         $transaction->softDelete();
         $this->em->flush();
+    }
+
+    private function applyFromDto(Transaction $transaction, TransactionInputDto $input): void
+    {
+        $transaction
+            ->setSpace($input->space)
+            ->setAccount($input->account)
+            ->setDestinationAccount($input->destinationAccount)
+            ->setType($input->type)
+            ->setAmount($input->amount)
+            ->setDate($input->date)
+            ->setDescription($input->description)
+            ->setCategory($input->category);
     }
 
     private function applyBalance(Account $account, TransactionTypeEnum $type, string $amount): void

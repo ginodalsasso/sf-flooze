@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Finance;
 
 use App\Dto\Finance\AssetEntryInputDto;
+use App\Dto\Finance\AssetListItemDto;
 use App\Entity\Asset;
 use App\Entity\User;
 use App\Form\Finance\AssetDividendFormType;
@@ -49,14 +50,16 @@ class AssetController extends AbstractController
         $this->denyAccessUnlessGranted('VIEW', $space);
 
         $assets = $this->assetRepository->findBySpace($space);
-        $assetsMetrics = [];
-        foreach ($assets as $asset) {
-            $assetsMetrics[$asset->getId()] = $this->assetMetricsService->compute($asset);
-        }
+        $assetItems = array_map(
+            fn (Asset $asset) => new AssetListItemDto(
+                asset: $asset,
+                metrics: $this->assetMetricsService->compute($asset),
+            ),
+            $assets,
+        );
 
         return $this->render('finance/asset/index.html.twig', [
-            'assets' => $assets,
-            'assetsMetrics' => $assetsMetrics,
+            'assetItems' => $assetItems,
         ]);
     }
 
