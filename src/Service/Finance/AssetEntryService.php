@@ -45,7 +45,7 @@ class AssetEntryService
         $entry->setAsset($asset)
             ->setSpace($space)
             ->setDate($date)
-            ->setKind(AssetEntryKindEnum::Buy)
+            ->setKind(AssetEntryKindEnum::BUY)
             ->setQuantity($quantity)
             ->setUnitPrice($unitPrice)
             ->setFxRate($fxRate)
@@ -96,7 +96,7 @@ class AssetEntryService
         $entry->setAsset($asset)
             ->setSpace($space)
             ->setDate($date)
-            ->setKind(AssetEntryKindEnum::Sell)
+            ->setKind(AssetEntryKindEnum::SELL)
             ->setQuantity($quantity)
             ->setUnitPrice($unitPrice)
             ->setFxRate($fxRate)
@@ -135,7 +135,7 @@ class AssetEntryService
         $entry->setAsset($asset)
             ->setSpace($space)
             ->setDate($date)
-            ->setKind(AssetEntryKindEnum::Dividend)
+            ->setKind(AssetEntryKindEnum::DIVIDEND)
             ->setQuantity($amount)
             ->setUnitPrice('1')
             ->setFxRate($fxRate)
@@ -160,7 +160,7 @@ class AssetEntryService
     /** Calculate realized P&L for a sell entry in space currency. */
     public function calculateRealizedPnL(AssetEntry $sellEntry): ?float
     {
-        if ($sellEntry->getKind() !== AssetEntryKindEnum::Sell) {
+        if ($sellEntry->getKind() !== AssetEntryKindEnum::SELL) {
             return null;
         }
 
@@ -203,7 +203,7 @@ class AssetEntryService
     {
         $total = 0.0;
         foreach ($asset->getEntries() as $entry) {
-            if ($entry->getKind() === AssetEntryKindEnum::Sell) {
+            if ($entry->getKind() === AssetEntryKindEnum::SELL) {
                 $pnl = $this->calculateRealizedPnL($entry);
                 if ($pnl !== null) {
                     $total += $pnl;

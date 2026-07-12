@@ -6,34 +6,34 @@ namespace App\Enum;
 
 enum AssetTypeEnum: string
 {
-    case Stock = 'stock';
-    case Crypto = 'crypto';
-    case Etf = 'etf';
+    case STOCK = 'stock';
+    case CRYPTO = 'crypto';
+    case ETF = 'etf';
 
     public function label(): string
     {
         return match($this) {
-            self::Stock  => 'Action',
-            self::Crypto => 'Crypto-monnaie',
-            self::Etf    => 'ETF',
+            self::STOCK  => 'Action',
+            self::CRYPTO => 'Crypto-monnaie',
+            self::ETF    => 'ETF',
         };
     }
 
     public function icon(): string
     {
         return match($this) {
-            self::Stock  => 'trending-up',
-            self::Crypto => 'coins',
-            self::Etf    => 'bar-chart-2',
+            self::STOCK  => 'trending-up',
+            self::CRYPTO => 'coins',
+            self::ETF    => 'bar-chart-2',
         };
     }
 
     public function badgeVariant(): string
     {
         return match($this) {
-            self::Stock  => 'info',
-            self::Crypto => 'fiscal',
-            self::Etf    => 'positive',
+            self::STOCK  => 'info',
+            self::CRYPTO => 'fiscal',
+            self::ETF    => 'positive',
         };
     }
 
@@ -41,9 +41,9 @@ enum AssetTypeEnum: string
     public function supportsDividend(): bool
     {
         return match($this) {
-            self::Stock  => true,
-            self::Crypto => false,
-            self::Etf    => true,
+            self::STOCK  => true,
+            self::CRYPTO => false,
+            self::ETF    => true,
         };
     }
 
@@ -51,9 +51,9 @@ enum AssetTypeEnum: string
     public function hasUnitPrice(): bool
     {
         return match($this) {
-            self::Stock  => true,
-            self::Crypto => true,
-            self::Etf    => true,
+            self::STOCK  => true,
+            self::CRYPTO => true,
+            self::ETF    => true,
         };
     }
 
@@ -67,9 +67,9 @@ enum AssetTypeEnum: string
     public function description(): string
     {
         return match($this) {
-            self::Stock  => 'Action individuelle (dividendes possibles)',
-            self::Crypto => 'Crypto-monnaie (pas de dividende, staking possible)',
-            self::Etf    => 'ETF (dividendes ou capitalisation)',
+            self::STOCK  => 'Action individuelle (dividendes possibles)',
+            self::CRYPTO => 'Crypto-monnaie (pas de dividende, staking possible)',
+            self::ETF    => 'ETF (dividendes ou capitalisation)',
         };
     }
 
@@ -77,8 +77,8 @@ enum AssetTypeEnum: string
     public function requiredAccountType(): AccountTypeEnum
     {
         return match($this) {
-            self::Stock, self::Etf => AccountTypeEnum::Stock,
-            self::Crypto => AccountTypeEnum::Crypto,
+            self::STOCK, self::ETF => AccountTypeEnum::STOCK,
+            self::CRYPTO => AccountTypeEnum::CRYPTO,
         };
     }
 }

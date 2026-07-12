@@ -6,34 +6,34 @@ namespace App\Enum;
 
 enum AssetEntryKindEnum: string
 {
-    case Buy      = 'buy';
-    case Sell     = 'sell';
-    case Dividend = 'dividend';
+    case BUY = 'buy';
+    case SELL = 'sell';
+    case DIVIDEND = 'dividend';
 
     public function label(): string
     {
         return match($this) {
-            self::Buy      => 'Achat',
-            self::Sell     => 'Vente',
-            self::Dividend => 'Dividende',
+            self::BUY      => 'Achat',
+            self::SELL     => 'Vente',
+            self::DIVIDEND => 'Dividende',
         };
     }
 
     public function icon(): string
     {
         return match($this) {
-            self::Buy      => 'arrow-down-left',
-            self::Sell     => 'arrow-up-right',
-            self::Dividend => 'banknote',
+            self::BUY      => 'arrow-down-left',
+            self::SELL     => 'arrow-up-right',
+            self::DIVIDEND => 'banknote',
         };
     }
 
     public function badgeVariant(): string
     {
         return match($this) {
-            self::Buy      => 'positive',
-            self::Sell     => 'negative',
-            self::Dividend => 'fiscal',
+            self::BUY      => 'positive',
+            self::SELL     => 'negative',
+            self::DIVIDEND => 'fiscal',
         };
     }
 
@@ -41,9 +41,9 @@ enum AssetEntryKindEnum: string
     public function isCashInflow(): bool
     {
         return match($this) {
-            self::Buy      => false,
-            self::Sell     => true,
-            self::Dividend => true,
+            self::BUY      => false,
+            self::SELL     => true,
+            self::DIVIDEND => true,
         };
     }
 
@@ -51,9 +51,9 @@ enum AssetEntryKindEnum: string
     public function affectsQuantity(): bool
     {
         return match($this) {
-            self::Buy      => true,
-            self::Sell     => true,
-            self::Dividend => false,
+            self::BUY      => true,
+            self::SELL     => true,
+            self::DIVIDEND => false,
         };
     }
 
@@ -61,9 +61,9 @@ enum AssetEntryKindEnum: string
     public function quantitySign(): int
     {
         return match($this) {
-            self::Buy      => 1,
-            self::Sell     => -1,
-            self::Dividend => 0,
+            self::BUY      => 1,
+            self::SELL     => -1,
+            self::DIVIDEND => 0,
         };
     }
 }

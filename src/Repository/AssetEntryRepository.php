@@ -44,7 +44,7 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->where('e.asset = :asset')
             ->andWhere('e.kind = :kind')
             ->setParameter('asset', $asset)
-            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->setParameter('kind', AssetEntryKindEnum::BUY)
             ->orderBy('e.date', 'ASC')
             ->addOrderBy('e.createdAt', 'ASC')
             ->getQuery()
@@ -58,8 +58,8 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->select('SUM(e.quantity * CASE WHEN e.kind = :buy THEN 1 WHEN e.kind = :sell THEN -1 ELSE 0 END)')
             ->where('e.asset = :asset')
             ->setParameter('asset', $asset)
-            ->setParameter('buy', AssetEntryKindEnum::Buy)
-            ->setParameter('sell', AssetEntryKindEnum::Sell)
+            ->setParameter('buy', AssetEntryKindEnum::BUY)
+            ->setParameter('sell', AssetEntryKindEnum::SELL)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -74,7 +74,7 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->where('e.asset = :asset')
             ->andWhere('e.kind = :kind')
             ->setParameter('asset', $asset)
-            ->setParameter('kind', AssetEntryKindEnum::Dividend)
+            ->setParameter('kind', AssetEntryKindEnum::DIVIDEND)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -102,7 +102,7 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->where('e.asset = :asset')
             ->andWhere('e.kind = :kind')
             ->setParameter('asset', $asset)
-            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->setParameter('kind', AssetEntryKindEnum::BUY)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -117,7 +117,7 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->where('e.asset = :asset')
             ->andWhere('e.kind = :kind')
             ->setParameter('asset', $asset)
-            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->setParameter('kind', AssetEntryKindEnum::BUY)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -132,7 +132,7 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->where('e.asset = :asset')
             ->andWhere('e.kind = :kind')
             ->setParameter('asset', $asset)
-            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->setParameter('kind', AssetEntryKindEnum::BUY)
             ->getQuery()
             ->getOneOrNullResult();
 
@@ -155,7 +155,7 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->where('e.asset = :asset')
             ->andWhere('e.kind = :kind')
             ->setParameter('asset', $asset)
-            ->setParameter('kind', AssetEntryKindEnum::Buy)
+            ->setParameter('kind', AssetEntryKindEnum::BUY)
             ->getQuery()
             ->getOneOrNullResult();
 

@@ -86,9 +86,9 @@ final readonly class AssetEntryTransactionService
         $account = $entry->getAccount();
         if ($account !== null) {
             $type = match ($entry->getKind()) {
-                AssetEntryKindEnum::Buy => TransactionTypeEnum::Income,
-                AssetEntryKindEnum::Sell => TransactionTypeEnum::Expense,
-                AssetEntryKindEnum::Dividend => null,
+                AssetEntryKindEnum::BUY => TransactionTypeEnum::INCOME,
+                AssetEntryKindEnum::SELL => TransactionTypeEnum::EXPENSE,
+                AssetEntryKindEnum::DIVIDEND => null,
             };
 
             if ($type !== null) {
@@ -103,8 +103,8 @@ final readonly class AssetEntryTransactionService
         $fundingAccount = $entry->getFundingAccount();
         if ($fundingAccount !== null) {
             $type = match ($entry->getKind()) {
-                AssetEntryKindEnum::Buy => TransactionTypeEnum::Expense,
-                AssetEntryKindEnum::Sell, AssetEntryKindEnum::Dividend => TransactionTypeEnum::Income,
+                AssetEntryKindEnum::BUY => TransactionTypeEnum::EXPENSE,
+                AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => TransactionTypeEnum::INCOME,
             };
 
             $expected[] = [
@@ -180,9 +180,9 @@ final readonly class AssetEntryTransactionService
         }
 
         $type = match ($entry->getKind()) {
-            AssetEntryKindEnum::Buy => TransactionTypeEnum::Income,
-            AssetEntryKindEnum::Sell => TransactionTypeEnum::Expense,
-            AssetEntryKindEnum::Dividend => null,
+            AssetEntryKindEnum::BUY => TransactionTypeEnum::INCOME,
+            AssetEntryKindEnum::SELL => TransactionTypeEnum::EXPENSE,
+            AssetEntryKindEnum::DIVIDEND => null,
         };
 
         if ($type === null) {
@@ -204,8 +204,8 @@ final readonly class AssetEntryTransactionService
         }
 
         $type = match ($entry->getKind()) {
-            AssetEntryKindEnum::Buy => TransactionTypeEnum::Expense,
-            AssetEntryKindEnum::Sell, AssetEntryKindEnum::Dividend => TransactionTypeEnum::Income,
+            AssetEntryKindEnum::BUY => TransactionTypeEnum::EXPENSE,
+            AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => TransactionTypeEnum::INCOME,
         };
 
         $this->createTransaction($entry, [
@@ -221,17 +221,17 @@ final readonly class AssetEntryTransactionService
         $fees = (float) $entry->getFees();
 
         return match ($entry->getKind()) {
-            AssetEntryKindEnum::Buy => $gross + $fees,
-            AssetEntryKindEnum::Sell, AssetEntryKindEnum::Dividend => max(0.0, $gross - $fees),
+            AssetEntryKindEnum::BUY => $gross + $fees,
+            AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => max(0.0, $gross - $fees),
         };
     }
 
     private function buildDescription(AssetEntry $entry): string
     {
         $kindLabel = match ($entry->getKind()) {
-            AssetEntryKindEnum::Buy => 'Achat',
-            AssetEntryKindEnum::Sell => 'Vente',
-            AssetEntryKindEnum::Dividend => 'Dividende',
+            AssetEntryKindEnum::BUY => 'Achat',
+            AssetEntryKindEnum::SELL => 'Vente',
+            AssetEntryKindEnum::DIVIDEND => 'Dividende',
         };
 
         return sprintf('%s %s', $kindLabel, $entry->getAsset()->getTicker());

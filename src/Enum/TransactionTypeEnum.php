@@ -6,34 +6,34 @@ namespace App\Enum;
 
 enum TransactionTypeEnum: string
 {
-    case Income   = 'income';
-    case Expense  = 'expense';
-    case Transfer = 'transfer';
+    case INCOME = 'income';
+    case EXPENSE = 'expense';
+    case TRANSFER = 'transfer';
 
     public function label(): string
     {
         return match($this) {
-            self::Income   => 'Revenu',
-            self::Expense  => 'Dépense',
-            self::Transfer => 'Virement',
+            self::INCOME   => 'Revenu',
+            self::EXPENSE  => 'Dépense',
+            self::TRANSFER => 'Virement',
         };
     }
 
     public function icon(): string
     {
         return match($this) {
-            self::Income   => 'arrow-down-left',
-            self::Expense  => 'arrow-up-right',
-            self::Transfer => 'arrow-left-right',
+            self::INCOME   => 'arrow-down-left',
+            self::EXPENSE  => 'arrow-up-right',
+            self::TRANSFER => 'arrow-left-right',
         };
     }
 
     public function badgeVariant(): string
     {
         return match($this) {
-            self::Income   => 'positive',
-            self::Expense  => 'negative',
-            self::Transfer => 'info',
+            self::INCOME   => 'positive',
+            self::EXPENSE  => 'negative',
+            self::TRANSFER => 'info',
         };
     }
 
@@ -41,9 +41,9 @@ enum TransactionTypeEnum: string
     public function balanceSign(): int
     {
         return match($this) {
-            self::Income   => 1,
-            self::Expense  => -1,
-            self::Transfer => -1,
+            self::INCOME   => 1,
+            self::EXPENSE  => -1,
+            self::TRANSFER => -1,
         };
     }
 }

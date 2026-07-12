@@ -6,42 +6,42 @@ namespace App\Enum;
 
 enum AccountTypeEnum: string
 {
-    case Bank = 'bank';
-    case Cash = 'cash';
-    case Crypto = 'crypto';
-    case Saving = 'saving';
-    case Stock = 'stock';
+    case BANK = 'bank';
+    case CASH = 'cash';
+    case CRYPTO = 'crypto';
+    case SAVING = 'saving';
+    case STOCK = 'stock';
 
     public function label(): string
     {
         return match($this) {
-            self::Bank   => 'Compte bancaire',
-            self::Cash   => 'Espèces',
-            self::Crypto => 'Crypto-monnaies',
-            self::Saving => 'Épargne',
-            self::Stock  => 'Actions / Bourse',
+            self::BANK   => 'Compte bancaire',
+            self::CASH   => 'Espèces',
+            self::CRYPTO => 'Crypto-monnaies',
+            self::SAVING => 'Épargne',
+            self::STOCK  => 'Actions / Bourse',
         };
     }
 
     public function icon(): string
     {
         return match($this) {
-            self::Bank   => 'landmark',
-            self::Cash   => 'wallet',
-            self::Crypto => 'coins',
-            self::Saving => 'piggy-bank',
-            self::Stock  => 'trending-up',
+            self::BANK   => 'landmark',
+            self::CASH   => 'wallet',
+            self::CRYPTO => 'coins',
+            self::SAVING => 'piggy-bank',
+            self::STOCK  => 'trending-up',
         };
     }
 
     public function badgeVariant(): string
     {
         return match($this) {
-            self::Bank   => 'info',
-            self::Cash   => 'positive',
-            self::Crypto => 'fiscal',
-            self::Saving => 'alert',
-            self::Stock  => 'soon',
+            self::BANK   => 'info',
+            self::CASH   => 'positive',
+            self::CRYPTO => 'fiscal',
+            self::SAVING => 'alert',
+            self::STOCK  => 'soon',
         };
     }
 }

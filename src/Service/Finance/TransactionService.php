@@ -26,8 +26,8 @@ class TransactionService
 
         $this->applyBalance($transaction->getAccount(), $transaction->getType(), $amount);
 
-        if ($transaction->getType() === TransactionTypeEnum::Transfer && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::Income, $amount);
+        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
+            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::INCOME, $amount);
         }
 
         $this->em->persist($transaction);
@@ -59,8 +59,8 @@ class TransactionService
 
         // Reverse old effect
         $this->applyBalance($oldAccount, $oldType, $this->negate($oldAmount));
-        if ($oldType === TransactionTypeEnum::Transfer && $oldDestAccount !== null) {
-            $this->applyBalance($oldDestAccount, TransactionTypeEnum::Income, $this->negate($oldAmount));
+        if ($oldType === TransactionTypeEnum::TRANSFER && $oldDestAccount !== null) {
+            $this->applyBalance($oldDestAccount, TransactionTypeEnum::INCOME, $this->negate($oldAmount));
         }
 
         $type = $transaction->getType();
@@ -68,8 +68,8 @@ class TransactionService
 
         // Apply new effect
         $this->applyBalance($transaction->getAccount(), $type, $amount);
-        if ($type === TransactionTypeEnum::Transfer && $destAccount !== null) {
-            $this->applyBalance($destAccount, TransactionTypeEnum::Income, $amount);
+        if ($type === TransactionTypeEnum::TRANSFER && $destAccount !== null) {
+            $this->applyBalance($destAccount, TransactionTypeEnum::INCOME, $amount);
         }
 
         $this->em->flush();
@@ -88,8 +88,8 @@ class TransactionService
 
         $this->applyBalance($transaction->getAccount(), $type, $this->negate($amount));
 
-        if ($type === TransactionTypeEnum::Transfer && $destAccount !== null) {
-            $this->applyBalance($destAccount, TransactionTypeEnum::Income, $this->negate($amount));
+        if ($type === TransactionTypeEnum::TRANSFER && $destAccount !== null) {
+            $this->applyBalance($destAccount, TransactionTypeEnum::INCOME, $this->negate($amount));
         }
 
         $transaction->softDelete();

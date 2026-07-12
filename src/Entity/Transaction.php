@@ -128,9 +128,9 @@ class Transaction
 
         if ($this->assetEntry !== null) {
             return match ($this->assetEntry->getKind()) {
-                AssetEntryKindEnum::Buy => 'Investissement',
-                AssetEntryKindEnum::Sell => 'Vente d\'actif',
-                AssetEntryKindEnum::Dividend => 'Dividende',
+                AssetEntryKindEnum::BUY => 'Investissement',
+                AssetEntryKindEnum::SELL => 'Vente d\'actif',
+                AssetEntryKindEnum::DIVIDEND => 'Dividende',
             };
         }
 
