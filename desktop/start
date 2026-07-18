@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -e
+
+cd "$(dirname "$0")/.."
+
+if [ ! -f .env.desktop ]; then
+    echo "Error: .env.desktop not found."
+    exit 1
+fi
+
+# Load desktop-mode environment variables
+set -a
+source .env.desktop
+set +a
+
+# Install Composer dependencies if needed
+if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
+    echo "Installing Composer dependencies..."
+    composer install --no-interaction --prefer-dist --optimize-autoloader
+fi
+
+# Clear the desktop cache: a stale cache (built with APP_ENV=dev) could
+# point the app to the wrong database.
+if [ -d "var/cache/desktop" ]; then
+    echo "Clearing desktop cache..."
+    rm -rf var/cache/desktop
+fi
+
+# Prepare the local SQLite database
+# var/app.db is created automatically on first connection.
+mkdir -p var
+echo "Updating SQLite schema (var/app.db)..."
+php bin/console doctrine:schema:update --force --env=desktop --no-interaction
+
+# Start the PHP built-in web server with a dedicated router.
+# The router forces $_SERVER/$_ENV because some PHP setups (variables_order
+# without 'E') do not forward environment variables to the built-in server.
+echo "Starting local server on http://localhost:8765"
+echo "APP_ENV = $APP_ENV"
+echo "DATABASE_URL = $DATABASE_URL"
+# exec: bash is replaced by PHP, so stopping the desktop app really kills
+# the server (no orphaned process).
+exec php -S localhost:8765 -t "$PWD/public" "$PWD/desktop/router.php"

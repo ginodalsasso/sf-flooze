@@ -1,0 +1,8 @@
+# Overrides for desktop mode (standalone local desktop app).
+# This file is imported only when APP_ENV=desktop.
+
+parameters:
+    app.features:
+        # No mail server on a desktop machine: email verification is disabled
+        # (see App\Controller\RegistrationController).
+        email_verification: false

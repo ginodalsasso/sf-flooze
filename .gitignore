@@ -6,6 +6,7 @@
 ###> symfony/framework-bundle ###
 .env
 /.env.local
+/.env.desktop
 /.env.local.php
 /.env.*.local
 /config/secrets/prod/prod.decrypt.private.php
@@ -13,6 +14,17 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+###> tauri ###
+/desktop/src-tauri/target/
+/desktop/src-tauri/Cargo.lock
+###< tauri ###
+
+# Temporary build files
+/.venv-icon/
+/build-tauri-check.bat
+/check-vcdev.bat
+/install-tauri-cli.ps1
 
 ###> phpunit/phpunit ###
 /phpunit.xml
@@ -23,3 +35,11 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> os ###
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
+###< os ###
+
+SECURITY_PLAN.md

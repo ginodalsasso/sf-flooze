@@ -1,5 +1,10 @@
 {% extends 'layout/app.html.twig' %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'dashboard/_styles.html.twig' %}
+{% endblock %}
+
 {% block title %}Tableau de bord — Flooze{% endblock %}
 
 {% block content %}

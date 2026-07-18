@@ -23,6 +23,16 @@ framework:
     #esi: true
     #fragments: true
 
+when@desktop:
+    framework:
+        rate_limiter:
+            # A desktop app runs locally for a single user: every request comes
+            # from 127.0.0.1, so IP-based rate limiting can only ever block the
+            # legitimate user (e.g. a form error followed by a resubmit).
+            # Standard practice for local desktop apps: disable it.
+            registration:
+                policy: 'no_limit'
+
 when@test:
     framework:
         test: true

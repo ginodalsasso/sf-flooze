@@ -8,6 +8,10 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     email_sender: '%env(EMAIL_SENDER)%'
+    # Feature flags that can be disabled per environment (see App\Service\Feature\FeatureFlags
+    # and the overrides in config/services_<env>.yaml).
+    app.features:
+        email_verification: true
 
 services:
     # default configuration for services in *this* file
@@ -23,6 +27,10 @@ services:
     App\Service\Notification\EmailService:
         arguments:
             $emailSender: '%email_sender%'
+
+    App\Service\Feature\FeatureFlags:
+        arguments:
+            $features: '%app.features%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

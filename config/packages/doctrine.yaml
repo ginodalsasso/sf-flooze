@@ -25,6 +25,12 @@ when@test:
             # "TEST_TOKEN" is typically set by ParaTest
             dbname_suffix: '_test%env(default::TEST_TOKEN)%'
 
+when@desktop:
+    doctrine:
+        dbal:
+            # Local SQLite database, configured via DATABASE_URL (.env.desktop)
+            url: '%env(resolve:DATABASE_URL)%'
+
 when@prod:
     doctrine:
         orm:

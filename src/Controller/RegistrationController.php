@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
 use App\Repository\UserRepository;
+use App\Service\Feature\FeatureFlags;
 use App\Service\Notification\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,6 +27,7 @@ class RegistrationController extends AbstractController
         EntityManagerInterface $em,
         EmailService $emailService,
         RateLimiterFactoryInterface $registrationLimiter,
+        FeatureFlags $features,
     ): Response {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
@@ -46,17 +48,27 @@ class RegistrationController extends AbstractController
                 $passwordHasher->hashPassword($user, $form->get('plainPassword')->getData())
             );
 
-            $token = bin2hex(random_bytes(32));
-            $user->setVerificationToken($token);
-            $user->setVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
-            $user->setIsVerified(false);
+            if (!$features->isEnabled('email_verification')) {
+                // Feature disabled in this environment (e.g. standalone desktop
+                // mode, no mail server): verify the account directly, otherwise
+                // it would stay unusable forever.
+                $user->setIsVerified(true);
+            } else {
+                $token = bin2hex(random_bytes(32));
+                $user->setVerificationToken($token);
+                $user->setVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
+                $user->setIsVerified(false);
+            }
 
             $em->persist($user);
             $em->flush();
 
-            $emailService->sendVerificationEmail($user);
-
-            $this->addFlash('success', 'Account created. Please check your email to verify your account.');
+            if ($user->isVerified()) {
+                $this->addFlash('success', 'Account created. You can now sign in.');
+            } else {
+                $emailService->sendVerificationEmail($user);
+                $this->addFlash('success', 'Account created. Please check your email to verify your account.');
+            }
 
             return $this->redirectToRoute('app_login');
         }

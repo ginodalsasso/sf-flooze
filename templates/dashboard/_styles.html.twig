@@ -1,0 +1,54 @@
+<style>
+/* ── Recent activity ───────────────────────────────────── */
+.dashboard-recent-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+
+.dashboard-recent-item:last-child { border-bottom: none; }
+.dashboard-recent-item:hover { background: var(--bg-elevated); }
+
+.dashboard-recent-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-recent-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.dashboard-recent-desc {
+  font-size: 14px;
+  color: var(--fg-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-recent-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.dashboard-recent-amount--income { color: var(--color-positive); }
+.dashboard-recent-amount--expense { color: var(--color-negative); }
+.dashboard-recent-amount--transfer { color: var(--fg-2); }
+</style>
