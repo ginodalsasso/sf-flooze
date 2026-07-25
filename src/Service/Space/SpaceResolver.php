@@ -12,11 +12,12 @@ class SpaceResolver
 {
     public function __construct(private readonly RequestStack $requestStack) {}
 
-    /** Returns the active space for the user, defaulting to the first available. Filters out soft-deleted spaces. */
+    /** Returns the active space for the user, defaulting to the first non-deleted one. */
     public function resolve(User $user): ?Space
     {
         $session = $this->requestStack->getSession();
         $activeSpaceId = $session->get('flooze_active_space_id');
+        $fallback = null;
 
         foreach ($user->getSpaces() as $space) {
             if ($space->isDeleted()) {
@@ -25,24 +26,13 @@ class SpaceResolver
             if ($space->getId() === $activeSpaceId) {
                 return $space;
             }
+            $fallback ??= $space;
         }
 
-        $first = $user->getSpaces()->first();
-        if ($first instanceof Space && !$first->isDeleted()) {
-            $session->set('flooze_active_space_id', $first->getId());
-
-            return $first;
+        if ($fallback !== null) {
+            $session->set('flooze_active_space_id', $fallback->getId());
         }
 
-        // Fallback: find first non-deleted space if the first one was deleted
-        foreach ($user->getSpaces() as $space) {
-            if (!$space->isDeleted()) {
-                $session->set('flooze_active_space_id', $space->getId());
-
-                return $space;
-            }
-        }
-
-        return null;
+        return $fallback;
     }
 }

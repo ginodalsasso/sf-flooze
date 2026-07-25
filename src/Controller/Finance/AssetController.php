@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Finance;
 
+use App\Controller\ActiveSpaceControllerTrait;
 use App\Dto\Finance\AssetEntryInputDto;
 use App\Dto\Finance\AssetListItemDto;
 use App\Entity\Asset;
-use App\Entity\User;
 use App\Form\Finance\AssetDividendFormType;
 use App\Form\Finance\AssetFormType;
 use App\Form\Finance\AssetSellFormType;
@@ -19,6 +19,7 @@ use App\Service\Finance\AssetMetricsService;
 use App\Service\Finance\AssetService;
 use App\Service\Space\SpaceResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -26,6 +27,8 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/finance/assets', name: 'app_asset_')]
 class AssetController extends AbstractController
 {
+    use ActiveSpaceControllerTrait;
+
     public function __construct(
         private readonly AssetService $assetService,
         private readonly AssetEntryService $assetEntryService,
@@ -39,15 +42,10 @@ class AssetController extends AbstractController
     #[Route('', name: 'index')]
     public function index(): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        $space = $this->spaceResolver->resolve($user);
-
-        if ($space === null) {
-            return $this->redirectToRoute('app_space_new');
+        $space = $this->resolveActiveSpace('VIEW');
+        if ($space instanceof RedirectResponse) {
+            return $space;
         }
-
-        $this->denyAccessUnlessGranted('VIEW', $space);
 
         $assets = $this->assetRepository->findBySpace($space);
         $assetItems = array_map(
@@ -78,15 +76,10 @@ class AssetController extends AbstractController
     #[Route('/new', name: 'new')]
     public function new(Request $request): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        $space = $this->spaceResolver->resolve($user);
-
-        if ($space === null) {
-            return $this->redirectToRoute('app_space_new');
+        $space = $this->resolveActiveSpace('EDIT');
+        if ($space instanceof RedirectResponse) {
+            return $space;
         }
-
-        $this->denyAccessUnlessGranted('EDIT', $space);
 
         // An asset must be linked to an account. If the space has no account at
         // all, redirect to account creation before allowing any asset creation.

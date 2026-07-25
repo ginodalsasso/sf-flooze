@@ -17,6 +17,7 @@ class DashboardService
         private readonly TransactionRepository $transactionRepository,
     ) {}
 
+    // Summarizes the financial state of a Space for display on the dashboard.
     public function summarize(Space $space): DashboardSummaryDto
     {
         $accounts = $this->accountRepository->findBySpace($space);

@@ -5,15 +5,74 @@ declare(strict_types=1);
 namespace App\Form\Finance;
 
 use App\Dto\Finance\TransactionInputDto;
+use App\Entity\Account;
+use App\Entity\Category;
 use App\Entity\Space;
 use App\Enum\TransactionTypeEnum;
+use App\Repository\AccountRepository;
+use App\Repository\CategoryRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 abstract class AbstractTransactionFormType extends AbstractType
 {
+    /** Placeholder shown on the description field; subclasses may override. */
+    protected function descriptionPlaceholder(): string
+    {
+        return 'Ex. : Courses Lidl, Salaire mars…';
+    }
+
+    /** Adds amount/date/description/category/destinationAccount common to all transaction forms. */
+    protected function addSharedFields(FormBuilderInterface $builder, Space $space): void
+    {
+        $builder
+            ->add('amount', NumberType::class, [
+                'scale' => 2,
+                'html5' => false,
+                'attr' => ['placeholder' => '0,00'],
+                'constraints' => [
+                    new Assert\NotNull(message: 'Le montant est obligatoire.'),
+                    new Assert\GreaterThan(value: 0, message: 'Le montant doit être supérieur à 0.'),
+                ],
+            ])
+            ->add('date', DateType::class, [
+                'widget' => 'single_text',
+                'input'  => 'datetime_immutable',
+                'constraints' => [new Assert\NotNull(message: 'La date est obligatoire.')],
+            ])
+            ->add('description', TextType::class, [
+                'required' => false,
+                'attr' => ['placeholder' => $this->descriptionPlaceholder()],
+                'constraints' => [new Assert\Length(max: 255, maxMessage: 'Maximum {{ limit }} caractères.')],
+            ])
+            ->add('category', EntityType::class, [
+                'class' => Category::class,
+                'required' => false,
+                'placeholder' => 'Sans catégorie',
+                'query_builder' => fn(CategoryRepository $repo) => $repo->createSpaceScopedQb($space),
+                'choice_label' => 'name',
+            ])
+            ->add('destinationAccount', EntityType::class, [
+                'class' => Account::class,
+                'required' => false,
+                'placeholder' => 'Aucun (non applicable)',
+                'label' => 'Compte destinataire (virements uniquement)',
+                'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
+                    ->where('a.space = :space')
+                    ->andWhere('a.deletedAt IS NULL')
+                    ->setParameter('space', $space)
+                    ->orderBy('a.name', 'ASC'),
+                'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getCurrency()->display() . ')',
+            ]);
+    }
+
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([

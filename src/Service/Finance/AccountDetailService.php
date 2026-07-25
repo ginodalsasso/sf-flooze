@@ -16,6 +16,7 @@ class AccountDetailService
         private readonly AccountBalanceService $accountBalanceService,
     ) {}
 
+    // Build a detailed view of an Account, including its transactions and monthly financial summary.
     public function build(Account $account): AccountDetailDto
     {
         $startOfMonth = new \DateTimeImmutable('first day of this month midnight');

@@ -34,8 +34,9 @@ final readonly class AssetEntryTransactionService
 
     public function createForEntry(AssetEntry $entry): void
     {
-        $this->createHoldingTransaction($entry);
-        $this->createFundingTransaction($entry);
+        foreach ($this->buildExpectedTransactions($entry) as $expected) {
+            $this->createTransaction($entry, $expected);
+        }
     }
 
     /**
@@ -155,7 +156,7 @@ final readonly class AssetEntryTransactionService
 
         $entry->addTransaction($transaction);
         $this->em->persist($transaction);
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
     }
 
     /**
@@ -174,53 +175,14 @@ final readonly class AssetEntryTransactionService
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry));
 
-        $this->applyBalance($oldAccount, $oldType, $this->negate($oldAmount));
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        $oldAccount->reverseOperation($oldType, $oldAmount);
+        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
     }
 
-    private function createHoldingTransaction(AssetEntry $entry): void
-    {
-        $account = $entry->getAccount();
-        if ($account === null) {
-            return;
-        }
-
-        $type = match ($entry->getKind()) {
-            AssetEntryKindEnum::BUY => TransactionTypeEnum::INCOME,
-            AssetEntryKindEnum::SELL => TransactionTypeEnum::EXPENSE,
-            AssetEntryKindEnum::DIVIDEND => null,
-        };
-
-        if ($type === null) {
-            return;
-        }
-
-        $this->createTransaction($entry, [
-            'account' => $account,
-            'type' => $type,
-            'amount' => $entry->getTotalAmountInSpaceCurrency(),
-        ]);
-    }
-
-    private function createFundingTransaction(AssetEntry $entry): void
-    {
-        $fundingAccount = $entry->getFundingAccount();
-        if ($fundingAccount === null) {
-            return;
-        }
-
-        $type = match ($entry->getKind()) {
-            AssetEntryKindEnum::BUY => TransactionTypeEnum::EXPENSE,
-            AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => TransactionTypeEnum::INCOME,
-        };
-
-        $this->createTransaction($entry, [
-            'account' => $fundingAccount,
-            'type' => $type,
-            'amount' => $this->calculateFundingAmount($entry),
-        ]);
-    }
-
+    /**
+     * Calculates the funding amount for an AssetEntry based on its kind and fees.
+     * For BUY: funding amount = total + fees
+     */
     private function calculateFundingAmount(AssetEntry $entry): string
     {
         $gross = $entry->getTotalAmountInSpaceCurrency();
@@ -236,6 +198,9 @@ final readonly class AssetEntryTransactionService
         };
     }
 
+    /**
+     * Build a description for an asset entry based on its kind.
+     */
     private function buildDescription(AssetEntry $entry): string
     {
         $kindLabel = match ($entry->getKind()) {
@@ -247,25 +212,11 @@ final readonly class AssetEntryTransactionService
         return sprintf('%s %s', $kindLabel, $entry->getAsset()->getTicker());
     }
 
+    /**
+     * Reverse the balance effect of a transaction on its account.
+     */
     private function reverseBalanceEffect(Transaction $transaction): void
     {
-        $this->applyBalance(
-            $transaction->getAccount(),
-            $transaction->getType(),
-            $this->negate($transaction->getAmount())
-        );
-    }
-
-    private function applyBalance(Account $account, TransactionTypeEnum $type, string $amount): void
-    {
-        // bcmul: multiply numeric strings, scale 2 keeps cents precision.
-        $delta = bcmul($amount, (string) $type->balanceSign(), 2);
-        $account->adjustBalance($delta);
-    }
-
-    private function negate(string $amount): string
-    {
-        // Multiply by -1 to flip the sign without float rounding.
-        return bcmul('-1', $amount, 2);
+        $transaction->getAccount()->reverseOperation($transaction->getType(), $transaction->getAmount());
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Finance;
 
+use App\Controller\ActiveSpaceControllerTrait;
 use App\Entity\Account;
-use App\Entity\User;
 use App\Form\Finance\AccountFormType;
 use App\Repository\AccountRepository;
 use App\Repository\TransactionRepository;
@@ -13,6 +13,7 @@ use App\Service\Finance\AccountDetailService;
 use App\Service\Finance\AccountService;
 use App\Service\Space\SpaceResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,6 +21,8 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/finance/accounts', name: 'app_account_')]
 class AccountController extends AbstractController
 {
+    use ActiveSpaceControllerTrait;
+
     public function __construct(
         private readonly AccountService $accountService,
         private readonly AccountDetailService $accountDetailService,
@@ -31,15 +34,10 @@ class AccountController extends AbstractController
     #[Route('', name: 'index')]
     public function index(): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        $space = $this->spaceResolver->resolve($user);
-
-        if ($space === null) {
-            return $this->redirectToRoute('app_space_new');
+        $space = $this->resolveActiveSpace('VIEW');
+        if ($space instanceof RedirectResponse) {
+            return $space;
         }
-
-        $this->denyAccessUnlessGranted('VIEW', $space);
 
         return $this->render('finance/account/index.html.twig', [
             'accounts' => $this->accountRepository->findBySpace($space),
@@ -59,15 +57,10 @@ class AccountController extends AbstractController
     #[Route('/new', name: 'new')]
     public function new(Request $request): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        $space = $this->spaceResolver->resolve($user);
-
-        if ($space === null) {
-            return $this->redirectToRoute('app_space_new');
+        $space = $this->resolveActiveSpace('EDIT');
+        if ($space instanceof RedirectResponse) {
+            return $space;
         }
-
-        $this->denyAccessUnlessGranted('EDIT', $space);
 
         $account = new Account();
         $form = $this->createForm(AccountFormType::class, $account);

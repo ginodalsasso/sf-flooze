@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Finance;
 
+use App\Controller\ActiveSpaceControllerTrait;
 use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Transaction;
-use App\Entity\User;
 use App\Enum\TransactionTypeEnum;
 use App\Form\Finance\AssetTransactionFormType;
 use App\Form\Finance\ClassicTransactionFormType;
@@ -17,6 +17,7 @@ use App\Service\Finance\AccountBalanceService;
 use App\Service\Finance\TransactionService;
 use App\Service\Space\SpaceResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -24,6 +25,8 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/finance/transactions', name: 'app_transaction_')]
 class TransactionController extends AbstractController
 {
+    use ActiveSpaceControllerTrait;
+
     public function __construct(
         private readonly TransactionService $transactionService,
         private readonly TransactionRepository $transactionRepository,
@@ -35,15 +38,10 @@ class TransactionController extends AbstractController
     #[Route('', name: 'index')]
     public function index(Request $request): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        $space = $this->spaceResolver->resolve($user);
-
-        if ($space === null) {
-            return $this->redirectToRoute('app_space_new');
+        $space = $this->resolveActiveSpace('VIEW');
+        if ($space instanceof RedirectResponse) {
+            return $space;
         }
-
-        $this->denyAccessUnlessGranted('VIEW', $space);
 
         $typeFilter    = $request->query->get('type');
         $accountFilter = $request->query->getInt('account');
@@ -67,15 +65,10 @@ class TransactionController extends AbstractController
     #[Route('/new', name: 'new')]
     public function new(Request $request): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        $space = $this->spaceResolver->resolve($user);
-
-        if ($space === null) {
-            return $this->redirectToRoute('app_space_new');
+        $space = $this->resolveActiveSpace('EDIT');
+        if ($space instanceof RedirectResponse) {
+            return $space;
         }
-
-        $this->denyAccessUnlessGranted('EDIT', $space);
 
         $mode = $request->query->get('mode');
 

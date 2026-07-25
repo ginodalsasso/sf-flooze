@@ -33,10 +33,10 @@ class TransactionService
         $this->guardSpendableFunds($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
         $this->guardValidTransfer($transaction->getAccount(), $transaction->getDestinationAccount(), $transaction->getType());
 
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
 
         if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::INCOME, $transaction->getAmount());
+            $transaction->getDestinationAccount()->applyOperation(TransactionTypeEnum::INCOME, $transaction->getAmount());
         }
 
         $this->em->persist($transaction);
@@ -63,9 +63,9 @@ class TransactionService
         $oldDestAccount = $transaction->getDestinationAccount();
 
         // Reverse old effect
-        $this->applyBalance($oldAccount, $oldType, $this->negate($oldAmount));
+        $oldAccount->reverseOperation($oldType, $oldAmount);
         if ($oldType === TransactionTypeEnum::TRANSFER && $oldDestAccount !== null) {
-            $this->applyBalance($oldDestAccount, TransactionTypeEnum::INCOME, $this->negate($oldAmount));
+            $oldDestAccount->reverseOperation(TransactionTypeEnum::INCOME, $oldAmount);
         }
 
         // Apply new data
@@ -76,9 +76,9 @@ class TransactionService
         $this->guardValidTransfer($transaction->getAccount(), $transaction->getDestinationAccount(), $transaction->getType());
 
         // Apply new effect
-        $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
         if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
-            $this->applyBalance($transaction->getDestinationAccount(), TransactionTypeEnum::INCOME, $transaction->getAmount());
+            $transaction->getDestinationAccount()->applyOperation(TransactionTypeEnum::INCOME, $transaction->getAmount());
         }
 
         $this->em->flush();
@@ -95,10 +95,10 @@ class TransactionService
         $destAccount = $transaction->getDestinationAccount();
         $amount = $transaction->getAmount();
 
-        $this->applyBalance($transaction->getAccount(), $type, $this->negate($amount));
+        $transaction->getAccount()->reverseOperation($type, $amount);
 
         if ($type === TransactionTypeEnum::TRANSFER && $destAccount !== null) {
-            $this->applyBalance($destAccount, TransactionTypeEnum::INCOME, $this->negate($amount));
+            $destAccount->reverseOperation(TransactionTypeEnum::INCOME, $amount);
         }
 
         $transaction->softDelete();
@@ -118,19 +118,9 @@ class TransactionService
             ->setCategory($input->category);
     }
 
-    private function applyBalance(Account $account, TransactionTypeEnum $type, string $amount): void
-    {
-        // bcmul: multiply numeric strings, scale 2 keeps cents precision.
-        $delta = bcmul($amount, (string) $type->balanceSign(), 2);
-        $account->adjustBalance($delta);
-    }
-
-    private function negate(string $amount): string
-    {
-        // Multiply by -1 to flip the sign without float rounding.
-        return bcmul('-1', $amount, 2);
-    }
-
+    /**
+     * Guard that a numeric string is strictly positive, throwing an exception if not.
+     */
     private function guardStrictlyPositive(string $amount): void
     {
         // bccomp: compare numeric strings (-1 if less, 0 if equal, 1 if greater).
@@ -139,6 +129,10 @@ class TransactionService
         }
     }
 
+    /**
+     * Guard that the account has sufficient available funds for the transaction.
+     * Income transactions are exempt from this check.
+     */
     private function guardSpendableFunds(Account $account, TransactionTypeEnum $type, string $amount): void
     {
         if ($type !== TransactionTypeEnum::INCOME) {
@@ -146,6 +140,9 @@ class TransactionService
         }
     }
 
+    /**
+     * Guard that the transfer is valid (source and destination accounts are different).
+     */
     private function guardValidTransfer(?Account $source, ?Account $destination, TransactionTypeEnum $type): void
     {
         if ($type !== TransactionTypeEnum::TRANSFER || $destination === null) {
@@ -157,6 +154,9 @@ class TransactionService
         }
     }
 
+    /**
+     * Guard that a transaction is not linked to an asset entry, throwing an exception if it is.
+     */
     private function guardNotLinkedToAsset(Transaction $transaction): void
     {
         if ($transaction->isLinkedToAsset()) {

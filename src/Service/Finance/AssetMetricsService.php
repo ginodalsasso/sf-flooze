@@ -14,6 +14,9 @@ final readonly class AssetMetricsService
         private AssetEntryRepository $entryRepository,
     ) {}
 
+    /**
+     * Compute metrics for a given Asset, including total quantity, average price, total cost, and dividends.
+     */
     public function compute(Asset $asset): AssetMetricsDto
     {
         return new AssetMetricsDto(

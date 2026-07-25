@@ -122,6 +122,7 @@ class AssetEntryService
         return $total;
     }
 
+    // Guard methods for validating input data
     private function validate(AssetEntryInputDto $input): void
     {
         switch ($input->kind) {
@@ -147,6 +148,7 @@ class AssetEntryService
         }
     }
 
+    // Guard that a numeric string is strictly positive, throwing an exception if not.
     private function guardStrictlyPositive(?string $value, string $fieldName): void
     {
         if ($value === null || bccomp($value, '0', 8) <= 0) {

@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\AccountTypeEnum;
 use App\Enum\CurrencyEnum;
+use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
 use App\Trait\SoftDeleteTrait;
 use App\Trait\SpaceScopeTrait;
@@ -103,5 +104,17 @@ class Account
         $this->balance = bcadd($this->balance, $amount, 2);
 
         return $this;
+    }
+
+    /** Apply the balance effect of a transaction ($type sign × $amount). */
+    public function applyOperation(TransactionTypeEnum $type, string $amount): static
+    {
+        return $this->adjustBalance(bcmul($amount, (string) $type->balanceSign(), 2));
+    }
+
+    /** Reverse the balance effect of a transaction (used when editing/deleting). */
+    public function reverseOperation(TransactionTypeEnum $type, string $amount): static
+    {
+        return $this->adjustBalance(bcmul($amount, (string) (-$type->balanceSign()), 2));
     }
 }
