@@ -119,7 +119,8 @@ src/Entity/
 ├── Account.php               # Finance: bank/cash/crypto/saving account
 ├── Transaction.php           # Finance: income/expense/transfer
 ├── Category.php              # Finance: hierarchical with fiscal flags
-├── Asset.php                 # Finance: stocks, crypto, ETF
+├── Asset.php                 # Finance: stocks, crypto, ETF (ticker, name, currency, type)
+├── AssetEntry.php            # Finance: ledger row for a buy/sell/dividend operation
 │
 ├── Property.php              # Real estate: residential/rental/secondary
 ├── Tenant.php                # Real estate: tenant with income verification
@@ -158,9 +159,13 @@ Space (1) ──── (N) Document
 Space (1) ──── (N) Reminder
 
 Account (1) ──── (N) Transaction
+Account (1) ──── (N) AssetEntry [holding account, nullable]
+Account (1) ──── (N) AssetEntry [funding account, nullable]
 Category (1) ──── (N) Transaction
 Category (1) ──── (N) Category [parent_id self-referential]
 Transaction (1) ──── (1) Transaction [destination, nullable, for transfers]
+Transaction (N) ──── (0..1) AssetEntry [asset_entry_id, SET NULL on hard delete]
+Asset (1) ──── (N) AssetEntry
 
 Property (1) ──── (N) Lease
 Property (1) ──── (N) Loan
@@ -204,9 +209,15 @@ AI/
 └── AIMetricsService.php          # OCR confidence logging
 
 Finance/
-├── TransactionService.php        # CRUD + reconciliation
+├── TransactionService.php        # CRUD + balance management (manual transactions)
 ├── CategoryService.php           # Hierarchy + flag management
-└── AssetService.php              # Price tracking
+├── AssetService.php              # Asset CRUD
+├── AssetEntryService.php         # Buy/sell/dividend ledger + P&L (FIFO)
+├── AssetEntryTransactionService.php # Keeps Transaction rows in sync with AssetEntry
+├── AssetMetricsService.php       # Aggregated metrics (qty, avg price, cost basis)
+├── AccountService.php            # Account CRUD + soft-delete
+├── AccountBalanceService.php     # invested vs available balance split
+└── AccountDetailService.php      # Per-account detail DTO (monthly stats)
 
 RealEstate/
 ├── PropertyService.php
@@ -414,7 +425,8 @@ templates/
 | `account` | name, type, balance, currency | ✓ |
 | `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, date, description, metadata (JSON) | ✓ |
 | `category` | parent_id (nullable), name, is_deductible, is_declarable | — |
-| `asset` | ticker, name, quantity, avg_price, currency, type | — |
+| `asset` | ticker, name, currency, type | — |
+| `asset_entry` | asset_id, account_id (nullable), funding_account_id (nullable), date, kind (buy\|sell\|dividend), quantity, unit_price, fx_rate, fees, note | ✓ |
 | `property` | name, address, type, purchase_price, purchase_date | ✓ |
 | `tenant` | first_name, last_name, email, phone, monthly_income, guarantor_name, guarantor_income | — |
 | `lease` | property_id, rent, charges, type, security_deposit, start_date, end_date, is_active | ✓ |

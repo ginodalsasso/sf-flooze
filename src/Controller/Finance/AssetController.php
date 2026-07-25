@@ -254,7 +254,7 @@ class AssetController extends AbstractController
     {
         $entry = $this->assetEntryRepository->find($entryId);
 
-        if (!$entry || $entry->getAsset()->getId() !== $assetId) {
+        if (!$entry || $entry->getAsset()->getId() !== $assetId || $entry->isDeleted()) {
             throw $this->createNotFoundException('Entry not found.');
         }
 

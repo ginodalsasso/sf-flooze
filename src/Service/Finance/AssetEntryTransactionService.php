@@ -22,7 +22,9 @@ use Doctrine\ORM\EntityManagerInterface;
  * and in TransactionService; the AssetEntry remains the source of truth.
  *
  * This service intentionally does NOT flush: it is called from Doctrine entity
- * listeners, where flushing inside the listener would break the unit of work.
+ * listeners (prePersist/preUpdate), where flushing inside the listener would break
+ * the unit of work. For delete, it IS called from the service (not a listener) and
+ * the caller is responsible for flushing.
  */
 final readonly class AssetEntryTransactionService
 {
@@ -59,7 +61,7 @@ final readonly class AssetEntryTransactionService
             }
         }
 
-        // Any remaining existing transaction no longer matches the entry and is removed.
+        // Remaining transactions no longer match the entry: soft-delete them.
         foreach ($existing as $orphan) {
             $entry->removeTransaction($orphan);
             $this->reverseBalanceEffect($orphan);
@@ -67,17 +69,21 @@ final readonly class AssetEntryTransactionService
         }
     }
 
+    /**
+     * Soft-delete all transactions linked to this entry and reverse their balance effects.
+     * The AssetEntry FK is preserved on the transaction for audit purposes.
+     * The caller must flush after this call.
+     */
     public function deleteForEntry(AssetEntry $entry): void
     {
         foreach ($entry->getTransactions()->toArray() as $transaction) {
-            $entry->removeTransaction($transaction);
             $this->reverseBalanceEffect($transaction);
             $transaction->softDelete();
         }
     }
 
     /**
-     * @return array<int, array{account: Account, type: TransactionTypeEnum, amount: float}>
+     * @return array<int, array{account: Account, type: TransactionTypeEnum, amount: string}>
      */
     private function buildExpectedTransactions(AssetEntry $entry): array
     {
@@ -133,7 +139,7 @@ final readonly class AssetEntryTransactionService
     }
 
     /**
-     * @param array{account: Account, type: TransactionTypeEnum, amount: float} $expected
+     * @param array{account: Account, type: TransactionTypeEnum, amount: string} $expected
      */
     private function createTransaction(AssetEntry $entry, array $expected): void
     {
@@ -142,7 +148,7 @@ final readonly class AssetEntryTransactionService
             ->setSpace($entry->getSpace())
             ->setAccount($expected['account'])
             ->setType($expected['type'])
-            ->setAmount($this->formatAmount($expected['amount']))
+            ->setAmount($expected['amount'])
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry))
             ->setAssetEntry($entry);
@@ -153,7 +159,7 @@ final readonly class AssetEntryTransactionService
     }
 
     /**
-     * @param array{account: Account, type: TransactionTypeEnum, amount: float} $expected
+     * @param array{account: Account, type: TransactionTypeEnum, amount: string} $expected
      */
     private function updateTransaction(Transaction $transaction, AssetEntry $entry, array $expected): void
     {
@@ -164,7 +170,7 @@ final readonly class AssetEntryTransactionService
         $transaction
             ->setAccount($expected['account'])
             ->setType($expected['type'])
-            ->setAmount($this->formatAmount($expected['amount']))
+            ->setAmount($expected['amount'])
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry));
 
@@ -215,14 +221,18 @@ final readonly class AssetEntryTransactionService
         ]);
     }
 
-    private function calculateFundingAmount(AssetEntry $entry): float
+    private function calculateFundingAmount(AssetEntry $entry): string
     {
         $gross = $entry->getTotalAmountInSpaceCurrency();
-        $fees = (float) $entry->getFees();
+        $fees = $entry->getFees();
 
         return match ($entry->getKind()) {
-            AssetEntryKindEnum::BUY => $gross + $fees,
-            AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => max(0.0, $gross - $fees),
+            AssetEntryKindEnum::BUY => bcadd($gross, $fees, 2),
+            AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => (
+                bccomp(bcsub($gross, $fees, 2), '0', 2) >= 0
+                    ? bcsub($gross, $fees, 2)
+                    : '0.00'
+            ),
         };
     }
 
@@ -235,11 +245,6 @@ final readonly class AssetEntryTransactionService
         };
 
         return sprintf('%s %s', $kindLabel, $entry->getAsset()->getTicker());
-    }
-
-    private function formatAmount(float $amount): string
-    {
-        return (string) round($amount, 2);
     }
 
     private function reverseBalanceEffect(Transaction $transaction): void

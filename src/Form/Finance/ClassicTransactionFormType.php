@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Form\Finance;
 
-use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Space;
@@ -13,20 +12,17 @@ use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Form for transactions on classic accounts (bank, cash, savings).
  */
-class ClassicTransactionFormType extends AbstractType
+class ClassicTransactionFormType extends AbstractTransactionFormType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -93,36 +89,4 @@ class ClassicTransactionFormType extends AbstractType
             ]);
     }
 
-    public function configureOptions(OptionsResolver $resolver): void
-    {
-        $resolver->setDefaults([
-            'data_class' => TransactionInputDto::class,
-            'constraints' => [
-                new Assert\Callback([$this, 'validateTransferDestination']),
-            ],
-        ]);
-        $resolver->setRequired('space');
-        $resolver->setAllowedTypes('space', Space::class);
-    }
-
-    public function validateTransferDestination(TransactionInputDto $input, ExecutionContextInterface $context): void
-    {
-        if ($input->type !== TransactionTypeEnum::TRANSFER) {
-            return;
-        }
-
-        if ($input->destinationAccount === null) {
-            $context->buildViolation('Le compte destinataire est obligatoire pour un virement.')
-                ->atPath('destinationAccount')
-                ->addViolation();
-
-            return;
-        }
-
-        if ($input->destinationAccount->getId() === $input->account->getId()) {
-            $context->buildViolation('Le compte destinataire doit être différent du compte source.')
-                ->atPath('destinationAccount')
-                ->addViolation();
-        }
-    }
 }

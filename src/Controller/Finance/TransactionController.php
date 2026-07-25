@@ -8,12 +8,12 @@ use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Transaction;
 use App\Entity\User;
-use App\Enum\AccountTypeEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Form\Finance\AssetTransactionFormType;
 use App\Form\Finance\ClassicTransactionFormType;
 use App\Repository\AccountRepository;
 use App\Repository\TransactionRepository;
+use App\Service\Finance\AccountBalanceService;
 use App\Service\Finance\TransactionService;
 use App\Service\Space\SpaceResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,6 +28,7 @@ class TransactionController extends AbstractController
         private readonly TransactionService $transactionService,
         private readonly TransactionRepository $transactionRepository,
         private readonly AccountRepository $accountRepository,
+        private readonly AccountBalanceService $accountBalanceService,
         private readonly SpaceResolver $spaceResolver,
     ) {}
 
@@ -143,9 +144,7 @@ class TransactionController extends AbstractController
                 $this->addFlash('success', 'Transaction mise à jour.');
                 $redirectTo = $request->query->get('redirect_to');
 
-                return $redirectTo
-                    ? $this->redirect($redirectTo)
-                    : $this->redirectToRoute('app_transaction_index');
+                return $this->safeRedirect($redirectTo, 'app_transaction_index');
             } catch (\InvalidArgumentException $e) {
                 $this->addFlash('error', $e->getMessage());
             }
@@ -186,17 +185,23 @@ class TransactionController extends AbstractController
         $this->transactionService->delete($transaction);
         $this->addFlash('success', 'Transaction supprimée.');
 
-        $redirectTo = $request->request->get('redirect_to');
-
-        return $redirectTo
-            ? $this->redirect($redirectTo)
-            : $this->redirectToRoute('app_transaction_index');
+        return $this->safeRedirect($request->request->get('redirect_to'), 'app_transaction_index');
     }
 
     private function resolveFormType(Account $account): string
     {
-        return \in_array($account->getType(), [AccountTypeEnum::CRYPTO, AccountTypeEnum::STOCK], true)
+        return $this->accountBalanceService->isAssetHoldingAccount($account)
             ? AssetTransactionFormType::class
             : ClassicTransactionFormType::class;
+    }
+
+    /** Redirect to $path if it is an internal path (starts with /), otherwise fall back to a named route. */
+    private function safeRedirect(?string $path, string $fallbackRoute): \Symfony\Component\HttpFoundation\Response
+    {
+        if ($path !== null && str_starts_with($path, '/')) {
+            return $this->redirect($path);
+        }
+
+        return $this->redirectToRoute($fallbackRoute);
     }
 }

@@ -124,11 +124,14 @@ class Asset
         return $this;
     }
 
-    /** All distinct accounts linked to this asset's entries. */
+    /** All distinct accounts linked to this asset's active (non-deleted) entries. */
     public function getAccounts(): array
     {
         $accounts = [];
         foreach ($this->entries as $entry) {
+            if ($entry->isDeleted()) {
+                continue;
+            }
             $account = $entry->getAccount();
             if ($account !== null && !in_array($account, $accounts, true)) {
                 $accounts[] = $account;
@@ -138,14 +141,15 @@ class Asset
         return $accounts;
     }
 
-    /** The account of the first entry, used as the asset's primary display account. */
+    /** The account of the most recent active entry, used as the asset's primary display account. */
     public function getPrimaryAccount(): ?Account
     {
-        $entries = $this->entries->toArray();
-        if ($entries === []) {
-            return null;
+        foreach ($this->entries as $entry) {
+            if (!$entry->isDeleted()) {
+                return $entry->getAccount();
+            }
         }
 
-        return $entries[0]->getAccount();
+        return null;
     }
 }

@@ -16,6 +16,7 @@ class AssetEntryService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly AssetEntryRepository $entryRepository,
+        private readonly AssetEntryTransactionService $transactionService,
     ) {}
 
     /**
@@ -51,63 +52,69 @@ class AssetEntryService
         return $entry;
     }
 
-    /** Delete an entry. The linked account balance is restored by the entity listener. */
+    /**
+     * Soft-delete an entry and reverse its linked transaction balance effects.
+     * The AssetEntry FK is preserved on soft-deleted transactions for audit.
+     */
     public function delete(AssetEntry $entry): void
     {
-        $this->em->remove($entry);
+        $this->transactionService->deleteForEntry($entry);
+        $entry->softDelete();
         $this->em->flush();
     }
 
-    /** Calculate realized P&L for a sell entry in space currency. */
-    public function calculateRealizedPnL(AssetEntry $sellEntry): ?float
+    /** Calculate realized P&L for a sell entry in space currency using FIFO. */
+    public function calculateRealizedPnL(AssetEntry $sellEntry): ?string
     {
         if ($sellEntry->getKind() !== AssetEntryKindEnum::SELL) {
             return null;
         }
 
-        $sellQty = (float) $sellEntry->getQuantity();
-        $sellPrice = (float) $sellEntry->getUnitPrice();
-        $sellFx = (float) $sellEntry->getFxRate();
+        $sellQty = $sellEntry->getQuantity();
 
-        // Get buy entries in FIFO order
         $buys = $this->entryRepository->findBuysByAsset($sellEntry->getAsset());
 
         $remainingQty = $sellQty;
-        $matchedCost = 0.0;
+        $matchedCost = '0';
 
         foreach ($buys as $buy) {
-            if ($remainingQty <= 0.0) {
+            if (bccomp($remainingQty, '0', 8) <= 0) {
                 break;
             }
 
-            $buyQty = (float) $buy->getQuantity();
-            $buyPrice = (float) $buy->getUnitPrice();
-            $buyFx = (float) $buy->getFxRate();
+            $buyQty = $buy->getQuantity();
+            $buyPrice = $buy->getUnitPrice();
+            $buyFx = $buy->getFxRate();
 
-            $matched = min($remainingQty, $buyQty);
-            $matchedCost += $matched * $buyPrice * $buyFx;
-            $remainingQty -= $matched;
+            $matched = bccomp($remainingQty, $buyQty, 8) <= 0 ? $remainingQty : $buyQty;
+
+            // cost in space currency: matched × buyPrice × buyFx
+            $cost = bcmul(bcmul($matched, $buyPrice, 8), $buyFx, 6);
+            $matchedCost = bcadd($matchedCost, $cost, 6);
+            $remainingQty = bcsub($remainingQty, $matched, 8);
         }
 
-        if ($remainingQty > 0.0) {
-            // Should not happen if validation is correct, but defensive
+        if (bccomp($remainingQty, '0', 8) > 0) {
             return null;
         }
 
-        $sellProceeds = $sellQty * $sellPrice * $sellFx;
+        $sellProceeds = $sellEntry->getTotalAmountInSpaceCurrency();
 
-        return $sellProceeds - $matchedCost - (float) $sellEntry->getFees();
+        return bcsub(bcsub($sellProceeds, $matchedCost, 2), $sellEntry->getFees(), 2);
     }
 
     /** Calculate total realized P&L across all sells for an asset. */
-    public function calculateTotalRealizedPnL(Asset $asset): float
+    public function calculateTotalRealizedPnL(Asset $asset): string
     {
-        $total = 0.0;
+        $total = '0';
         foreach ($asset->getEntries() as $entry) {
+            if ($entry->isDeleted()) {
+                continue;
+            }
             if ($entry->getKind() === AssetEntryKindEnum::SELL) {
                 $pnl = $this->calculateRealizedPnL($entry);
                 if ($pnl !== null) {
-                    $total += $pnl;
+                    $total = bcadd($total, $pnl, 2);
                 }
             }
         }
@@ -132,9 +139,9 @@ class AssetEntryService
             $heldQty = $this->entryRepository->getTotalQuantity($input->asset);
             if (bccomp($input->quantity, $heldQty, 8) > 0) {
                 throw new \RuntimeException(sprintf(
-                    'Cannot sell %.8f units: only %.8f held.',
-                    (float) $input->quantity,
-                    (float) $heldQty
+                    'Cannot sell %s units: only %s held.',
+                    $input->quantity,
+                    $heldQty,
                 ));
             }
         }
@@ -142,7 +149,7 @@ class AssetEntryService
 
     private function guardStrictlyPositive(?string $value, string $fieldName): void
     {
-        if ($value === null || (float) $value <= 0.0) {
+        if ($value === null || bccomp($value, '0', 8) <= 0) {
             throw new \InvalidArgumentException(sprintf('%s must be strictly positive.', $fieldName));
         }
     }

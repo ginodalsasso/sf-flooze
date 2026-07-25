@@ -53,7 +53,11 @@ readonly class AccountBalanceService
     }
 
     /**
-     * Ensure an asset-holding account does not use invested funds.
+     * Ensure an asset-holding account does not spend invested funds.
+     *
+     * Classic accounts (bank, cash, saving) allow negative balances by design
+     * — overdraft and credit operations are valid in personal finance. Only
+     * asset accounts enforce a floor because "invested" funds are not liquid.
      *
      * @throws \InvalidArgumentException when available balance is insufficient
      */

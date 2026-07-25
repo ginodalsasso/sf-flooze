@@ -14,10 +14,12 @@ use Doctrine\ORM\Events;
  *
  * Asset entries are the source of truth for asset-related cash movements.
  * Manual edit/delete of the generated transactions is blocked in the UI.
+ *
+ * Delete is handled directly in AssetEntryService (not here) to support
+ * soft-delete: em->remove() is never called, so preRemove would not fire.
  */
 #[AsEntityListener(event: Events::prePersist, method: 'prePersist', entity: AssetEntry::class)]
 #[AsEntityListener(event: Events::preUpdate, method: 'preUpdate', entity: AssetEntry::class)]
-#[AsEntityListener(event: Events::preRemove, method: 'preRemove', entity: AssetEntry::class)]
 class AssetEntryListener
 {
     public function __construct(
@@ -32,10 +34,5 @@ class AssetEntryListener
     public function preUpdate(AssetEntry $entry): void
     {
         $this->transactionService->updateForEntry($entry);
-    }
-
-    public function preRemove(AssetEntry $entry): void
-    {
-        $this->transactionService->deleteForEntry($entry);
     }
 }

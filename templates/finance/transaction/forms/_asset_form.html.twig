@@ -1,4 +1,9 @@
-{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+{{ form_start(form, {attr: {
+    novalidate: 'novalidate',
+    'data-controller': 'transfer-guard',
+    'data-transfer-guard-source-id-value': form.account.vars.id,
+    'data-transfer-guard-dest-id-value': form.destinationAccount.vars.id
+}}) }}
 
     <div class="form-section txn-form-grid">
         <twig:Form:Field field="{{ form.type }}" label="Type de transaction" />
@@ -31,26 +36,6 @@
 {{ form_end(form) }}
 
 <script>
-(function () {
-    const source = document.getElementById('{{ form.account.vars.id }}');
-    const dest = document.getElementById('{{ form.destinationAccount.vars.id }}');
-    if (!source || !dest) return;
-
-    function updateDestOptions() {
-        const sourceId = source.value;
-        for (const option of dest.options) {
-            option.disabled = option.value === sourceId && sourceId !== '';
-        }
-        if (dest.value === sourceId) {
-            dest.value = '';
-        }
-    }
-
-    source.addEventListener('change', updateDestOptions);
-    updateDestOptions();
-})();
-
-
 (function () {
     const accountSelect = document.getElementById('{{ form.account.vars.id }}');
     const amountInput = document.getElementById('{{ form.amount.vars.id }}');

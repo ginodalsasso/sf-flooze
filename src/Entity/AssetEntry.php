@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\AssetEntryKindEnum;
 use App\Repository\AssetEntryRepository;
+use App\Trait\SoftDeleteTrait;
 use App\Trait\SpaceScopeTrait;
 use App\Trait\TimestampTrait;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -19,6 +20,7 @@ class AssetEntry
 {
     use TimestampTrait;
     use SpaceScopeTrait;
+    use SoftDeleteTrait;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -56,7 +58,7 @@ class AssetEntry
     private ?Account $fundingAccount = null;
 
     /** @var Collection<int, Transaction> */
-    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'assetEntry', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'assetEntry', cascade: ['persist'])]
     private Collection $transactions;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -219,16 +221,16 @@ class AssetEntry
         return $this;
     }
 
-    /** Total amount of this entry in asset currency: qty × unit_price */
-    public function getTotalAmount(): float
+    /** Total amount of this entry in asset currency: qty × unit_price (scale 6 for intermediate precision) */
+    public function getTotalAmount(): string
     {
-        return (float) $this->quantity * (float) $this->unitPrice;
+        return bcmul($this->quantity, $this->unitPrice, 6);
     }
 
-    /** Total amount converted to space currency: qty × unit_price × fx_rate */
-    public function getTotalAmountInSpaceCurrency(): float
+    /** Total amount converted to space currency: qty × unit_price × fx_rate (scale 2 for storage) */
+    public function getTotalAmountInSpaceCurrency(): string
     {
-        return $this->getTotalAmount() * (float) $this->fxRate;
+        return bcmul($this->getTotalAmount(), $this->fxRate, 2);
     }
 
 }
