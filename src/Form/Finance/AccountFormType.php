@@ -19,6 +19,8 @@ class AccountFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $balanceLocked = $options['balance_locked'];
+
         $builder
             ->add('name', TextType::class, [
                 'attr' => ['placeholder' => 'Ex. : Compte courant, Livret A, Binance…'],
@@ -34,8 +36,10 @@ class AccountFormType extends AbstractType
             ->add('balance', NumberType::class, [
                 'scale' => 2,
                 'html5' => false,
+                'disabled' => $balanceLocked,
                 'attr' => ['placeholder' => '0,00'],
-                'constraints' => [
+                'help' => $balanceLocked ? 'Le solde ne peut pas être modifié directement car des transactions existent sur ce compte.' : null,
+                'constraints' => $balanceLocked ? [] : [
                     new Assert\NotNull(message: 'Le solde ne peut pas être vide.'),
                 ],
             ])
@@ -47,6 +51,10 @@ class AccountFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => Account::class]);
+        $resolver->setDefaults([
+            'data_class' => Account::class,
+            'balance_locked' => false,
+        ]);
+        $resolver->setAllowedTypes('balance_locked', 'bool');
     }
 }

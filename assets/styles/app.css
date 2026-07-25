@@ -145,6 +145,24 @@ body {
 
 .form-group input::placeholder { color: var(--fg-3); }
 
+.form-group input[type="email"]:disabled,
+.form-group input[type="password"]:disabled,
+.form-group input[type="text"]:disabled {
+  background: var(--bg-base);
+  color: var(--fg-3);
+  border-color: var(--border);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.form-group select:disabled {
+  background: var(--bg-base);
+  color: var(--fg-3);
+  border-color: var(--border);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .form-group select {
   background: var(--bg-elevated);
   border: 1px solid var(--border-strong);

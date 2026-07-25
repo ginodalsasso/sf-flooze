@@ -116,4 +116,16 @@ class TransactionRepository extends ServiceEntityRepository
 
         return $result ?? '0';
     }
+
+    /** Returns the number of active (non-deleted) transactions linked to the account. */
+    public function countByAccount(Account $account): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.account = :account')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('account', $account)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
