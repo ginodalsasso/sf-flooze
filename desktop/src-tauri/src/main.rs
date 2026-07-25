@@ -12,22 +12,26 @@ fn main() {
     let backend = Mutex::new(start_backend());
     wait_for_backend();
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
             window.show().unwrap();
             Ok(())
         })
-        .on_window_event(move |_, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                if let Ok(mut child) = backend.lock() {
-                    kill_backend(&mut child);
-                }
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    // Catch-all: whatever the exit path (window closed, quit from the
+    // taskbar, AppHandle::exit()...), the PHP server must not outlive the
+    // app. `RunEvent::Exit` is the last event the event loop emits.
+    app.run(move |_, event| {
+        if let tauri::RunEvent::Exit = event {
+            if let Ok(mut child) = backend.lock() {
+                kill_backend(&mut child);
             }
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        }
+    });
 }
 
 /// Walks up from the executable to find the Symfony project root.
@@ -81,8 +85,8 @@ fn wait_for_backend() {
 
 /// Stops the backend and its whole process tree.
 ///
-/// On Windows the spawned process is pwsh, which itself started `php -S`:
-/// a plain `kill()` would leave the PHP server orphaned and port 8765 busy.
+/// On Windows the spawned process is pwsh, which itself started FrankenPHP:
+/// a plain `kill()` would leave the server orphaned and port 8765 busy.
 /// `taskkill /T` kills the whole tree.
 #[cfg(target_os = "windows")]
 fn kill_backend(child: &mut Child) {

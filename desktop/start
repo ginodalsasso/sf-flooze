@@ -13,6 +13,22 @@ set -a
 source .env.desktop
 set +a
 
+# Load the desktop PHP configuration (extensions for the bundled binary)
+export PHPRC="$PWD/desktop"
+
+# Locate the FrankenPHP binary: desktop/bin first, then PATH.
+if [ -x "desktop/bin/frankenphp" ]; then
+    FRANKENPHP="desktop/bin/frankenphp"
+elif [ -x "desktop/bin/frankenphp.exe" ]; then
+    FRANKENPHP="desktop/bin/frankenphp.exe"
+elif command -v frankenphp >/dev/null 2>&1; then
+    FRANKENPHP="frankenphp"
+else
+    echo "Error: FrankenPHP binary not found."
+    echo "Download it from https://frankenphp.dev and place it in desktop/bin/ (or add it to your PATH)."
+    exit 1
+fi
+
 # Install Composer dependencies if needed
 if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
     echo "Installing Composer dependencies..."
@@ -30,14 +46,12 @@ fi
 # var/app.db is created automatically on first connection.
 mkdir -p var
 echo "Updating SQLite schema (var/app.db)..."
-php bin/console doctrine:schema:update --force --env=desktop --no-interaction
+"$FRANKENPHP" php-cli bin/console doctrine:schema:update --force --env=desktop --no-interaction
 
-# Start the PHP built-in web server with a dedicated router.
-# The router forces $_SERVER/$_ENV because some PHP setups (variables_order
-# without 'E') do not forward environment variables to the built-in server.
-echo "Starting local server on http://localhost:8765"
+# Start FrankenPHP in worker mode (see desktop/Caddyfile).
+echo "Starting FrankenPHP on http://localhost:8765"
 echo "APP_ENV = $APP_ENV"
 echo "DATABASE_URL = $DATABASE_URL"
-# exec: bash is replaced by PHP, so stopping the desktop app really kills
-# the server (no orphaned process).
-exec php -S localhost:8765 -t "$PWD/public" "$PWD/desktop/router.php"
+# exec: bash is replaced by FrankenPHP, so stopping the desktop app really
+# kills the server (no orphaned process).
+exec "$FRANKENPHP" run --config "$PWD/desktop/Caddyfile"

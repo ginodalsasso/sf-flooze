@@ -81,11 +81,16 @@ sf-flooze/
 │
 ├── migrations/                    # Doctrine migrations
 │
-├── frankenphp/
+├── frankenphp/                    # Docker app server config (dev + prod)
 │   ├── Caddyfile
-│   ├── compose.yaml
-│   ├── compose.override.yaml
-│   └── compose.prod.yaml
+│   ├── conf.d/
+│   └── docker-entrypoint.sh
+│
+├── desktop/                       # Tauri desktop app (see desktop/README.md)
+│   ├── Caddyfile                  # FrankenPHP worker mode on :8765
+│   ├── start / start.ps1          # Bootstrap + launch FrankenPHP
+│   ├── bin/                       # Local FrankenPHP binary (gitignored)
+│   └── src-tauri/                 # Tauri shell (WebView over localhost:8765)
 │
 ├── .claude/
 │   ├── rules.md
@@ -305,6 +310,15 @@ AI/
 | `ReconcileAccountCommand` | Match Transactions ↔ bank statement | On demand |
 | `SyncCloudStorageCommand` | Backup docs to Google Drive | Weekly (future) |
 | `OptimizeTaxesCommand` | Run Ollama fiscal recommendations | On demand (future) |
+
+---
+
+## Desktop App
+
+The desktop app is a Tauri WebView shell over the same Symfony codebase, served
+by a local **FrankenPHP binary in worker mode** on `http://localhost:8765`
+(`desktop/Caddyfile`), backed by SQLite (`var/app.db`) under the `desktop`
+kernel environment. Details: [desktop/README.md](desktop/README.md).
 
 ---
 

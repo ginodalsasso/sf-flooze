@@ -1,0 +1,4 @@
+# The FrankenPHP binary and its bundled PHP distribution are downloaded
+# locally (see desktop/README.md) — none of it is committed.
+*
+!.gitignore

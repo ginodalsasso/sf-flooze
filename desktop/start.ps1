@@ -21,6 +21,22 @@ Get-Content ".env.desktop" | ForEach-Object {
     }
 }
 
+# Load the desktop PHP configuration (extensions for the bundled binary)
+[Environment]::SetEnvironmentVariable('PHPRC', "$root\desktop", 'Process')
+
+# Locate the FrankenPHP binary: desktop/bin first, then PATH.
+$frankenphp = @("$root\desktop\bin\frankenphp.exe", "$root\desktop\bin\frankenphp") |
+    Where-Object { Test-Path $_ } |
+    Select-Object -First 1
+if (-Not $frankenphp) {
+    $cmd = Get-Command frankenphp -ErrorAction SilentlyContinue
+    if ($cmd) { $frankenphp = $cmd.Source }
+}
+if (-Not $frankenphp) {
+    Write-Error "FrankenPHP binary not found. Download it from https://frankenphp.dev and place it in desktop/bin/ (or add it to your PATH)."
+    exit 1
+}
+
 # Install Composer dependencies if needed
 if (-Not (Test-Path "vendor/autoload.php")) {
     Write-Host "Installing Composer dependencies..."
@@ -38,27 +54,25 @@ if (Test-Path "var/cache/desktop") {
 # var/app.db is created automatically on first connection.
 New-Item -ItemType Directory -Force -Path "var" | Out-Null
 Write-Host "Updating SQLite schema (var/app.db)..."
-php bin/console doctrine:schema:update --force --env=desktop --no-interaction
+& $frankenphp php-cli bin/console doctrine:schema:update --force --env=desktop --no-interaction
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Error while updating the database schema."
     exit 1
 }
 
-# Kill old PHP servers still listening on port 8765. Otherwise a "zombie"
+# Kill old servers still listening on port 8765. Otherwise a "zombie"
 # server (started with another environment) keeps the port: the new server
 # cannot bind and Tauri ends up querying the old one.
 Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue |
     Select-Object -ExpandProperty OwningProcess -Unique |
     ForEach-Object {
-        if ((Get-Process -Id $_ -ErrorAction SilentlyContinue).ProcessName -eq 'php') {
+        if ((Get-Process -Id $_ -ErrorAction SilentlyContinue).ProcessName -in @('php', 'frankenphp')) {
             Stop-Process -Id $_ -Force
         }
     }
 
-# Start the PHP built-in web server with a dedicated router.
-# The router forces $_SERVER/$_ENV because some PHP setups (variables_order
-# without 'E') do not forward environment variables to the built-in server.
-Write-Host "Starting local server on http://localhost:8765"
+# Start FrankenPHP in worker mode (see desktop/Caddyfile).
+Write-Host "Starting FrankenPHP on http://localhost:8765"
 Write-Host "APP_ENV = $([Environment]::GetEnvironmentVariable('APP_ENV', 'Process'))"
 Write-Host "DATABASE_URL = $([Environment]::GetEnvironmentVariable('DATABASE_URL', 'Process'))"
-php -S localhost:8765 -t "$root/public" "$root/desktop/router.php"
+& $frankenphp run --config "$root\desktop\Caddyfile"
