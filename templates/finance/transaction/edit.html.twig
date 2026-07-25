@@ -16,7 +16,11 @@
 <div class="page-content">
     <div class="form-page">
         <twig:Flash levels="{{ ['error'] }}" />
-        {% include 'finance/transaction/forms/_form.html.twig' with {submit_label: 'Enregistrer', redirect_to: redirect_to} %}
+        {% if transaction.account.type.value in ['crypto', 'stock'] %}
+            {% include 'finance/transaction/forms/_asset_form.html.twig' with {submit_label: 'Enregistrer', redirect_to: redirect_to} %}
+        {% else %}
+            {% include 'finance/transaction/forms/_classic_form.html.twig' with {submit_label: 'Enregistrer', redirect_to: redirect_to} %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}

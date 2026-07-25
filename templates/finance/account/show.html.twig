@@ -34,11 +34,34 @@
             </div>
         </div>
         <div class="acc-show-balance">
-            {% set balance = detail.account.balance %}
-            <p class="acc-card-balance{% if balance < 0 %} acc-card-balance--negative{% elseif balance > 0 %} acc-card-balance--positive{% endif %}">
-                {{ balance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
-            </p>
-            <p class="acc-card-currency">Solde actuel</p>
+            {% if detail.isAssetAccount %}
+                <div class="acc-show-balances">
+                    <div class="acc-show-balance-item">
+                        <p class="acc-card-balance{% if detail.account.balance < 0 %} acc-card-balance--negative{% elseif detail.account.balance > 0 %} acc-card-balance--positive{% endif %}">
+                            {{ detail.account.balance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                        </p>
+                        <p class="acc-card-currency">Solde total</p>
+                    </div>
+                    <div class="acc-show-balance-item">
+                        <p class="acc-card-balance">
+                            {{ detail.investedBalance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                        </p>
+                        <p class="acc-card-currency">Investi</p>
+                    </div>
+                    <div class="acc-show-balance-item">
+                        <p class="acc-card-balance{% if detail.availableBalance < 0 %} acc-card-balance--negative{% elseif detail.availableBalance > 0 %} acc-card-balance--positive{% endif %}">
+                            {{ detail.availableBalance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                        </p>
+                        <p class="acc-card-currency">Disponible</p>
+                    </div>
+                </div>
+            {% else %}
+                {% set balance = detail.account.balance %}
+                <p class="acc-card-balance{% if balance < 0 %} acc-card-balance--negative{% elseif balance > 0 %} acc-card-balance--positive{% endif %}">
+                    {{ balance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                </p>
+                <p class="acc-card-currency">Solde actuel</p>
+            {% endif %}
         </div>
         <div class="acc-show-actions">
             <twig:Button
@@ -54,11 +77,11 @@
     {# Monthly summary #}
     <div class="acc-show-monthly">
         <div class="acc-show-monthly-item">
-            <span class="acc-show-monthly-label">Revenus ce mois</span>
+            <span class="acc-show-monthly-label">{{ detail.isAssetAccount ? 'Entrées ce mois' : 'Revenus ce mois' }}</span>
             <span class="acc-show-monthly-value acc-show-monthly-value--positive">+{{ detail.monthlyIncome|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}</span>
         </div>
         <div class="acc-show-monthly-item">
-            <span class="acc-show-monthly-label">Dépenses ce mois</span>
+            <span class="acc-show-monthly-label">{{ detail.isAssetAccount ? 'Sorties ce mois' : 'Dépenses ce mois' }}</span>
             <span class="acc-show-monthly-value acc-show-monthly-value--negative">-{{ detail.monthlyExpense|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}</span>
         </div>
         <div class="acc-show-monthly-item">
@@ -107,10 +130,18 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <twig:Badge
-                                    label="{{ txn.type.label() }}"
-                                    variant="{{ txn.type.badgeVariant() }}"
-                                />
+                                {% if txn.linkedToAsset %}
+                                    {% set assetKindLabel = txn.categoryLabel %}
+                                    <twig:Badge
+                                        label="{{ assetKindLabel }}"
+                                        variant="{{ txn.type.badgeVariant() }}"
+                                    />
+                                {% else %}
+                                    <twig:Badge
+                                        label="{{ detail.isAssetAccount ? txn.type.assetLabel() : txn.type.label() }}"
+                                        variant="{{ txn.type.badgeVariant() }}"
+                                    />
+                                {% endif %}
                             </td>
                             <td>
                                 <span class="txn-amount txn-amount--{{ txn.type.value }}">

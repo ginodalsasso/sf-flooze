@@ -12,13 +12,16 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class TransactionService
 {
-    public function __construct(private readonly EntityManagerInterface $em) {}
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly AccountBalanceService $accountBalanceService,
+    ) {}
 
     /**
      * Persist a new transaction and update account balance(s).
      * Rejects non-positive amounts as a defense-in-depth measure.
      *
-     * @throws \InvalidArgumentException if amount is not strictly positive
+     * @throws \InvalidArgumentException if amount is not strictly positive or if funds are insufficient
      */
     public function save(TransactionInputDto $input): Transaction
     {
@@ -26,6 +29,9 @@ class TransactionService
 
         $transaction = new Transaction();
         $this->applyFromDto($transaction, $input);
+
+        $this->guardSpendableFunds($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        $this->guardValidTransfer($transaction->getAccount(), $transaction->getDestinationAccount(), $transaction->getType());
 
         $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
 
@@ -64,6 +70,10 @@ class TransactionService
 
         // Apply new data
         $this->applyFromDto($transaction, $input);
+
+        // Ensure the new source account has enough available funds before applying the new effect.
+        $this->guardSpendableFunds($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        $this->guardValidTransfer($transaction->getAccount(), $transaction->getDestinationAccount(), $transaction->getType());
 
         // Apply new effect
         $this->applyBalance($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
@@ -126,6 +136,24 @@ class TransactionService
         // bccomp: compare numeric strings (-1 if less, 0 if equal, 1 if greater).
         if (bccomp($amount, '0', 2) <= 0) {
             throw new \InvalidArgumentException('Transaction amount must be strictly positive.');
+        }
+    }
+
+    private function guardSpendableFunds(Account $account, TransactionTypeEnum $type, string $amount): void
+    {
+        if ($type !== TransactionTypeEnum::INCOME) {
+            $this->accountBalanceService->guardAvailableFunds($account, $amount);
+        }
+    }
+
+    private function guardValidTransfer(?Account $source, ?Account $destination, TransactionTypeEnum $type): void
+    {
+        if ($type !== TransactionTypeEnum::TRANSFER || $destination === null) {
+            return;
+        }
+
+        if ($source !== null && $source->getId() === $destination->getId()) {
+            throw new \InvalidArgumentException('Le compte destinataire doit être différent du compte source.');
         }
     }
 

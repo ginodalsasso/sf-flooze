@@ -8,9 +8,11 @@ use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Space;
+use App\Enum\AccountTypeEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
+use App\Service\Finance\AccountBalanceService;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -20,9 +22,17 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
-class TransactionFormType extends AbstractType
+/**
+ * Form for transactions on asset-holding accounts (crypto, stock).
+ */
+class AssetTransactionFormType extends AbstractType
 {
+    public function __construct(
+        private readonly AccountBalanceService $accountBalanceService,
+    ) {}
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         /** @var Space $space */
@@ -31,7 +41,10 @@ class TransactionFormType extends AbstractType
         $builder
             ->add('type', EnumType::class, [
                 'class' => TransactionTypeEnum::class,
-                'choice_label' => fn(TransactionTypeEnum $t) => $t->label(),
+                'choices' => [TransactionTypeEnum::EXPENSE, TransactionTypeEnum::TRANSFER],
+                'choice_label' => fn(TransactionTypeEnum $t) => $t->assetLabel(),
+                'label' => 'Type d\'opération',
+                'data' => TransactionTypeEnum::EXPENSE,
             ])
             ->add('account', EntityType::class, [
                 'class' => Account::class,
@@ -39,10 +52,17 @@ class TransactionFormType extends AbstractType
                 'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
                     ->where('a.space = :space')
                     ->andWhere('a.deletedAt IS NULL')
+                    ->andWhere('a.type IN (:assetTypes)')
                     ->setParameter('space', $space)
+                    ->setParameter('assetTypes', [AccountTypeEnum::CRYPTO, AccountTypeEnum::STOCK])
                     ->orderBy('a.name', 'ASC'),
-                'placeholder' => 'Choisir un compte…',
+                'placeholder' => 'Choisir un compte crypto/actif…',
                 'constraints' => [new Assert\NotNull(message: 'Le compte est obligatoire.')],
+                'label' => 'Compte crypto/actif',
+                'choice_attr' => fn(Account $a) => [
+                    'data-available-balance' => $this->accountBalanceService->getAvailableBalance($a),
+                    'data-currency' => $a->getCurrency()->value,
+                ],
             ])
             ->add('amount', NumberType::class, [
                 'scale' => 2,
@@ -60,7 +80,7 @@ class TransactionFormType extends AbstractType
             ])
             ->add('description', TextType::class, [
                 'required' => false,
-                'attr' => ['placeholder' => 'Ex. : Courses Lidl, Salaire mars…'],
+                'attr' => ['placeholder' => 'Ex. : Dépôt, retrait…'],
                 'constraints' => [
                     new Assert\Length(max: 255, maxMessage: 'Maximum {{ limit }} caractères.'),
                 ],
@@ -75,7 +95,7 @@ class TransactionFormType extends AbstractType
             ->add('destinationAccount', EntityType::class, [
                 'class' => Account::class,
                 'required' => false,
-                'placeholder' => 'Aucun (non applicable)',
+                'placeholder' => 'Choisir un compte destinataire…',
                 'label' => 'Compte destinataire (virements uniquement)',
                 'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
                     ->where('a.space = :space')
@@ -88,8 +108,34 @@ class TransactionFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => TransactionInputDto::class]);
+        $resolver->setDefaults([
+            'data_class' => TransactionInputDto::class,
+            'constraints' => [
+                new Assert\Callback([$this, 'validateTransferDestination']),
+            ],
+        ]);
         $resolver->setRequired('space');
         $resolver->setAllowedTypes('space', Space::class);
+    }
+
+    public function validateTransferDestination(TransactionInputDto $input, ExecutionContextInterface $context): void
+    {
+        if ($input->type !== TransactionTypeEnum::TRANSFER) {
+            return;
+        }
+
+        if ($input->destinationAccount === null) {
+            $context->buildViolation('Le compte destinataire est obligatoire pour un virement.')
+                ->atPath('destinationAccount')
+                ->addViolation();
+
+            return;
+        }
+
+        if ($input->destinationAccount->getId() === $input->account->getId()) {
+            $context->buildViolation('Le compte destinataire doit être différent du compte source.')
+                ->atPath('destinationAccount')
+                ->addViolation();
+        }
     }
 }

@@ -1,0 +1,95 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section txn-form-grid">
+        <twig:Form:Field field="{{ form.type }}" label="Type de transaction" />
+        <twig:Form:Field field="{{ form.date }}" label="Date" />
+    </div>
+
+    <div class="form-section txn-form-grid">
+        <twig:Form:Field field="{{ form.account }}" label="Compte crypto/actif" />
+        <div>
+            <twig:Form:Field field="{{ form.amount }}" label="Montant" />
+            <p id="asset-available-balance" class="txn-balance-hint"></p>
+        </div>
+    </div>
+
+    <div class="form-section txn-form-full">
+        <twig:Form:Field field="{{ form.description }}" label="Description" />
+    </div>
+
+    <div class="form-section txn-form-grid">
+        <twig:Form:Field field="{{ form.category }}" label="Catégorie" />
+        <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire"
+                         hint="Uniquement pour les virements depuis un compte crypto/actif" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ redirect_to ?? path('app_transaction_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}
+
+<script>
+(function () {
+    const source = document.getElementById('{{ form.account.vars.id }}');
+    const dest = document.getElementById('{{ form.destinationAccount.vars.id }}');
+    if (!source || !dest) return;
+
+    function updateDestOptions() {
+        const sourceId = source.value;
+        for (const option of dest.options) {
+            option.disabled = option.value === sourceId && sourceId !== '';
+        }
+        if (dest.value === sourceId) {
+            dest.value = '';
+        }
+    }
+
+    source.addEventListener('change', updateDestOptions);
+    updateDestOptions();
+})();
+
+
+(function () {
+    const accountSelect = document.getElementById('{{ form.account.vars.id }}');
+    const amountInput = document.getElementById('{{ form.amount.vars.id }}');
+    const hint = document.getElementById('asset-available-balance');
+
+    function formatMoney(value, currency) {
+        const number = parseFloat(value);
+        if (isNaN(number)) return '';
+        return number.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
+    }
+
+    function updateHint() {
+        const option = accountSelect.selectedOptions[0];
+        if (!option || !option.dataset.availableBalance) {
+            hint.textContent = '';
+            return;
+        }
+
+        const available = parseFloat(option.dataset.availableBalance);
+        const currency = option.dataset.currency || '';
+        const amount = parseFloat(amountInput.value.replace(',', '.')) || 0;
+
+        let text = formatMoney(option.dataset.availableBalance, currency) + ' disponible';
+        if (amount > available) {
+            text += ' — fonds insuffisants';
+            hint.classList.add('txn-balance-hint--warning');
+        } else {
+            hint.classList.remove('txn-balance-hint--warning');
+        }
+        hint.textContent = text;
+    }
+
+    if (accountSelect) {
+        accountSelect.addEventListener('change', updateHint);
+    }
+    if (amountInput) {
+        amountInput.addEventListener('input', updateHint);
+    }
+
+    updateHint();
+})();
+</script>

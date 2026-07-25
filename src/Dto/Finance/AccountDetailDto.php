@@ -23,11 +23,18 @@ final readonly class AccountDetailDto
         public array $transactions,
         public string $monthlyIncome,
         public string $monthlyExpense,
+        public string $investedBalance = '0.00',
+        public string $availableBalance = '0.00',
     ) {}
 
     public function hasTransactions(): bool
     {
         return $this->transactions !== [];
+    }
+
+    public function isAssetAccount(): bool
+    {
+        return \in_array($this->account->getType(), [\App\Enum\AccountTypeEnum::CRYPTO, \App\Enum\AccountTypeEnum::STOCK], true);
     }
 
     public function monthlyNetFlow(): string

@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Controller\Finance;
 
 use App\Dto\Finance\TransactionInputDto;
+use App\Entity\Account;
 use App\Entity\Transaction;
 use App\Entity\User;
+use App\Enum\AccountTypeEnum;
 use App\Enum\TransactionTypeEnum;
-use App\Form\Finance\TransactionFormType;
+use App\Form\Finance\AssetTransactionFormType;
+use App\Form\Finance\ClassicTransactionFormType;
 use App\Repository\AccountRepository;
 use App\Repository\TransactionRepository;
 use App\Service\Finance\TransactionService;
@@ -73,21 +76,38 @@ class TransactionController extends AbstractController
 
         $this->denyAccessUnlessGranted('EDIT', $space);
 
+        $mode = $request->query->get('mode');
+
+        if ($mode !== 'classic' && $mode !== 'asset') {
+            return $this->render('finance/transaction/mode.html.twig');
+        }
+
         $input = new TransactionInputDto();
         $input->space = $space;
         $input->date = new \DateTimeImmutable();
 
-        $form = $this->createForm(TransactionFormType::class, $input, ['space' => $space]);
+        $formType = $mode === 'asset'
+            ? AssetTransactionFormType::class
+            : ClassicTransactionFormType::class;
+
+        $form = $this->createForm($formType, $input, ['space' => $space]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->transactionService->save($input);
-            $this->addFlash('success', 'Transaction enregistrée.');
+            try {
+                $this->transactionService->save($input);
+                $this->addFlash('success', 'Transaction enregistrée.');
 
-            return $this->redirectToRoute('app_transaction_index');
+                return $this->redirectToRoute('app_transaction_index');
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
         }
 
-        return $this->render('finance/transaction/new.html.twig', ['form' => $form]);
+        return $this->render('finance/transaction/new.html.twig', [
+            'form' => $form,
+            'mode' => $mode,
+        ]);
     }
 
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'])]
@@ -113,17 +133,22 @@ class TransactionController extends AbstractController
 
         $input = TransactionInputDto::fromTransaction($transaction, $transaction->getSpace());
 
-        $form = $this->createForm(TransactionFormType::class, $input, ['space' => $transaction->getSpace()]);
+        $formType = $this->resolveFormType($transaction->getAccount());
+        $form = $this->createForm($formType, $input, ['space' => $transaction->getSpace()]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->transactionService->update($transaction, $input);
-            $this->addFlash('success', 'Transaction mise à jour.');
-            $redirectTo = $request->query->get('redirect_to');
+            try {
+                $this->transactionService->update($transaction, $input);
+                $this->addFlash('success', 'Transaction mise à jour.');
+                $redirectTo = $request->query->get('redirect_to');
 
-            return $redirectTo
-                ? $this->redirect($redirectTo)
-                : $this->redirectToRoute('app_transaction_index');
+                return $redirectTo
+                    ? $this->redirect($redirectTo)
+                    : $this->redirectToRoute('app_transaction_index');
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('finance/transaction/edit.html.twig', [
@@ -166,5 +191,12 @@ class TransactionController extends AbstractController
         return $redirectTo
             ? $this->redirect($redirectTo)
             : $this->redirectToRoute('app_transaction_index');
+    }
+
+    private function resolveFormType(Account $account): string
+    {
+        return \in_array($account->getType(), [AccountTypeEnum::CRYPTO, AccountTypeEnum::STOCK], true)
+            ? AssetTransactionFormType::class
+            : ClassicTransactionFormType::class;
     }
 }

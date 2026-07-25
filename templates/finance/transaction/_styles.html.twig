@@ -120,4 +120,76 @@
 }
 
 .txn-form-full { grid-column: 1 / -1; }
+
+.txn-balance-hint {
+  margin-top: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.txn-balance-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+.txn-balance-value--warning { color: #C2A89A; }
+.txn-balance-warning { color: #C2A89A; }
+
+.txn-balance-hint--warning { color: #C2A89A; }
+
+/* ── Mode selector ─────────────────────────────────────── */
+.txn-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.txn-mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 28px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-card);
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+}
+
+.txn-mode-card:hover {
+  border-color: var(--fg-3);
+  box-shadow: var(--shadow-card), 0 0 0 3px rgba(200,213,194,.08);
+  transform: translateY(-2px);
+}
+
+.txn-mode-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.txn-mode-icon i { width: 20px; height: 20px; color: var(--fg-2); }
+
+.txn-mode-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fg-1);
+}
+
+.txn-mode-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-3);
+  margin: 0;
+}
 </style>

@@ -19,6 +19,19 @@ enum TransactionTypeEnum: string
         };
     }
 
+    /**
+     * Label used for asset-holding accounts (crypto/stock). Only withdrawals
+     * and outgoing transfers make sense for these accounts: incoming money is
+     * always a transfer from another tracked account.
+     */
+    public function assetLabel(): string
+    {
+        return match($this) {
+            self::EXPENSE  => 'Retrait de fonds',
+            self::TRANSFER => 'Virement sortant',
+        };
+    }
+
     public function icon(): string
     {
         return match($this) {

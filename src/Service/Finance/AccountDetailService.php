@@ -13,6 +13,7 @@ class AccountDetailService
 {
     public function __construct(
         private readonly TransactionRepository $transactionRepository,
+        private readonly AccountBalanceService $accountBalanceService,
     ) {}
 
     public function build(Account $account): AccountDetailDto
@@ -35,6 +36,8 @@ class AccountDetailService
                 $startOfMonth,
                 $startOfNextMonth,
             ),
+            investedBalance: $this->accountBalanceService->getInvestedBalance($account),
+            availableBalance: $this->accountBalanceService->getAvailableBalance($account),
         );
     }
 }

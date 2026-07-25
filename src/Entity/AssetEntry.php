@@ -56,7 +56,7 @@ class AssetEntry
     private ?Account $fundingAccount = null;
 
     /** @var Collection<int, Transaction> */
-    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'assetEntry', cascade: ['persist'])]
+    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'assetEntry', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $transactions;
 
     #[ORM\Column(length: 255, nullable: true)]

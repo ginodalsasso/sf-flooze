@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Account;
 use App\Entity\Asset;
 use App\Entity\AssetEntry;
 use App\Entity\Space;
@@ -103,6 +104,21 @@ class AssetEntryRepository extends ServiceEntityRepository
             ->andWhere('e.kind = :kind')
             ->setParameter('asset', $asset)
             ->setParameter('kind', AssetEntryKindEnum::BUY)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ?? '0';
+    }
+
+    /** Total amount invested in a given holding account: BUY - SELL in space currency. */
+    public function getInvestedBalance(Account $account): string
+    {
+        $result = $this->createQueryBuilder('e')
+            ->select('SUM(e.quantity * e.unitPrice * e.fxRate * CASE WHEN e.kind = :buy THEN 1 WHEN e.kind = :sell THEN -1 ELSE 0 END)')
+            ->where('e.account = :account')
+            ->setParameter('account', $account)
+            ->setParameter('buy', AssetEntryKindEnum::BUY)
+            ->setParameter('sell', AssetEntryKindEnum::SELL)
             ->getQuery()
             ->getSingleScalarResult();
 

@@ -1,0 +1,35 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/transaction/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Nouvelle transaction — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Nouvelle transaction"
+    subtitle="Choisis le type de compte concerné"
+/>
+
+<div class="page-content">
+    <div class="txn-mode-grid">
+        <a href="{{ path('app_transaction_new', {mode: 'classic'}) }}" class="txn-mode-card">
+            <div class="txn-mode-icon">
+                <i data-lucide="landmark"></i>
+            </div>
+            <h2 class="txn-mode-title">Compte / Livret</h2>
+            <p class="txn-mode-desc">Revenu, dépense ou virement sur un compte bancaire, des espèces ou un livret d’épargne.</p>
+        </a>
+
+        <a href="{{ path('app_transaction_new', {mode: 'asset'}) }}" class="txn-mode-card">
+            <div class="txn-mode-icon">
+                <i data-lucide="coins"></i>
+            </div>
+            <h2 class="txn-mode-title">Crypto / Action</h2>
+            <p class="txn-mode-desc">Dépôt, retrait ou virement depuis un compte crypto ou un compte titres. Seuls les fonds non investis sont utilisables.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

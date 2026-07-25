@@ -8,12 +8,19 @@
 {% block title %}Nouvelle transaction — Flooze{% endblock %}
 
 {% block content %}
-<twig:PageHeader title="Nouvelle transaction" subtitle="Enregistre un revenu, une dépense ou un virement" />
+<twig:PageHeader
+    title="Nouvelle transaction"
+    subtitle="{{ mode == 'asset' ? 'Opération sur un compte crypto/actif' : 'Opération sur un compte ou un livret' }}"
+/>
 
 <div class="page-content">
     <div class="form-page">
         <twig:Flash levels="{{ ['error'] }}" />
-        {% include 'finance/transaction/forms/_form.html.twig' with {submit_label: 'Enregistrer'} %}
+        {% if mode == 'asset' %}
+            {% include 'finance/transaction/forms/_asset_form.html.twig' with {submit_label: 'Enregistrer'} %}
+        {% else %}
+            {% include 'finance/transaction/forms/_classic_form.html.twig' with {submit_label: 'Enregistrer'} %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}

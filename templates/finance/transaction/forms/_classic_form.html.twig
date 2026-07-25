@@ -26,3 +26,24 @@
     </div>
 
 {{ form_end(form) }}
+
+<script>
+(function () {
+    const source = document.getElementById('{{ form.account.vars.id }}');
+    const dest = document.getElementById('{{ form.destinationAccount.vars.id }}');
+    if (!source || !dest) return;
+
+    function updateDestOptions() {
+        const sourceId = source.value;
+        for (const option of dest.options) {
+            option.disabled = option.value === sourceId && sourceId !== '';
+        }
+        if (dest.value === sourceId) {
+            dest.value = '';
+        }
+    }
+
+    source.addEventListener('change', updateDestOptions);
+    updateDestOptions();
+})();
+</script>
