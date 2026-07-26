@@ -10,6 +10,13 @@
     </div>
 
     <div class="form-section">
+        <twig:Form:Field field="{{ form.applicableTypes }}"
+                         label="Types de transaction applicables"
+                         hint="La catégorie n'apparaîtra que dans les formulaires de ces types"
+                         attr="{{ {class: 'cat-form-types'} }}" />
+    </div>
+
+    <div class="form-section">
         <p class="form-section-label" title="Indiquez si cette catégorie a un impact fiscal sur vos déclarations">Flags fiscaux</p>
         <div class="cat-form-flags">
             <twig:Form:CheckboxField field="{{ form.isDeductible }}"

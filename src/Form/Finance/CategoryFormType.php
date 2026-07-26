@@ -6,10 +6,12 @@ namespace App\Form\Finance;
 
 use App\Entity\Category;
 use App\Entity\Space;
+use App\Enum\TransactionTypeEnum;
 use App\Repository\CategoryRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -47,6 +49,15 @@ class CategoryFormType extends AbstractType
                     return $qb;
                 },
                 'choice_label' => 'name',
+            ])
+            ->add('applicableTypes', EnumType::class, [
+                'class' => TransactionTypeEnum::class,
+                'multiple' => true,
+                'expanded' => true,
+                'choice_label' => fn(TransactionTypeEnum $type) => $type->label(),
+                'constraints' => [
+                    new Assert\Count(min: 1, minMessage: 'Sélectionne au moins un type de transaction.'),
+                ],
             ])
             ->add('isDeductible', CheckboxType::class, ['required' => false])
             ->add('isDeclarable', CheckboxType::class, ['required' => false]);

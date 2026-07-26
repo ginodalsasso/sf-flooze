@@ -58,6 +58,7 @@ abstract class AbstractTransactionFormType extends AbstractType
                 'placeholder' => 'Sans catégorie',
                 'query_builder' => fn(CategoryRepository $repo) => $repo->createSpaceScopedQb($space),
                 'choice_label' => 'name',
+                'group_by' => $this->categoryGroup(...),
             ])
             ->add('destinationAccount', EntityType::class, [
                 'class' => Account::class,
@@ -73,12 +74,23 @@ abstract class AbstractTransactionFormType extends AbstractType
             ]);
     }
 
+    /** Optgroup label: the types the category applies to, or "Tous types" if unrestricted. */
+    private function categoryGroup(Category $category): string
+    {
+        $types = $category->getApplicableTypes();
+
+        return $types === []
+            ? 'Tous types'
+            : implode(' · ', array_map(fn(TransactionTypeEnum $type) => $type->label(), $types));
+    }
+
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => TransactionInputDto::class,
             'constraints' => [
                 new Assert\Callback([$this, 'validateTransferDestination']),
+                new Assert\Callback([$this, 'validateCategoryType']),
             ],
         ]);
         $resolver->setRequired('space');
@@ -104,5 +116,19 @@ abstract class AbstractTransactionFormType extends AbstractType
                 ->atPath('destinationAccount')
                 ->addViolation();
         }
+    }
+
+    /** Guards against a category being posted for a type it does not apply to. ex: a "Salaire" category on an expense transaction. **/
+    public function validateCategoryType(TransactionInputDto $input, ExecutionContextInterface $context): void
+    {
+        if ($input->category === null || !isset($input->type) || $input->category->appliesTo($input->type)) {
+            return;
+        }
+
+        $context->buildViolation('La catégorie "{{ category }}" ne s\'applique pas aux transactions de type « {{ type }} ».')
+            ->setParameter('{{ category }}', $input->category->getName())
+            ->setParameter('{{ type }}', $input->type->label())
+            ->atPath('category')
+            ->addViolation();
     }
 }

@@ -118,7 +118,7 @@ src/Entity/
 │
 ├── Account.php               # Finance: bank/cash/crypto/saving account
 ├── Transaction.php           # Finance: income/expense/transfer
-├── Category.php              # Finance: hierarchical with fiscal flags
+├── Category.php              # Finance: hierarchical, fiscal flags, applicable transaction types
 ├── Asset.php                 # Finance: stocks, crypto, ETF (ticker, name, currency, type)
 ├── AssetEntry.php            # Finance: ledger row for a buy/sell/dividend operation
 │
@@ -374,6 +374,10 @@ Same pattern as DocumentLink. Reminders can be linked to Property, Lease, TaxYea
 ### 5. Category Hierarchy
 
 `Category` is self-referential with `parent_id`. `is_deductible` and `is_declarable` flags propagate fiscal significance.
+
+`applicable_types` (JSON, list of `TransactionTypeEnum` values) scopes a category to income / expense / transfer.
+Empty array = tous types (legacy rows). Les selects de transaction groupent les catégories par ce scope
+(`group_by`), et `AbstractTransactionFormType::validateCategoryType()` rejette une catégorie hors scope.
 
 ### 6. Invoice Sequential Numbering
 

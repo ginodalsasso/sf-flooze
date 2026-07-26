@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\TransactionTypeEnum;
 use App\Repository\CategoryRepository;
 use App\Trait\SpaceScopeTrait;
 use App\Trait\TimestampTrait;
@@ -40,6 +41,10 @@ class Category
 
     #[ORM\Column(type: 'boolean')]
     private bool $isDeclarable = false;
+
+    /** @var list<string> TransactionTypeEnum values this category can be used on; empty = all types */
+    #[ORM\Column(type: 'json')]
+    private array $applicableTypes = [];
 
     public function __construct()
     {
@@ -103,5 +108,27 @@ class Category
         $this->isDeclarable = $isDeclarable;
 
         return $this;
+    }
+
+    /** @return list<TransactionTypeEnum> */
+    public function getApplicableTypes(): array
+    {
+        return array_map(TransactionTypeEnum::from(...), $this->applicableTypes);
+    }
+
+    /** @param list<TransactionTypeEnum> $types */
+    public function setApplicableTypes(array $types): static
+    {
+        $this->applicableTypes = array_values(array_unique(
+            array_map(fn(TransactionTypeEnum $type) => $type->value, $types)
+        ));
+
+        return $this;
+    }
+
+    /** True when the category may be used on a transaction of this type (empty = all types) */
+    public function appliesTo(TransactionTypeEnum $type): bool
+    {
+        return $this->applicableTypes === [] || in_array($type->value, $this->applicableTypes, true);
     }
 }

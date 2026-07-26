@@ -5,6 +5,9 @@
             {{ category.name }}
         </div>
         <div class="cat-row-flags">
+            {% for type in category.applicableTypes %}
+                <twig:Badge label="{{ type.label }}" variant="{{ type.badgeVariant }}" />
+            {% endfor %}
             {% if category.isDeductible %}
                 <twig:Badge label="Déductible" variant="fiscal" />
             {% endif %}
