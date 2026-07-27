@@ -12,11 +12,24 @@ Multi-tenant via `Space`. OCR Ollama local. PDF dompdf.
 | Avant de... | Lire |
 |---|---|
 | Créer/modifier une entité, relation, FK, colonne | [`ARCHITECTURE.md`](ARCHITECTURE.md) — **ERD = autorité** |
-| Écrire ou refactorer du code PHP | [`rules.md`](rules.md) — conventions, naming, anti-patterns |
+| Écrire ou refactorer du code PHP | [`.claude/rules.md`](.claude/rules.md) — principes, conventions, anti-patterns |
 | Toucher `templates/` ou `assets/styles/` | [`FRONTEND.md`](FRONTEND.md) + [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) |
 | Écrire ou modifier des tests | [`TESTING.md`](TESTING.md) |
+| Toucher à l'authz, aux voters, aux formulaires sensibles | [`SECURITY_PLAN.md`](SECURITY_PLAN.md) |
 | Installer le projet, comprendre les services tournants | [`SETUP.md`](SETUP.md) |
 | Comprendre le périmètre d'un module métier | [`MODULES.md`](MODULES.md) |
+
+---
+
+## Principes de code (priment sur tout le reste)
+
+1. **Simplicité — pas de sur-engineering.** La solution la plus simple qui marche est la bonne. Code lisible avant code malin. Une abstraction se crée sur un besoin réel et présent, jamais anticipé.
+2. **SOLID.** SRP (controller = HTTP, service = métier, repository = queries, entité = état) · OCP · LSP · ISP · DIP (injection uniquement).
+3. **Changements isolés.** Modifier un module ne doit pas obliger à modifier les autres. Ne pas renommer ni changer une signature publique sans recenser les appelants. Attention particulière aux points partagés : `app.css`, traits, listeners Doctrine, macros.
+4. **Documentation courte et précise.** Le commentaire dit *pourquoi*, jamais *quoi*. 1 ligne max dans une méthode. PHPDoc seulement si le type-hint ne suffit pas.
+5. **Nommage conservé.** Suivre les conventions existantes pour le nouveau code, ne pas renommer l'existant.
+
+Détail et exemples : [`.claude/rules.md`](.claude/rules.md).
 
 ---
 
@@ -26,7 +39,15 @@ Multi-tenant via `Space`. OCR Ollama local. PDF dompdf.
 2. **Multi-tenant.** Toute entité métier a `space_id` + filtre par `space` dans toute query.
 3. **Soft delete.** `deleted_at` (TIMESTAMP nullable), jamais `is_deleted`. Filtre `deletedAt IS NULL` dans les queries actives.
 4. **DI uniquement.** Jamais `new XxxService()` dans un autre service. Constructor injection avec `private readonly`.
-5. **Security par espace.** `denyAccessUnlessGranted('VIEW'|'EDIT', $entity->getSpace())` via `SpaceScopeVoter`.
+5. **La sécurité se vérifie côté backend — l'UI ne sécurise rien.** Un bouton masqué, un `disabled`, un `readonly` ou un `{% if %}` en Twig sont contournables : la requête HTTP est forgeable. Tout contrôle affiché côté UI doit exister côté serveur.
+   - `denyAccessUnlessGranted('VIEW'|'EDIT', $entity->getSpace())` via `SpaceScopeVoter` sur **chaque** action, y compris `new`, `delete`, exports et endpoints JSON.
+   - Query filtrée par `space` — un ID en URL ne prouve rien sur son propriétaire.
+   - Entités choisies en formulaire scopées par `space` (`query_builder`) **et** revalidées avant persist.
+   - Champ non modifiable = champ non mappé, pas un champ `disabled`.
+   - Actions destructives en `POST`/`DELETE` avec CSRF, jamais en `GET`.
+   - Jamais de redirection vers une URL issue de la requête sans validation locale.
+
+   Checklist complète : [`.claude/rules.md`](.claude/rules.md) → *Sécurité*. Plan de durcissement : [`SECURITY_PLAN.md`](SECURITY_PLAN.md).
 
 ---
 
@@ -60,6 +81,8 @@ php bin/console lint:twig templates/            # templates valides
 - **`DocumentLink` polymorphique** — un `Document` attachable à n'importe quelle entité (évite N tables de jointure).
 - **`Space` = unité multi-tenant** — un user peut avoir plusieurs spaces (perso, pro, EIRL).
 - **Tout flux monétaire passe par `Transaction`** — `RentPayment` et `LoanPayment` génèrent automatiquement leur `Transaction` via `LinkedTransactionListener`. Source de vérité unique pour le module Finance.
+- **Multi-devise : `Space.currency` de référence, `Account.balance` dans la devise du compte** — seuls les agrégats convertissent. Taux historique figé sur la ligne (`transaction.fx_rate`), taux spot via `ExchangeRateService` (seul détenteur des taux, point de branchement d'une API).
+- **Virement = 1 `Transaction`, 2 comptes** (`account_id` + `destination_account_id`), pas de double-entry. Toute query filtrant par compte doit matcher **les deux jambes**.
 
 ---
 

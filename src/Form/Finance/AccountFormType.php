@@ -46,6 +46,9 @@ class AccountFormType extends AbstractType
             ->add('currency', EnumType::class, [
                 'class' => CurrencyEnum::class,
                 'choice_label' => fn(CurrencyEnum $c) => $c->display(),
+                // Locked with the balance: changing it would reinterpret every amount already recorded.
+                'disabled' => $balanceLocked,
+                'help' => $balanceLocked ? 'La devise ne peut plus être modifiée car des transactions existent sur ce compte.' : null,
             ]);
     }
 

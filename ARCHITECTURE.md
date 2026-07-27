@@ -163,7 +163,7 @@ Account (1) ──── (N) AssetEntry [holding account, nullable]
 Account (1) ──── (N) AssetEntry [funding account, nullable]
 Category (1) ──── (N) Transaction
 Category (1) ──── (N) Category [parent_id self-referential]
-Transaction (1) ──── (1) Transaction [destination, nullable, for transfers]
+Account (1) ──── (N) Transaction [destination_account_id, nullable, for transfers]
 Transaction (N) ──── (0..1) AssetEntry [asset_entry_id, SET NULL on hard delete]
 Asset (1) ──── (N) AssetEntry
 
@@ -217,6 +217,7 @@ Finance/
 ├── AssetMetricsService.php       # Aggregated metrics (qty, avg price, cost basis)
 ├── AccountService.php            # Account CRUD + soft-delete
 ├── AccountBalanceService.php     # invested vs available balance split
+├── ExchangeRateService.php       # Single source of FX rates (space currency conversions)
 └── AccountDetailService.php      # Per-account detail DTO (monthly stats)
 
 RealEstate/
@@ -383,6 +384,33 @@ Empty array = tous types (legacy rows). Les selects de transaction groupent les 
 
 `InvoiceService::generateNumber(Space $space, int $year)` queries the max existing number for the space+year, then increments. Format: `FAC-2025-001`.
 
+### 7. Multi-devise
+
+`Space.currency` est la **devise de référence** : tout total qui traverse plusieurs comptes s'y exprime. Elle se choisit à la création d'un space et n'est plus modifiable — la changer invaliderait tous les `fx_rate` déjà figés.
+
+`Account.balance` reste **dans la devise du compte**, pour rester rapprochable avec un relevé bancaire. Seuls les agrégats convertissent.
+
+Deux taux distincts, à ne pas confondre :
+
+| Taux | Où | Rôle |
+|---|---|---|
+| **historique** | `transaction.fx_rate`, `asset_entry.fx_rate` | Figé à la date de l'opération. Un taux récupéré plus tard ne doit jamais réécrire le passé. |
+| **spot** | `ExchangeRateService` | Convertit les *soldes* à l'instant présent (total du dashboard, invested vs available). |
+
+`ExchangeRateService` est le **seul** détenteur des taux (table en `private const`). Brancher une API de taux ne touche que cette classe : aucun appelant, aucune colonne. La table devient alors le fallback offline.
+
+### 8. Virements — une ligne, deux comptes
+
+Un virement est **une seule `Transaction`** portant `account_id` (débité) et `destination_account_id` (crédité). Il n'y a pas de double-entry.
+
+Conséquence à ne pas oublier : **toute query filtrant par compte doit matcher les deux jambes**, sinon le compte destinataire voit son solde bouger sans transaction visible.
+
+```php
+->andWhere('t.account = :account OR t.destinationAccount = :account')
+```
+
+Entre deux devises, la banque seule connaît le taux appliqué : `destination_amount` porte le montant **réellement crédité**, dans la devise du compte destinataire. Il est `NULL` quand les deux comptes partagent la même devise, et obligatoire sinon (`TransactionService::guardValidTransfer`).
+
 ---
 
 ## Template Structure
@@ -425,9 +453,9 @@ templates/
 | Table | Champs spécifiques | Soft |
 |---|---|:-:|
 | `user` | email, password, roles (JSON) — pas de `space_id` | — |
-| `space` | user_id, name, type — pas de `space_id` (racine) | — |
+| `space` | user_id, name, type, currency (devise de référence) — pas de `space_id` (racine) | — |
 | `account` | name, type, balance, currency | ✓ |
-| `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, date, description, metadata (JSON) | ✓ |
+| `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, fx_rate, destination_amount (nullable), date, description, metadata (JSON) | ✓ |
 | `category` | parent_id (nullable), name, is_deductible, is_declarable | — |
 | `asset` | ticker, name, currency, type | — |
 | `asset_entry` | asset_id, account_id (nullable), funding_account_id (nullable), date, kind (buy\|sell\|dividend), quantity, unit_price, fx_rate, fees, note | ✓ |

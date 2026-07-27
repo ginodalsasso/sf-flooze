@@ -30,6 +30,7 @@ final readonly class AssetEntryTransactionService
 {
     public function __construct(
         private EntityManagerInterface $em,
+        private ExchangeRateService $exchangeRateService,
     ) {}
 
     public function createForEntry(AssetEntry $entry): void
@@ -149,7 +150,8 @@ final readonly class AssetEntryTransactionService
             ->setSpace($entry->getSpace())
             ->setAccount($expected['account'])
             ->setType($expected['type'])
-            ->setAmount($expected['amount'])
+            ->setAmount($this->toAccountCurrency($expected['amount'], $expected['account']))
+            ->setFxRate($this->fxRateOf($expected['account']))
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry))
             ->setAssetEntry($entry);
@@ -171,12 +173,31 @@ final readonly class AssetEntryTransactionService
         $transaction
             ->setAccount($expected['account'])
             ->setType($expected['type'])
-            ->setAmount($expected['amount'])
+            ->setAmount($this->toAccountCurrency($expected['amount'], $expected['account']))
+            ->setFxRate($this->fxRateOf($expected['account']))
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry));
 
         $oldAccount->reverseOperation($oldType, $oldAmount);
         $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
+    }
+
+    /**
+     * AssetEntry amounts are expressed in the space currency, account balances in the
+     * account currency: the amount must be converted before it can move a balance.
+     */
+    private function toAccountCurrency(string $amount, Account $account): string
+    {
+        return $this->exchangeRateService->convert(
+            $amount,
+            $account->getSpace()->getCurrency(),
+            $account->getCurrency(),
+        );
+    }
+
+    private function fxRateOf(Account $account): string
+    {
+        return $this->exchangeRateService->getRate($account->getCurrency(), $account->getSpace()->getCurrency());
     }
 
     /**

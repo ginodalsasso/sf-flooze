@@ -82,7 +82,10 @@
                             <td>
                                 <span class="txn-account">{{ txn.account.name }}</span>
                                 {% if txn.destinationAccount %}
-                                    <div class="txn-cat">→ {{ txn.destinationAccount.name }}</div>
+                                    <div class="txn-cat">
+                                        → {{ txn.destinationAccount.name }}
+                                        {%- if txn.destinationAmount %} ({{ txn.destinationAmount|money(txn.destinationAccount.currency) }}){% endif %}
+                                    </div>
                                 {% endif %}
                             </td>
                             <td>
@@ -94,7 +97,7 @@
                             <td>
                                 <span class="txn-amount txn-amount--{{ txn.type.value }}">
                                     {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
-                                    {{ txn.amount|number_format(2, ',', ' ') }} {{ txn.account.currency.value }}
+                                    {{ txn.amount|money(txn.account.currency) }}
                                 </span>
                             </td>
                             <td>

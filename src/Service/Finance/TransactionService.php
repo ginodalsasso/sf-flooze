@@ -15,6 +15,7 @@ class TransactionService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly AccountBalanceService $accountBalanceService,
+        private readonly ExchangeRateService $exchangeRateService,
     ) {}
 
     /**
@@ -31,13 +32,9 @@ class TransactionService
         $this->applyFromDto($transaction, $input);
 
         $this->guardSpendableFunds($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
-        $this->guardValidTransfer($transaction->getAccount(), $transaction->getDestinationAccount(), $transaction->getType());
+        $this->guardValidTransfer($transaction);
 
-        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
-
-        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
-            $transaction->getDestinationAccount()->applyOperation(TransactionTypeEnum::INCOME, $transaction->getAmount());
-        }
+        $this->applyBalanceEffect($transaction);
 
         $this->em->persist($transaction);
         $this->em->flush();
@@ -56,30 +53,15 @@ class TransactionService
         $this->guardNotLinkedToAsset($transaction);
         $this->guardStrictlyPositive($input->amount);
 
-        // Snapshot old state before applying the DTO.
-        $oldAccount = $transaction->getAccount();
-        $oldType = $transaction->getType();
-        $oldAmount = $transaction->getAmount();
-        $oldDestAccount = $transaction->getDestinationAccount();
+        $this->reverseBalanceEffect($transaction);
 
-        // Reverse old effect
-        $oldAccount->reverseOperation($oldType, $oldAmount);
-        if ($oldType === TransactionTypeEnum::TRANSFER && $oldDestAccount !== null) {
-            $oldDestAccount->reverseOperation(TransactionTypeEnum::INCOME, $oldAmount);
-        }
-
-        // Apply new data
         $this->applyFromDto($transaction, $input);
 
         // Ensure the new source account has enough available funds before applying the new effect.
         $this->guardSpendableFunds($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
-        $this->guardValidTransfer($transaction->getAccount(), $transaction->getDestinationAccount(), $transaction->getType());
+        $this->guardValidTransfer($transaction);
 
-        // Apply new effect
-        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
-        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
-            $transaction->getDestinationAccount()->applyOperation(TransactionTypeEnum::INCOME, $transaction->getAmount());
-        }
+        $this->applyBalanceEffect($transaction);
 
         $this->em->flush();
     }
@@ -91,15 +73,7 @@ class TransactionService
     {
         $this->guardNotLinkedToAsset($transaction);
 
-        $type = $transaction->getType();
-        $destAccount = $transaction->getDestinationAccount();
-        $amount = $transaction->getAmount();
-
-        $transaction->getAccount()->reverseOperation($type, $amount);
-
-        if ($type === TransactionTypeEnum::TRANSFER && $destAccount !== null) {
-            $destAccount->reverseOperation(TransactionTypeEnum::INCOME, $amount);
-        }
+        $this->reverseBalanceEffect($transaction);
 
         $transaction->softDelete();
         $this->em->flush();
@@ -113,9 +87,42 @@ class TransactionService
             ->setDestinationAccount($input->destinationAccount)
             ->setType($input->type)
             ->setAmount($input->amount)
+            ->setFxRate($this->exchangeRateService->getRate($input->account->getCurrency(), $input->space->getCurrency()))
+            ->setDestinationAmount($this->resolveDestinationAmount($input))
             ->setDate($input->date)
             ->setDescription($input->description)
             ->setCategory($input->category);
+    }
+
+    /** A credited amount is only meaningful on a transfer crossing two currencies. */
+    private function resolveDestinationAmount(TransactionInputDto $input): ?string
+    {
+        if ($input->type !== TransactionTypeEnum::TRANSFER || $input->destinationAccount === null) {
+            return null;
+        }
+
+        return $input->destinationAccount->getCurrency() === $input->account->getCurrency()
+            ? null
+            : $input->destinationAmount;
+    }
+
+    /** Debit the source account and, on a transfer, credit the destination with what it actually receives. */
+    private function applyBalanceEffect(Transaction $transaction): void
+    {
+        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
+
+        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
+            $transaction->getDestinationAccount()->applyOperation(TransactionTypeEnum::INCOME, $transaction->getCreditedAmount());
+        }
+    }
+
+    private function reverseBalanceEffect(Transaction $transaction): void
+    {
+        $transaction->getAccount()->reverseOperation($transaction->getType(), $transaction->getAmount());
+
+        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
+            $transaction->getDestinationAccount()->reverseOperation(TransactionTypeEnum::INCOME, $transaction->getCreditedAmount());
+        }
     }
 
     /**
@@ -141,16 +148,31 @@ class TransactionService
     }
 
     /**
-     * Guard that the transfer is valid (source and destination accounts are different).
+     * Guard that the transfer targets another account and, across currencies, states what was credited.
      */
-    private function guardValidTransfer(?Account $source, ?Account $destination, TransactionTypeEnum $type): void
+    private function guardValidTransfer(Transaction $transaction): void
     {
-        if ($type !== TransactionTypeEnum::TRANSFER || $destination === null) {
+        $destination = $transaction->getDestinationAccount();
+
+        if ($transaction->getType() !== TransactionTypeEnum::TRANSFER || $destination === null) {
             return;
         }
 
-        if ($source !== null && $source->getId() === $destination->getId()) {
+        if ($transaction->getAccount()->getId() === $destination->getId()) {
             throw new \InvalidArgumentException('Le compte destinataire doit être différent du compte source.');
+        }
+
+        if ($destination->getCurrency() === $transaction->getAccount()->getCurrency()) {
+            return;
+        }
+
+        $credited = $transaction->getDestinationAmount();
+
+        if ($credited === null || bccomp($credited, '0', 2) <= 0) {
+            throw new \InvalidArgumentException(sprintf(
+                'Virement entre devises différentes : le montant crédité en %s est obligatoire et doit être supérieur à 0.',
+                $destination->getCurrency()->value,
+            ));
         }
     }
 

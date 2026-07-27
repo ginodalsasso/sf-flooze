@@ -16,6 +16,13 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class TransactionRepository extends ServiceEntityRepository
 {
+    /**
+     * A transfer belongs to two accounts: it stays visible as long as one of them is
+     * still active, otherwise soft-deleting the source would hide a movement that the
+     * destination account was really credited with. Requires the 'a' and 'da' joins.
+     */
+    private const ON_ACTIVE_ACCOUNT = 'a.deletedAt IS NULL OR (t.destinationAccount IS NOT NULL AND da.deletedAt IS NULL)';
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Transaction::class);
@@ -23,7 +30,8 @@ class TransactionRepository extends ServiceEntityRepository
 
     /**
      * @return Transaction[] active transactions for the space, most recent first.
-     *         Excludes transactions whose account has been soft-deleted.
+     *         An account filter matches both legs of a transfer: the destination
+     *         account is credited, so the movement belongs to its history too.
      */
     public function findBySpace(Space $space, ?TransactionTypeEnum $type = null, ?Account $account = null): array
     {
@@ -33,7 +41,7 @@ class TransactionRepository extends ServiceEntityRepository
             ->leftJoin('t.destinationAccount', 'da')
             ->where('t.space = :space')
             ->andWhere('t.deletedAt IS NULL')
-            ->andWhere('a.deletedAt IS NULL')
+            ->andWhere(self::ON_ACTIVE_ACCOUNT)
             ->setParameter('space', $space)
             ->orderBy('t.date', 'DESC')
             ->addOrderBy('t.createdAt', 'DESC');
@@ -43,22 +51,22 @@ class TransactionRepository extends ServiceEntityRepository
         }
 
         if ($account !== null) {
-            $qb->andWhere('t.account = :account')->setParameter('account', $account);
+            $qb->andWhere('t.account = :account OR t.destinationAccount = :account')
+                ->setParameter('account', $account);
         }
 
         return $qb->getQuery()->getResult();
     }
 
-    /** @return Transaction[] most recent N transactions for dashboard widget.
-     *          Excludes transactions whose account has been soft-deleted.
-     */
+    /** @return Transaction[] most recent N transactions for dashboard widget. */
     public function findRecentBySpace(Space $space, int $limit = 10): array
     {
         return $this->createQueryBuilder('t')
             ->join('t.account', 'a')
+            ->leftJoin('t.destinationAccount', 'da')
             ->where('t.space = :space')
             ->andWhere('t.deletedAt IS NULL')
-            ->andWhere('a.deletedAt IS NULL')
+            ->andWhere(self::ON_ACTIVE_ACCOUNT)
             ->setParameter('space', $space)
             ->orderBy('t.date', 'DESC')
             ->addOrderBy('t.createdAt', 'DESC')
@@ -67,7 +75,11 @@ class TransactionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** Total amount for a transaction type within a date range. */
+    /**
+     * Total amount for a transaction type within a date range, converted to the space
+     * currency: accounts of the space may hold different currencies, so raw amounts
+     * cannot be added together.
+     */
     public function sumBySpaceAndTypeAndDateRange(
         Space $space,
         TransactionTypeEnum $type,
@@ -75,7 +87,7 @@ class TransactionRepository extends ServiceEntityRepository
         \DateTimeImmutable $end,
     ): string {
         $result = $this->createQueryBuilder('t')
-            ->select('SUM(t.amount)')
+            ->select('SUM(t.amount * t.fxRate)')
             ->join('t.account', 'a')
             ->where('t.space = :space')
             ->andWhere('t.type = :type')
@@ -117,12 +129,15 @@ class TransactionRepository extends ServiceEntityRepository
         return $result ?? '0';
     }
 
-    /** Returns the number of active (non-deleted) transactions linked to the account. */
+    /**
+     * Number of active transactions moving money on the account, incoming transfers included:
+     * they credit its balance, so they make it just as computed as an outgoing one.
+     */
     public function countByAccount(Account $account): int
     {
         return (int) $this->createQueryBuilder('t')
             ->select('COUNT(t.id)')
-            ->where('t.account = :account')
+            ->where('t.account = :account OR t.destinationAccount = :account')
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('account', $account)
             ->getQuery()

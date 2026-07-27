@@ -48,6 +48,14 @@ class Transaction
     #[ORM\Column(type: 'decimal', precision: 15, scale: 2)]
     private string $amount;
 
+    /** Account currency → space currency, frozen at transaction date: a later rate must never rewrite the past. */
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 6, options: ['default' => '1.000000'])]
+    private string $fxRate = '1.000000';
+
+    /** Amount actually credited to the destination account, in its own currency. Null when both accounts share a currency. */
+    #[ORM\Column(type: 'decimal', precision: 15, scale: 2, nullable: true)]
+    private ?string $destinationAmount = null;
+
     #[ORM\Column(type: 'date_immutable')]
     private \DateTimeImmutable $date;
 
@@ -159,6 +167,55 @@ class Transaction
         $this->amount = $amount;
 
         return $this;
+    }
+
+    public function getFxRate(): string
+    {
+        return $this->fxRate;
+    }
+
+    public function setFxRate(string $fxRate): static
+    {
+        $this->fxRate = $fxRate;
+
+        return $this;
+    }
+
+    public function getDestinationAmount(): ?string
+    {
+        return $this->destinationAmount;
+    }
+
+    public function setDestinationAmount(?string $destinationAmount): static
+    {
+        $this->destinationAmount = $destinationAmount;
+
+        return $this;
+    }
+
+    /** Amount converted to the space currency: amount × fx_rate. */
+    public function getAmountInSpaceCurrency(): string
+    {
+        return bcmul($this->amount, $this->fxRate, 2);
+    }
+
+    /** Amount credited to the destination account, in that account's currency. */
+    public function getCreditedAmount(): string
+    {
+        return $this->destinationAmount ?? $this->amount;
+    }
+
+    /** True when $account receives the money — i.e. it is the destination of a transfer. */
+    public function isIncomingFor(Account $account): bool
+    {
+        return $this->destinationAccount !== null
+            && $this->destinationAccount->getId() === $account->getId();
+    }
+
+    /** Amount as it hits $account, expressed in that account's currency. */
+    public function getAmountFor(Account $account): string
+    {
+        return $this->isIncomingFor($account) ? $this->getCreditedAmount() : $this->amount;
     }
 
     public function getDate(): \DateTimeImmutable

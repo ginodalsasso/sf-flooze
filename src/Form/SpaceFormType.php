@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\Space;
+use App\Enum\CurrencyEnum;
 use App\Enum\SpaceTypeEnum;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
@@ -17,13 +18,20 @@ class SpaceFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        // Only allow changing the type when creating a new space, not when editing
+        // Only allow changing the type when creating a new space, not when editing.
+        // Currency follows the same rule: changing it would invalidate every fx_rate already frozen on transactions.
         if (!$options['is_edit']) {
-            $builder->add('type', EnumType::class, [
-                'class' => SpaceTypeEnum::class,
-                'expanded' => true,
-                'multiple' => false,
-            ]);
+            $builder
+                ->add('type', EnumType::class, [
+                    'class' => SpaceTypeEnum::class,
+                    'expanded' => true,
+                    'multiple' => false,
+                ])
+                ->add('currency', EnumType::class, [
+                    'class' => CurrencyEnum::class,
+                    'choice_label' => fn(CurrencyEnum $c) => $c->display(),
+                    'label' => 'Devise de référence',
+                ]);
         }
 
         $builder->add('name', TextType::class, [

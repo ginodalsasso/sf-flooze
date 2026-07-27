@@ -24,7 +24,7 @@
         <li class="kpi-card">
             <span class="kpi-label">Balance totale</span>
             {% if summary.hasAccounts %}
-                <span class="kpi-value">{{ summary.totalBalance|number_format(2, ',', ' ') }}</span>
+                <span class="kpi-value">{{ summary.totalBalance|money(summary.currency) }}</span>
                 <div class="kpi-trend">
                     <i data-lucide="landmark"></i>
                     <span>Solde total</span>
@@ -39,7 +39,7 @@
         </li>
         <li class="kpi-card">
             <span class="kpi-label">Revenus du mois</span>
-            <span class="kpi-value kpi-value--positive">{{ summary.monthlyIncome|number_format(2, ',', ' ') }}</span>
+            <span class="kpi-value kpi-value--positive">{{ summary.monthlyIncome|money(summary.currency) }}</span>
             <div class="kpi-trend">
                 <i data-lucide="arrow-down-left" class="icon--positive"></i>
                 <span>Ce mois-ci</span>
@@ -47,7 +47,7 @@
         </li>
         <li class="kpi-card">
             <span class="kpi-label">Dépenses du mois</span>
-            <span class="kpi-value kpi-value--negative">{{ summary.monthlyExpense|number_format(2, ',', ' ') }}</span>
+            <span class="kpi-value kpi-value--negative">{{ summary.monthlyExpense|money(summary.currency) }}</span>
             <div class="kpi-trend">
                 <i data-lucide="arrow-up-right" class="icon--negative"></i>
                 <span>Ce mois-ci</span>
@@ -56,7 +56,7 @@
         <li class="kpi-card">
             <span class="kpi-label">Flux net</span>
             {% set netFlowClass = summary.netFlow starts with '-' ? 'kpi-value--negative' : 'kpi-value--positive' %}
-            <span class="kpi-value {{ netFlowClass }}">{{ summary.netFlow|number_format(2, ',', ' ') }}</span>
+            <span class="kpi-value {{ netFlowClass }}">{{ summary.netFlow|money(summary.currency) }}</span>
             <div class="kpi-trend">
                 <i data-lucide="activity"></i>
                 <span>Revenus − Dépenses</span>
@@ -157,7 +157,7 @@
                                     </div>
                                     <span class="dashboard-recent-amount dashboard-recent-amount--{{ txn.type.value }}">
                                         {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
-                                        {{ txn.amount|number_format(2, ',', ' ') }} {{ txn.account.currency.value }}
+                                        {{ txn.amount|money(txn.account.currency) }}
                                     </span>
                                 </li>
                             {% endfor %}

@@ -9,12 +9,14 @@ use App\Entity\Space;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
 use App\Repository\TransactionRepository;
+use App\Service\Finance\ExchangeRateService;
 
 class DashboardService
 {
     public function __construct(
         private readonly AccountRepository $accountRepository,
         private readonly TransactionRepository $transactionRepository,
+        private readonly ExchangeRateService $exchangeRateService,
     ) {}
 
     // Summarizes the financial state of a Space for display on the dashboard.
@@ -22,9 +24,14 @@ class DashboardService
     {
         $accounts = $this->accountRepository->findBySpace($space);
 
+        // Accounts may hold different currencies: each balance is converted before being added.
         $totalBalance = '0.00';
         foreach ($accounts as $account) {
-            $totalBalance = bcadd($totalBalance, $account->getBalance(), 2);
+            $totalBalance = bcadd(
+                $totalBalance,
+                $this->exchangeRateService->convert($account->getBalance(), $account->getCurrency(), $space->getCurrency()),
+                2,
+            );
         }
 
         $startOfMonth = new \DateTimeImmutable('first day of this month midnight');
@@ -53,6 +60,7 @@ class DashboardService
             netFlow: $netFlow,
             recentTransactions: $this->transactionRepository->findRecentBySpace($space, 5),
             hasAccounts: $accounts !== [],
+            currency: $space->getCurrency(),
         );
     }
 }

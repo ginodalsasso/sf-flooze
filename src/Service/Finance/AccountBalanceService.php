@@ -19,6 +19,7 @@ readonly class AccountBalanceService
 {
     public function __construct(
         private AssetEntryRepository $assetEntryRepository,
+        private ExchangeRateService $exchangeRateService,
     ) {}
 
     public function isAssetHoldingAccount(Account $account): bool
@@ -27,7 +28,9 @@ readonly class AccountBalanceService
     }
 
     /**
-     * Total amount currently invested in assets held by this account.
+     * Total amount currently invested in assets held by this account, in the account
+     * currency. AssetEntry stores its amounts in the space currency, so the result is
+     * converted back before it can be compared to the account balance.
      * Always 0.00 for non-asset accounts.
      */
     public function getInvestedBalance(Account $account): string
@@ -36,7 +39,11 @@ readonly class AccountBalanceService
             return '0.00';
         }
 
-        return bcadd($this->assetEntryRepository->getInvestedBalance($account), '0', 2);
+        return $this->exchangeRateService->convert(
+            $this->assetEntryRepository->getInvestedBalance($account),
+            $account->getSpace()->getCurrency(),
+            $account->getCurrency(),
+        );
     }
 
     /**

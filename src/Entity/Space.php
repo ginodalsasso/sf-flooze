@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\CurrencyEnum;
 use App\Enum\SpaceTypeEnum;
 use App\Repository\SpaceRepository;
 use App\Trait\SoftDeleteTrait;
@@ -32,6 +33,10 @@ class Space
 
     #[ORM\Column(type: 'string', enumType: SpaceTypeEnum::class)]
     private SpaceTypeEnum $type;
+
+    /** Reference currency: every cross-account total of the space is expressed in it. */
+    #[ORM\Column(type: 'string', enumType: CurrencyEnum::class, options: ['default' => 'EUR'])]
+    private CurrencyEnum $currency = CurrencyEnum::EUR;
 
     public function getId(): ?int
     {
@@ -70,6 +75,18 @@ class Space
     public function setType(SpaceTypeEnum $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getCurrency(): CurrencyEnum
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(CurrencyEnum $currency): static
+    {
+        $this->currency = $currency;
 
         return $this;
     }

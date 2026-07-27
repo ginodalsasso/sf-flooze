@@ -38,19 +38,19 @@
                 <div class="acc-show-balances">
                     <div class="acc-show-balance-item">
                         <p class="acc-card-balance{% if detail.account.balance < 0 %} acc-card-balance--negative{% elseif detail.account.balance > 0 %} acc-card-balance--positive{% endif %}">
-                            {{ detail.account.balance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                            {{ detail.account.balance|money(detail.account.currency) }}
                         </p>
                         <p class="acc-card-currency">Solde total</p>
                     </div>
                     <div class="acc-show-balance-item">
                         <p class="acc-card-balance">
-                            {{ detail.investedBalance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                            {{ detail.investedBalance|money(detail.account.currency) }}
                         </p>
                         <p class="acc-card-currency">Investi</p>
                     </div>
                     <div class="acc-show-balance-item">
                         <p class="acc-card-balance{% if detail.availableBalance < 0 %} acc-card-balance--negative{% elseif detail.availableBalance > 0 %} acc-card-balance--positive{% endif %}">
-                            {{ detail.availableBalance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                            {{ detail.availableBalance|money(detail.account.currency) }}
                         </p>
                         <p class="acc-card-currency">Disponible</p>
                     </div>
@@ -58,7 +58,7 @@
             {% else %}
                 {% set balance = detail.account.balance %}
                 <p class="acc-card-balance{% if balance < 0 %} acc-card-balance--negative{% elseif balance > 0 %} acc-card-balance--positive{% endif %}">
-                    {{ balance|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                    {{ balance|money(detail.account.currency) }}
                 </p>
                 <p class="acc-card-currency">Solde actuel</p>
             {% endif %}
@@ -78,17 +78,17 @@
     <div class="acc-show-monthly">
         <div class="acc-show-monthly-item">
             <span class="acc-show-monthly-label">{{ detail.isAssetAccount ? 'Entrées ce mois' : 'Revenus ce mois' }}</span>
-            <span class="acc-show-monthly-value acc-show-monthly-value--positive">+{{ detail.monthlyIncome|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}</span>
+            <span class="acc-show-monthly-value acc-show-monthly-value--positive">+{{ detail.monthlyIncome|money(detail.account.currency) }}</span>
         </div>
         <div class="acc-show-monthly-item">
             <span class="acc-show-monthly-label">{{ detail.isAssetAccount ? 'Sorties ce mois' : 'Dépenses ce mois' }}</span>
-            <span class="acc-show-monthly-value acc-show-monthly-value--negative">-{{ detail.monthlyExpense|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}</span>
+            <span class="acc-show-monthly-value acc-show-monthly-value--negative">-{{ detail.monthlyExpense|money(detail.account.currency) }}</span>
         </div>
         <div class="acc-show-monthly-item">
             <span class="acc-show-monthly-label">Flux net</span>
             {% set netFlow = detail.monthlyNetFlow %}
             <span class="acc-show-monthly-value {{ netFlow starts with '-' ? 'acc-show-monthly-value--negative' : 'acc-show-monthly-value--positive' }}">
-                {{ netFlow|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                {{ netFlow|money(detail.account.currency) }}
             </span>
         </div>
     </div>
@@ -111,6 +111,8 @@
                 </thead>
                 <tbody>
                     {% for txn in detail.transactions %}
+                        {# Incoming transfers now appear here: the row is read from this account's point of view. #}
+                        {% set isIncoming = txn.incomingFor(detail.account) %}
                         <tr>
                             <td>
                                 <span class="txn-date">{{ txn.date|date('d/m/Y') }}</span>
@@ -118,7 +120,9 @@
                             <td>
                                 <div class="txn-desc">{{ txn.description ?? '—' }}</div>
                                 {% if txn.destinationAccount %}
-                                    <div class="txn-cat">→ {{ txn.destinationAccount.name }}</div>
+                                    <div class="txn-cat">
+                                        {{ isIncoming ? '← ' ~ txn.account.name : '→ ' ~ txn.destinationAccount.name }}
+                                    </div>
                                 {% endif %}
                             </td>
                             <td>
@@ -136,6 +140,8 @@
                                         label="{{ assetKindLabel }}"
                                         variant="{{ txn.type.badgeVariant() }}"
                                     />
+                                {% elseif isIncoming %}
+                                    <twig:Badge label="Virement entrant" variant="positive" />
                                 {% else %}
                                     <twig:Badge
                                         label="{{ detail.isAssetAccount ? txn.type.assetLabel() : txn.type.label() }}"
@@ -144,9 +150,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="txn-amount txn-amount--{{ txn.type.value }}">
-                                    {% if txn.type.value == 'income' %}+{% elseif txn.type.value == 'expense' %}-{% endif %}
-                                    {{ txn.amount|number_format(2, ',', ' ') }} {{ detail.account.currency.value }}
+                                <span class="txn-amount txn-amount--{{ isIncoming ? 'income' : txn.type.value }}">
+                                    {% if txn.type.value == 'income' or isIncoming %}+{% else %}-{% endif %}
+                                    {{ txn.amountFor(detail.account)|money(detail.account.currency) }}
                                 </span>
                             </td>
                             <td>

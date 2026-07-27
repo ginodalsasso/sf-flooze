@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dto\Dashboard;
 
 use App\Entity\Transaction;
+use App\Enum\CurrencyEnum;
 
 /**
  * Read-only view model for the dashboard KPIs and recent activity.
@@ -24,6 +25,8 @@ final readonly class DashboardSummaryDto
         public string $netFlow,
         public array $recentTransactions,
         public bool $hasAccounts,
+        /** Currency every amount above is expressed in — the space reference currency. */
+        public CurrencyEnum $currency,
     ) {}
 
     public function hasRecentActivity(): bool

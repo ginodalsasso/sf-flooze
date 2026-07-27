@@ -23,6 +23,8 @@ class TransactionInputDto
     public Account $account;
     public ?Account $destinationAccount = null;
     public string $amount;
+    /** Only filled on a transfer between two accounts of different currencies. */
+    public ?string $destinationAmount = null;
     public \DateTimeImmutable $date;
     public ?string $description = null;
     public ?Category $category = null;
@@ -36,6 +38,7 @@ class TransactionInputDto
         $dto->account = $transaction->getAccount();
         $dto->destinationAccount = $transaction->getDestinationAccount();
         $dto->amount = $transaction->getAmount();
+        $dto->destinationAmount = $transaction->getDestinationAmount();
         $dto->date = $transaction->getDate();
         $dto->description = $transaction->getDescription();
         $dto->category = $transaction->getCategory();

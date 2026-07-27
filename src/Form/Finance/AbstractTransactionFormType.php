@@ -71,6 +71,16 @@ abstract class AbstractTransactionFormType extends AbstractType
                     ->setParameter('space', $space)
                     ->orderBy('a.name', 'ASC'),
                 'choice_label' => fn(Account $a) => $a->getName() . ' (' . $a->getCurrency()->display() . ')',
+            ])
+            ->add('destinationAmount', NumberType::class, [
+                'scale' => 2,
+                'html5' => false,
+                'required' => false,
+                'label' => 'Montant reçu',
+                'attr' => ['placeholder' => '0,00'],
+                'constraints' => [
+                    new Assert\GreaterThan(value: 0, message: 'Le montant reçu doit être supérieur à 0.'),
+                ],
             ]);
     }
 
@@ -90,6 +100,7 @@ abstract class AbstractTransactionFormType extends AbstractType
             'data_class' => TransactionInputDto::class,
             'constraints' => [
                 new Assert\Callback([$this, 'validateTransferDestination']),
+                new Assert\Callback([$this, 'validateCrossCurrencyTransfer']),
                 new Assert\Callback([$this, 'validateCategoryType']),
             ],
         ]);
@@ -114,6 +125,28 @@ abstract class AbstractTransactionFormType extends AbstractType
         if ($input->destinationAccount->getId() === $input->account->getId()) {
             $context->buildViolation('Le compte destinataire doit être différent du compte source.')
                 ->atPath('destinationAccount')
+                ->addViolation();
+        }
+    }
+
+    /**
+     * A transfer between two currencies cannot be converted for the user: only the bank
+     * knows the rate it applied, so the amount actually credited must be entered.
+     */
+    public function validateCrossCurrencyTransfer(TransactionInputDto $input, ExecutionContextInterface $context): void
+    {
+        if ($input->type !== TransactionTypeEnum::TRANSFER || $input->destinationAccount === null) {
+            return;
+        }
+
+        if ($input->destinationAccount->getCurrency() === $input->account->getCurrency()) {
+            return;
+        }
+
+        if ($input->destinationAmount === null) {
+            $context->buildViolation('Les deux comptes n\'ont pas la même devise : indique le montant réellement crédité en {{ currency }}.')
+                ->setParameter('{{ currency }}', $input->destinationAccount->getCurrency()->value)
+                ->atPath('destinationAmount')
                 ->addViolation();
         }
     }

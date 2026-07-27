@@ -42,6 +42,13 @@
                              hint="Choisis un nom qui identifie clairement cet espace" />
         </div>
 
+        {# Reference currency #}
+        <div class="form-section">
+            <twig:Form:Field field="{{ form.currency }}"
+                             label="Devise de référence"
+                             hint="Tes totaux multi-comptes seront exprimés dans cette devise. Non modifiable ensuite." />
+        </div>
+
         {# Actions #}
         <div class="form-actions">
             <twig:Button as="a" href="{{ path('app_home') }}" label="Annuler" variant="secondary" />
