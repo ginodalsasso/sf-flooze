@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Finance;
 
 use App\Enum\CurrencyEnum;
+use App\Service\Finance\Contract\ExchangeRateServiceInterface;
 
 /**
  * Single source of exchange rates for the whole application.
@@ -13,7 +14,7 @@ use App\Enum\CurrencyEnum;
  * API later changes this class only: no caller and no schema is impacted. The
  * table below then becomes the offline fallback.
  */
-final class ExchangeRateService
+final class ExchangeRateService implements ExchangeRateServiceInterface
 {
     /** Value of one unit of the currency, expressed in EUR (pivot). Updated manually. */
     private const RATES_TO_EUR = [

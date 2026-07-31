@@ -24,6 +24,7 @@ tests/
 ## Unit
 
 - **Mock toutes les dépendances externes** (HTTP, DB, Ollama, S3).
+- **Mocker l'interface, jamais l'implémentation** — `createMock(ExchangeRateServiceInterface::class)`. Un mock de classe concrète casse dès que l'implémentation change ; le contrat, lui, est stable.
 - Une méthode = un test.
 - Nommage : `test{Method}{Scenario}` — `testExtractFromImageReturnsAmount`, `testCreateTransactionRejectsNegativeWhenIncome`.
 - Pour les services qui appellent du HTTP : `MockHttpClient` + `MockResponse`.
@@ -63,3 +64,4 @@ tests/
 - Tester le détail d'implémentation (méthodes privées, ordre d'appel) plutôt que le comportement observable.
 - Tests qui dépendent de l'ordre d'exécution.
 - Mocker l'objet sous test lui-même.
+- Mocker une classe concrète alors qu'elle expose une interface.

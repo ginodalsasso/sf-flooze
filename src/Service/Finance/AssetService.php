@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Service\Finance;
 
 use App\Entity\Asset;
+use App\Service\Finance\Contract\AssetEntryTransactionServiceInterface;
+use App\Service\Finance\Contract\AssetServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
-class AssetService
+final class AssetService implements AssetServiceInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly AssetEntryTransactionService $entryTransactionService,
+        private readonly AssetEntryTransactionServiceInterface $entryTransactionService,
     ) {}
 
     public function save(Asset $asset): void

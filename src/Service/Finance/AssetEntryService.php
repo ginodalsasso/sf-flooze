@@ -8,27 +8,20 @@ use App\Dto\Finance\AssetEntryInputDto;
 use App\Entity\Asset;
 use App\Entity\AssetEntry;
 use App\Enum\AssetEntryKindEnum;
-use App\Repository\AssetEntryRepository;
+use App\Repository\Contract\AssetEntryRepositoryInterface;
+use App\Service\Finance\Contract\AssetEntryServiceInterface;
+use App\Service\Finance\Contract\AssetEntryTransactionServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
-class AssetEntryService
+final class AssetEntryService implements AssetEntryServiceInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly AssetEntryRepository $entryRepository,
-        private readonly AssetEntryTransactionService $transactionService,
+        private readonly AssetEntryRepositoryInterface $entryRepository,
+        private readonly AssetEntryTransactionServiceInterface $transactionService,
     ) {}
 
-    /**
-     * Record a buy, sell or dividend entry.
-     *
-     * Validation is kind-specific: buy/sell require quantity and unit price,
-     * dividend requires an amount. The linked account balances are updated by
-     * the Doctrine entity listener.
-     *
-     * @throws \InvalidArgumentException if a required amount/quantity/price is not positive
-     * @throws \RuntimeException if a sell quantity exceeds the held quantity
-     */
+    /** The linked account balances are updated by the Doctrine entity listener, not here. */
     public function recordEntry(AssetEntryInputDto $input): AssetEntry
     {
         $this->validate($input);
@@ -52,10 +45,7 @@ class AssetEntryService
         return $entry;
     }
 
-    /**
-     * Soft-delete an entry and reverse its linked transaction balance effects.
-     * The AssetEntry FK is preserved on soft-deleted transactions for audit.
-     */
+    /** The AssetEntry FK is preserved on soft-deleted transactions for audit. */
     public function delete(AssetEntry $entry): void
     {
         $this->transactionService->deleteForEntry($entry);
@@ -63,7 +53,6 @@ class AssetEntryService
         $this->em->flush();
     }
 
-    /** Calculate realized P&L for a sell entry in space currency using FIFO. */
     public function calculateRealizedPnL(AssetEntry $sellEntry): ?string
     {
         if ($sellEntry->getKind() !== AssetEntryKindEnum::SELL) {
@@ -103,7 +92,6 @@ class AssetEntryService
         return bcsub(bcsub($sellProceeds, $matchedCost, 2), $sellEntry->getFees(), 2);
     }
 
-    /** Calculate total realized P&L across all sells for an asset. */
     public function calculateTotalRealizedPnL(Asset $asset): string
     {
         $total = '0';

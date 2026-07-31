@@ -6,8 +6,8 @@ namespace App\Controller\Dashboard;
 
 use App\Controller\ActiveSpaceControllerTrait;
 use App\Entity\User;
-use App\Service\Dashboard\DashboardService;
-use App\Service\Space\SpaceResolver;
+use App\Service\Dashboard\Contract\DashboardServiceInterface;
+use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,8 +18,8 @@ class HomeController extends AbstractController
     use ActiveSpaceControllerTrait;
 
     public function __construct(
-        private readonly SpaceResolver $spaceResolver,
-        private readonly DashboardService $dashboardService,
+        private readonly SpaceResolverInterface $spaceResolver,
+        private readonly DashboardServiceInterface $dashboardService,
     ) {}
 
     #[Route('/', name: 'app_home')]

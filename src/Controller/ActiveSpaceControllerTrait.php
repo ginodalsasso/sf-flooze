@@ -6,13 +6,13 @@ namespace App\Controller;
 
 use App\Entity\Space;
 use App\Entity\User;
-use App\Service\Space\SpaceResolver;
+use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Provides the resolve-active-space-or-redirect boilerplate shared by every
  * space-scoped controller. Requires a $spaceResolver property (typed
- * SpaceResolver) — inject it via the controller constructor.
+ * SpaceResolverInterface) — inject it via the controller constructor.
  */
 trait ActiveSpaceControllerTrait
 {

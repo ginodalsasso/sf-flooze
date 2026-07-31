@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repository\Contract;
+
+use App\Entity\Account;
+use App\Entity\Space;
+use App\Entity\Transaction;
+use App\Enum\TransactionTypeEnum;
+use Doctrine\Persistence\ObjectRepository;
+
+/**
+ * @extends ObjectRepository<Transaction>
+ */
+interface TransactionRepositoryInterface extends ObjectRepository
+{
+    /**
+     * @return Transaction[] active transactions for the space, most recent first.
+     *         An account filter matches both legs of a transfer.
+     */
+    public function findBySpace(Space $space, ?TransactionTypeEnum $type = null, ?Account $account = null): array;
+
+    /** @return Transaction[] most recent N transactions for dashboard widget. */
+    public function findRecentBySpace(Space $space, int $limit = 10): array;
+
+    /** Total amount for a transaction type within a date range, converted to the space currency. */
+    public function sumBySpaceAndTypeAndDateRange(
+        Space $space,
+        TransactionTypeEnum $type,
+        \DateTimeImmutable $start,
+        \DateTimeImmutable $end,
+    ): string;
+
+    /** Total amount for a transaction type on a given account within a date range. */
+    public function sumByAccountAndTypeAndDateRange(
+        Account $account,
+        TransactionTypeEnum $type,
+        \DateTimeImmutable $start,
+        \DateTimeImmutable $end,
+    ): string;
+
+    /** Number of active transactions moving money on the account, incoming transfers included. */
+    public function countByAccount(Account $account): int;
+}

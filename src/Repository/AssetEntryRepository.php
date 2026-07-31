@@ -8,13 +8,14 @@ use App\Entity\Account;
 use App\Entity\Asset;
 use App\Entity\AssetEntry;
 use App\Enum\AssetEntryKindEnum;
+use App\Repository\Contract\AssetEntryRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<AssetEntry>
  */
-class AssetEntryRepository extends ServiceEntityRepository
+final class AssetEntryRepository extends ServiceEntityRepository implements AssetEntryRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {

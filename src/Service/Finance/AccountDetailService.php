@@ -7,16 +7,17 @@ namespace App\Service\Finance;
 use App\Dto\Finance\AccountDetailDto;
 use App\Entity\Account;
 use App\Enum\TransactionTypeEnum;
-use App\Repository\TransactionRepository;
+use App\Repository\Contract\TransactionRepositoryInterface;
+use App\Service\Finance\Contract\AccountBalanceServiceInterface;
+use App\Service\Finance\Contract\AccountDetailServiceInterface;
 
-class AccountDetailService
+final class AccountDetailService implements AccountDetailServiceInterface
 {
     public function __construct(
-        private readonly TransactionRepository $transactionRepository,
-        private readonly AccountBalanceService $accountBalanceService,
+        private readonly TransactionRepositoryInterface $transactionRepository,
+        private readonly AccountBalanceServiceInterface $accountBalanceService,
     ) {}
 
-    // Build a detailed view of an Account, including its transactions and monthly financial summary.
     public function build(Account $account): AccountDetailDto
     {
         $startOfMonth = new \DateTimeImmutable('first day of this month midnight');

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Service\Notification;
 
 use App\Entity\User;
+use App\Service\Notification\Contract\EmailServiceInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Environment;
 
-class EmailService
+final class EmailService implements EmailServiceInterface
 {
     public function __construct(
         private readonly MailerInterface $mailer,

@@ -9,7 +9,7 @@ use App\Entity\Space;
 use App\Enum\AccountTypeEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
-use App\Service\Finance\AccountBalanceService;
+use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -18,7 +18,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 class AssetTransactionFormType extends AbstractTransactionFormType
 {
     public function __construct(
-        private readonly AccountBalanceService $accountBalanceService,
+        private readonly AccountBalanceServiceInterface $accountBalanceService,
     ) {}
 
     protected function descriptionPlaceholder(): string

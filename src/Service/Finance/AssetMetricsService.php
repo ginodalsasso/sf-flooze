@@ -6,17 +6,15 @@ namespace App\Service\Finance;
 
 use App\Dto\Finance\AssetMetricsDto;
 use App\Entity\Asset;
-use App\Repository\AssetEntryRepository;
+use App\Repository\Contract\AssetEntryRepositoryInterface;
+use App\Service\Finance\Contract\AssetMetricsServiceInterface;
 
-final readonly class AssetMetricsService
+final readonly class AssetMetricsService implements AssetMetricsServiceInterface
 {
     public function __construct(
-        private AssetEntryRepository $entryRepository,
+        private AssetEntryRepositoryInterface $entryRepository,
     ) {}
 
-    /**
-     * Compute metrics for a given Asset, including total quantity, average price, total cost, and dividends.
-     */
     public function compute(Asset $asset): AssetMetricsDto
     {
         return new AssetMetricsDto(

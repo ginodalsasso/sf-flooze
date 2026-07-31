@@ -11,13 +11,13 @@ use App\Entity\Asset;
 use App\Form\Finance\AssetDividendFormType;
 use App\Form\Finance\AssetFormType;
 use App\Form\Finance\AssetSellFormType;
-use App\Repository\AccountRepository;
-use App\Repository\AssetEntryRepository;
-use App\Repository\AssetRepository;
-use App\Service\Finance\AssetEntryService;
-use App\Service\Finance\AssetMetricsService;
-use App\Service\Finance\AssetService;
-use App\Service\Space\SpaceResolver;
+use App\Repository\Contract\AccountRepositoryInterface;
+use App\Repository\Contract\AssetEntryRepositoryInterface;
+use App\Repository\Contract\AssetRepositoryInterface;
+use App\Service\Finance\Contract\AssetEntryServiceInterface;
+use App\Service\Finance\Contract\AssetMetricsServiceInterface;
+use App\Service\Finance\Contract\AssetServiceInterface;
+use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,13 +30,13 @@ class AssetController extends AbstractController
     use ActiveSpaceControllerTrait;
 
     public function __construct(
-        private readonly AssetService $assetService,
-        private readonly AssetEntryService $assetEntryService,
-        private readonly AssetMetricsService $assetMetricsService,
-        private readonly AssetRepository $assetRepository,
-        private readonly AssetEntryRepository $assetEntryRepository,
-        private readonly AccountRepository $accountRepository,
-        private readonly SpaceResolver $spaceResolver,
+        private readonly AssetServiceInterface $assetService,
+        private readonly AssetEntryServiceInterface $assetEntryService,
+        private readonly AssetMetricsServiceInterface $assetMetricsService,
+        private readonly AssetRepositoryInterface $assetRepository,
+        private readonly AssetEntryRepositoryInterface $assetEntryRepository,
+        private readonly AccountRepositoryInterface $accountRepository,
+        private readonly SpaceResolverInterface $spaceResolver,
     ) {}
 
     #[Route('', name: 'index')]

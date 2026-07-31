@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service\Feature;
 
+use App\Service\Feature\Contract\FeatureFlagsInterface;
+
 /**
  * Feature flags that can be enabled/disabled per environment.
  *
@@ -13,7 +15,7 @@ namespace App\Service\Feature;
  * given context — e.g. email verification on a standalone desktop app
  * without a mail server.
  */
-final class FeatureFlags
+final class FeatureFlags implements FeatureFlagsInterface
 {
     /**
      * @param array<string, bool> $features
@@ -22,10 +24,6 @@ final class FeatureFlags
         private readonly array $features,
     ) {}
 
-    /**
-     * Undeclared features default to enabled (same behavior as before
-     * the flag was introduced).
-     */
     public function isEnabled(string $feature): bool
     {
         return $this->features[$feature] ?? true;

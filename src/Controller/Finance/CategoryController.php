@@ -7,9 +7,9 @@ namespace App\Controller\Finance;
 use App\Controller\ActiveSpaceControllerTrait;
 use App\Entity\Category;
 use App\Form\Finance\CategoryFormType;
-use App\Repository\CategoryRepository;
-use App\Service\Finance\CategoryService;
-use App\Service\Space\SpaceResolver;
+use App\Repository\Contract\CategoryRepositoryInterface;
+use App\Service\Finance\Contract\CategoryServiceInterface;
+use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,9 +22,9 @@ class CategoryController extends AbstractController
     use ActiveSpaceControllerTrait;
 
     public function __construct(
-        private readonly CategoryService $categoryService,
-        private readonly CategoryRepository $categoryRepository,
-        private readonly SpaceResolver $spaceResolver,
+        private readonly CategoryServiceInterface $categoryService,
+        private readonly CategoryRepositoryInterface $categoryRepository,
+        private readonly SpaceResolverInterface $spaceResolver,
     ) {}
 
     #[Route('', name: 'index')]

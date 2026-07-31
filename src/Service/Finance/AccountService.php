@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Service\Finance;
 
 use App\Entity\Account;
+use App\Service\Finance\Contract\AccountServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
-class AccountService
+final class AccountService implements AccountServiceInterface
 {
     public function __construct(private readonly EntityManagerInterface $em) {}
 

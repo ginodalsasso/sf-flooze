@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\EventListener;
 
 use App\Entity\AssetEntry;
-use App\Service\Finance\AssetEntryTransactionService;
+use App\Service\Finance\Contract\AssetEntryServiceInterface;
+use App\Service\Finance\Contract\AssetEntryTransactionServiceInterface;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener;
 use Doctrine\ORM\Events;
 
@@ -23,7 +24,7 @@ use Doctrine\ORM\Events;
 class AssetEntryListener
 {
     public function __construct(
-        private readonly AssetEntryTransactionService $transactionService,
+        private readonly AssetEntryTransactionServiceInterface $transactionService,
     ) {}
 
     public function prePersist(AssetEntry $entry): void

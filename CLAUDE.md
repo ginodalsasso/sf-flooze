@@ -28,8 +28,9 @@ Multi-tenant via `Space`. OCR Ollama local. PDF dompdf.
 3. **Changements isolés.** Modifier un module ne doit pas obliger à modifier les autres. Ne pas renommer ni changer une signature publique sans recenser les appelants. Attention particulière aux points partagés : `app.css`, traits, listeners Doctrine, macros.
 4. **Documentation courte et précise.** Le commentaire dit *pourquoi*, jamais *quoi*. 1 ligne max dans une méthode. PHPDoc seulement si le type-hint ne suffit pas.
 5. **Nommage conservé.** Suivre les conventions existantes pour le nouveau code, ne pas renommer l'existant.
+6. **Interfaces = contrats.** Tout composant injectable (service, repository, client externe, générateur PDF, resolver) expose une interface `{Classe}Interface` dans le sous-dossier `Contract/` de son module ; l'implémentation est `final` et on type-hint **toujours** l'interface. Hors périmètre : entités, DTO, enums, traits, FormTypes, controllers, listeners, voters, commandes.
 
-Détail et exemples : [`.claude/rules.md`](.claude/rules.md).
+Détail et exemples : [`.claude/rules.md`](.claude/rules.md) → *Interfaces*.
 
 ---
 
@@ -38,7 +39,7 @@ Détail et exemples : [`.claude/rules.md`](.claude/rules.md).
 1. **ERD = autorité.** Toute entité, relation, pivot, colonne doit exister dans `ARCHITECTURE.md → Entity Map`. Sinon, ne pas le créer.
 2. **Multi-tenant.** Toute entité métier a `space_id` + filtre par `space` dans toute query.
 3. **Soft delete.** `deleted_at` (TIMESTAMP nullable), jamais `is_deleted`. Filtre `deletedAt IS NULL` dans les queries actives.
-4. **DI uniquement.** Jamais `new XxxService()` dans un autre service. Constructor injection avec `private readonly`.
+4. **DI uniquement.** Jamais `new XxxService()` dans un autre service. Constructor injection avec `private readonly`, type-hint sur l'**interface** du composant — jamais sur son implémentation.
 5. **La sécurité se vérifie côté backend — l'UI ne sécurise rien.** Un bouton masqué, un `disabled`, un `readonly` ou un `{% if %}` en Twig sont contournables : la requête HTTP est forgeable. Tout contrôle affiché côté UI doit exister côté serveur.
    - `denyAccessUnlessGranted('VIEW'|'EDIT', $entity->getSpace())` via `SpaceScopeVoter` sur **chaque** action, y compris `new`, `delete`, exports et endpoints JSON.
    - Query filtrée par `space` — un ID en URL ne prouve rien sur son propriétaire.

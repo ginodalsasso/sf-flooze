@@ -15,7 +15,8 @@ Ces quatre principes priment sur tout le reste. En cas de conflit entre une règ
 - **La solution la plus simple qui marche est la bonne.** Toujours la préférer.
 - Écrire pour être **lu**, pas pour impressionner : code plat, noms explicites, early return, pas de one-liner cryptique.
 - Une abstraction ne se crée que sur un besoin **réel et présent**, jamais sur un besoin anticipé.
-- Interface, classe abstraite, factory, event : uniquement si ≥ 2 implémentations existent **aujourd'hui**.
+- Classe abstraite, factory, event, couche de mapping : uniquement si ≥ 2 implémentations existent **aujourd'hui**.
+- **Exception : les interfaces de composants injectables** (voir [Interfaces](#interfaces)). Elles sont un contrat de lecture et un point d'injection, pas une abstraction spéculative — elles sont donc systématiques, même à une seule implémentation.
 - Pas de couche de config/paramétrage pour un cas d'usage unique.
 - Si une explication de plus de 3 phrases est nécessaire pour justifier un design → c'est trop complexe, simplifier.
 
@@ -23,12 +24,15 @@ Ces quatre principes priment sur tout le reste. En cas de conflit entre une règ
 
 - **SRP** : Controller = HTTP (valider, déléguer, répondre). Service = business logic. Repository = queries. Entity = état + getters/setters.
 - **OCP** : étendre via un nouveau service, plutôt que modifier un service existant utilisé ailleurs.
-- **LSP** : interface pour tout composant swappable (client IA, générateur PDF, storage).
-- **ISP** : traits et interfaces petits et focalisés — `SpaceScopeTrait` n'ajoute que `space`.
-- **DIP** : dépendre d'abstractions, injection par le container uniquement. **Jamais `new Service()` dans un autre service.**
+- **LSP** : l'implémentation respecte le contrat de son interface — mêmes types de retour, mêmes exceptions, pas de pré-condition ajoutée.
+- **ISP** : traits et interfaces petits et focalisés — une interface expose l'API réellement appelée, pas l'intégralité des méthodes publiques « au cas où ».
+- **DIP** : dépendre d'abstractions, injection par le container uniquement. Le type-hint est **l'interface**, jamais l'implémentation. **Jamais `new Service()` dans un autre service.**
 
 ```php
 // GOOD
+public function __construct(private readonly OllamaClientInterface $ollama) {}
+
+// BAD — couplé à l'implémentation
 public function __construct(private readonly OllamaClient $ollama) {}
 ```
 
@@ -106,6 +110,7 @@ Le nommage existant fait autorité : suivre les patterns ci-dessous pour le nouv
 | DTO | `{Action}{Noun}Dto` | `CreateTransactionDto` |
 | PDF Generator | `{Noun}PdfGenerator` | `QuotePdfGenerator` |
 | Voter | `{Noun}Voter` | `SpaceScopeVoter` |
+| Interface | `{Classe}Interface` dans `Contract/` | `App\Service\Finance\Contract\TransactionServiceInterface` |
 
 ### Méthodes
 
@@ -124,6 +129,98 @@ Le nommage existant fait autorité : suivre les patterns ci-dessous pour le nouv
 
 ---
 
+## Interfaces
+
+**Tout composant injectable est déclaré par une interface et injecté par cette interface.** L'interface est le contrat lisible du composant ; la classe n'est qu'une implémentation.
+
+### Périmètre
+
+| Concerné — interface obligatoire | Hors périmètre — pas d'interface |
+|---|---|
+| Services métier (`src/Service/**`) | Entités, DTO, enums, traits |
+| Repositories (`src/Repository/**`) | FormTypes, controllers |
+| Clients externes (Ollama, taux de change, mailer applicatif) | Listeners Doctrine, voters, commandes, Twig extensions |
+| Générateurs PDF, exports | Value objects |
+| Resolvers / providers (`SpaceResolver`, `FeatureFlags`) | |
+
+Le hors-périmètre n'est pas injecté dans du code métier : soit c'est de l'état (entité, DTO), soit c'est un point d'entrée dont le framework définit déjà le contrat (`VoterInterface`, `Command`, `AbstractType`). Une interface y serait du bruit.
+
+### Convention
+
+- Nom : `{Classe}Interface` (suffixe, comme Symfony — pas de préfixe `I` façon C#).
+- Emplacement : sous-dossier **`Contract/`** du module qui porte l'implémentation, d'où un namespace en `\Contract`. `Interface/` est impossible : `interface` est un mot réservé PHP.
+
+```
+src/Service/Finance/
+├── Contract/
+│   ├── TransactionServiceInterface.php     → App\Service\Finance\Contract
+│   └── ExchangeRateServiceInterface.php
+├── TransactionService.php                  → App\Service\Finance
+└── ExchangeRateService.php
+```
+
+- Implémentation : `final class X implements XInterface`, avec l'import du contrat.
+- L'interface ne déclare **que** les méthodes appelées de l'extérieur (ISP). Une méthode publique utilisée uniquement en interne n'y figure pas.
+- Types de retour explicites, DTO ou entités typées — jamais `array` nu (voir [Services](#services)).
+- PHPDoc génériques (`@return list<Transaction>`) portés par l'**interface**, pas dupliqués dans l'implémentation.
+
+```php
+// src/Service/Finance/Contract/TransactionServiceInterface.php
+namespace App\Service\Finance\Contract;
+
+interface TransactionServiceInterface
+{
+    public function save(TransactionInputDto $input): Transaction;
+}
+
+// src/Service/Finance/TransactionService.php
+namespace App\Service\Finance;
+
+use App\Service\Finance\Contract\ExchangeRateServiceInterface;
+use App\Service\Finance\Contract\TransactionServiceInterface;
+
+final class TransactionService implements TransactionServiceInterface
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly ExchangeRateServiceInterface $exchangeRates,
+    ) {}
+}
+```
+
+### Cas des repositories
+
+Le contrat vit dans `src/Repository/Contract/` et **étend `ObjectRepository`** : `find()`, `findBy()` et consorts restent disponibles sans les redéclarer. L'implémentation Doctrine reste un `ServiceEntityRepository`.
+
+```php
+namespace App\Repository\Contract;
+
+/** @extends ObjectRepository<Transaction> */
+interface TransactionRepositoryInterface extends ObjectRepository
+{
+    /** @return Transaction[] */
+    public function findBySpace(Space $space): array;
+}
+
+final class TransactionRepository extends ServiceEntityRepository implements TransactionRepositoryInterface
+```
+
+Deux points d'accès échappent au contrat, et c'est normal :
+
+- `$em->getRepository(Transaction::class)` retourne la classe concrète — injecter `TransactionRepositoryInterface` dans le constructeur à la place.
+- Les closures `query_builder` d'un `EntityType` reçoivent le repository de Doctrine et appellent `createQueryBuilder()`, absent du contrat : y garder le **type concret**. Ce n'est pas de l'injection.
+
+### Container
+
+- Une seule implémentation → l'autowiring résout le type-hint tout seul (alias automatique des interfaces à implémentation unique via le chargement PSR-4 de `services.yaml`). **Rien à configurer.**
+- Plusieurs implémentations → `#[AsAlias(SomethingInterface::class)]` sur celle par défaut, alias explicite dans `config/services.yaml` pour les autres.
+
+### Ce que la règle n'autorise pas
+
+Une interface ne justifie pas une deuxième implémentation « pour l'exemple », ni un `AbstractXxxService`, ni une factory. Le reste des règles de simplicité s'applique intégralement.
+
+---
+
 ## Architecture
 
 ### Controllers
@@ -138,6 +235,7 @@ Le nommage existant fait autorité : suivre les patterns ci-dessous pour le nouv
 - Créer un service quand : domaine métier distinct, logique partagée par plusieurs controllers, complexité > ~30 lignes en controller, ou interaction API externe.
 - > 300 lignes → split par use case.
 - Retourner DTOs ou entités typées, jamais d'arrays anonymes.
+- Toujours livré avec son interface, et injecté par elle (voir [Interfaces](#interfaces)).
 
 ### Repositories
 
@@ -178,7 +276,10 @@ Le nommage existant fait autorité : suivre les patterns ci-dessous pour le nouv
 
 **Conception**
 - Abstraction prématurée — 3 lignes similaires ne justifient pas une classe abstraite.
-- Interface ou point d'extension pour une seule implémentation.
+- Classe abstraite, factory ou point d'extension pour une seule implémentation (les interfaces de composants injectables font exception, voir [Interfaces](#interfaces)).
+- Interface sur une entité, un DTO, un FormType, un controller ou un voter.
+- Type-hint sur l'implémentation alors qu'une interface existe.
+- Interface qui recopie toutes les méthodes publiques, y compris celles appelées seulement en interne.
 - Réflexe microservices — monolithe jusqu'à preuve d'un bottleneck.
 - Renommer ou déplacer de l'existant sans nécessité fonctionnelle.
 - `if` de cas particulier ajouté dans un service partagé.

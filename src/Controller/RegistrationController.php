@@ -6,9 +6,9 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Form\RegistrationFormType;
-use App\Repository\UserRepository;
-use App\Service\Feature\FeatureFlags;
-use App\Service\Notification\EmailService;
+use App\Repository\Contract\UserRepositoryInterface;
+use App\Service\Feature\Contract\FeatureFlagsInterface;
+use App\Service\Notification\Contract\EmailServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,9 +25,9 @@ class RegistrationController extends AbstractController
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $em,
-        EmailService $emailService,
+        EmailServiceInterface $emailService,
         RateLimiterFactoryInterface $registrationLimiter,
-        FeatureFlags $features,
+        FeatureFlagsInterface $features,
     ): Response {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
@@ -82,7 +82,7 @@ class RegistrationController extends AbstractController
     public function verifyEmail(
         int $id,
         string $token,
-        UserRepository $userRepository,
+        UserRepositoryInterface $userRepository,
         EntityManagerInterface $em,
     ): Response {
         $user = $userRepository->find($id);

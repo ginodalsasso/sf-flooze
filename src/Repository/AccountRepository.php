@@ -7,13 +7,14 @@ namespace App\Repository;
 use App\Entity\Account;
 use App\Entity\Space;
 use App\Enum\AccountTypeEnum;
+use App\Repository\Contract\AccountRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Account>
  */
-class AccountRepository extends ServiceEntityRepository
+final class AccountRepository extends ServiceEntityRepository implements AccountRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {

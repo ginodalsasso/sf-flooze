@@ -7,11 +7,11 @@ namespace App\Controller\Finance;
 use App\Controller\ActiveSpaceControllerTrait;
 use App\Entity\Account;
 use App\Form\Finance\AccountFormType;
-use App\Repository\AccountRepository;
-use App\Repository\TransactionRepository;
-use App\Service\Finance\AccountDetailService;
-use App\Service\Finance\AccountService;
-use App\Service\Space\SpaceResolver;
+use App\Repository\Contract\AccountRepositoryInterface;
+use App\Repository\Contract\TransactionRepositoryInterface;
+use App\Service\Finance\Contract\AccountDetailServiceInterface;
+use App\Service\Finance\Contract\AccountServiceInterface;
+use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,11 +24,11 @@ class AccountController extends AbstractController
     use ActiveSpaceControllerTrait;
 
     public function __construct(
-        private readonly AccountService $accountService,
-        private readonly AccountDetailService $accountDetailService,
-        private readonly AccountRepository $accountRepository,
-        private readonly TransactionRepository $transactionRepository,
-        private readonly SpaceResolver $spaceResolver,
+        private readonly AccountServiceInterface $accountService,
+        private readonly AccountDetailServiceInterface $accountDetailService,
+        private readonly AccountRepositoryInterface $accountRepository,
+        private readonly TransactionRepositoryInterface $transactionRepository,
+        private readonly SpaceResolverInterface $spaceResolver,
     ) {}
 
     #[Route('', name: 'index')]

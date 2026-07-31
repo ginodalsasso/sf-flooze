@@ -8,13 +8,14 @@ use App\Entity\Account;
 use App\Entity\Space;
 use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
+use App\Repository\Contract\TransactionRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Transaction>
  */
-class TransactionRepository extends ServiceEntityRepository
+final class TransactionRepository extends ServiceEntityRepository implements TransactionRepositoryInterface
 {
     /**
      * A transfer belongs to two accounts: it stays visible as long as one of them is

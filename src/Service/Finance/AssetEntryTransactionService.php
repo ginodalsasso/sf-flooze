@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Service\Finance;
 
+use App\Dto\Finance\ExpectedTransactionDto;
 use App\Entity\Account;
 use App\Entity\AssetEntry;
 use App\Entity\Transaction;
 use App\Enum\AssetEntryKindEnum;
 use App\Enum\TransactionTypeEnum;
+use App\Service\Finance\Contract\AssetEntryTransactionServiceInterface;
+use App\Service\Finance\Contract\ExchangeRateServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -26,11 +29,11 @@ use Doctrine\ORM\EntityManagerInterface;
  * the unit of work. For delete, it IS called from the service (not a listener) and
  * the caller is responsible for flushing.
  */
-final readonly class AssetEntryTransactionService
+final readonly class AssetEntryTransactionService implements AssetEntryTransactionServiceInterface
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private ExchangeRateService $exchangeRateService,
+        private ExchangeRateServiceInterface $exchangeRateService,
     ) {}
 
     public function createForEntry(AssetEntry $entry): void
@@ -40,12 +43,7 @@ final readonly class AssetEntryTransactionService
         }
     }
 
-    /**
-     * Synchronises linked transactions when the AssetEntry is edited.
-     *
-     * This is not just a timestamp update: amount, date, type, account or fees
-     * may have changed, so the linked Transaction rows must reflect the entry.
-     */
+    /** Amount, date, type, account or fees may have changed: the linked rows must reflect the entry. */
     public function updateForEntry(AssetEntry $entry): void
     {
         $expected = $this->buildExpectedTransactions($entry);
@@ -53,7 +51,7 @@ final readonly class AssetEntryTransactionService
 
         // Update existing transactions that still target the same account.
         foreach ($expected as $expectedTx) {
-            [$match, $key] = $this->findTransactionByAccount($existing, $expectedTx['account']);
+            [$match, $key] = $this->findTransactionByAccount($existing, $expectedTx->account);
 
             if ($match !== null) {
                 unset($existing[$key]);
@@ -71,11 +69,7 @@ final readonly class AssetEntryTransactionService
         }
     }
 
-    /**
-     * Soft-delete all transactions linked to this entry and reverse their balance effects.
-     * The AssetEntry FK is preserved on the transaction for audit purposes.
-     * The caller must flush after this call.
-     */
+    /** The AssetEntry FK is preserved on the transaction for audit purposes. */
     public function deleteForEntry(AssetEntry $entry): void
     {
         foreach ($entry->getTransactions()->toArray() as $transaction) {
@@ -85,7 +79,7 @@ final readonly class AssetEntryTransactionService
     }
 
     /**
-     * @return array<int, array{account: Account, type: TransactionTypeEnum, amount: string}>
+     * @return ExpectedTransactionDto[]
      */
     private function buildExpectedTransactions(AssetEntry $entry): array
     {
@@ -100,11 +94,11 @@ final readonly class AssetEntryTransactionService
             };
 
             if ($type !== null) {
-                $expectedTransactions[] = [
-                    'account' => $account,
-                    'type' => $type,
-                    'amount' => $entry->getTotalAmountInSpaceCurrency(),
-                ];
+                $expectedTransactions[] = new ExpectedTransactionDto(
+                    account: $account,
+                    type: $type,
+                    amount: $entry->getTotalAmountInSpaceCurrency(),
+                );
             }
         }
 
@@ -115,11 +109,11 @@ final readonly class AssetEntryTransactionService
                 AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => TransactionTypeEnum::INCOME,
             };
 
-            $expectedTransactions[] = [
-                'account' => $fundingAccount,
-                'type' => $type,
-                'amount' => $this->calculateFundingAmount($entry),
-            ];
+            $expectedTransactions[] = new ExpectedTransactionDto(
+                account: $fundingAccount,
+                type: $type,
+                amount: $this->calculateFundingAmount($entry),
+            );
         }
 
         return $expectedTransactions;
@@ -142,18 +136,15 @@ final readonly class AssetEntryTransactionService
         return $noneFound;
     }
 
-    /**
-     * @param array{account: Account, type: TransactionTypeEnum, amount: string} $expected
-     */
-    private function createTransaction(AssetEntry $entry, array $expected): void
+    private function createTransaction(AssetEntry $entry, ExpectedTransactionDto $expected): void
     {
         $transaction = new Transaction();
         $transaction
             ->setSpace($entry->getSpace())
-            ->setAccount($expected['account'])
-            ->setType($expected['type'])
-            ->setAmount($this->toAccountCurrency($expected['amount'], $expected['account']))
-            ->setFxRate($this->fxRateOf($expected['account']))
+            ->setAccount($expected->account)
+            ->setType($expected->type)
+            ->setAmount($this->toAccountCurrency($expected->amount, $expected->account))
+            ->setFxRate($this->fxRateOf($expected->account))
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry))
             ->setAssetEntry($entry);
@@ -163,20 +154,17 @@ final readonly class AssetEntryTransactionService
         $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
     }
 
-    /**
-     * @param array{account: Account, type: TransactionTypeEnum, amount: string} $expected
-     */
-    private function updateTransaction(Transaction $transaction, AssetEntry $entry, array $expected): void
+    private function updateTransaction(Transaction $transaction, AssetEntry $entry, ExpectedTransactionDto $expected): void
     {
         $oldAccount = $transaction->getAccount();
         $oldType = $transaction->getType();
         $oldAmount = $transaction->getAmount();
 
         $transaction
-            ->setAccount($expected['account'])
-            ->setType($expected['type'])
-            ->setAmount($this->toAccountCurrency($expected['amount'], $expected['account']))
-            ->setFxRate($this->fxRateOf($expected['account']))
+            ->setAccount($expected->account)
+            ->setType($expected->type)
+            ->setAmount($this->toAccountCurrency($expected->amount, $expected->account))
+            ->setFxRate($this->fxRateOf($expected->account))
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry));
 

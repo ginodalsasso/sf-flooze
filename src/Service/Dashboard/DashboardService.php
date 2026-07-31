@@ -7,19 +7,19 @@ namespace App\Service\Dashboard;
 use App\Dto\Dashboard\DashboardSummaryDto;
 use App\Entity\Space;
 use App\Enum\TransactionTypeEnum;
-use App\Repository\AccountRepository;
-use App\Repository\TransactionRepository;
-use App\Service\Finance\ExchangeRateService;
+use App\Repository\Contract\AccountRepositoryInterface;
+use App\Repository\Contract\TransactionRepositoryInterface;
+use App\Service\Dashboard\Contract\DashboardServiceInterface;
+use App\Service\Finance\Contract\ExchangeRateServiceInterface;
 
-class DashboardService
+final class DashboardService implements DashboardServiceInterface
 {
     public function __construct(
-        private readonly AccountRepository $accountRepository,
-        private readonly TransactionRepository $transactionRepository,
-        private readonly ExchangeRateService $exchangeRateService,
+        private readonly AccountRepositoryInterface $accountRepository,
+        private readonly TransactionRepositoryInterface $transactionRepository,
+        private readonly ExchangeRateServiceInterface $exchangeRateService,
     ) {}
 
-    // Summarizes the financial state of a Space for display on the dashboard.
     public function summarize(Space $space): DashboardSummaryDto
     {
         $accounts = $this->accountRepository->findBySpace($space);

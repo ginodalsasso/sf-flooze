@@ -6,7 +6,7 @@ namespace App\Form\Finance;
 
 use App\Entity\Asset;
 use App\Entity\Space;
-use App\Repository\AssetEntryRepository;
+use App\Repository\Contract\AssetEntryRepositoryInterface;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -14,7 +14,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 class AssetSellFormType extends AbstractAssetOperationFormType
 {
     public function __construct(
-        private readonly AssetEntryRepository $entryRepository,
+        private readonly AssetEntryRepositoryInterface $entryRepository,
     ) {}
 
     public function buildForm(FormBuilderInterface $builder, array $options): void

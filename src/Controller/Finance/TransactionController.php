@@ -11,11 +11,11 @@ use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
 use App\Form\Finance\AssetTransactionFormType;
 use App\Form\Finance\ClassicTransactionFormType;
-use App\Repository\AccountRepository;
-use App\Repository\TransactionRepository;
-use App\Service\Finance\AccountBalanceService;
-use App\Service\Finance\TransactionService;
-use App\Service\Space\SpaceResolver;
+use App\Repository\Contract\AccountRepositoryInterface;
+use App\Repository\Contract\TransactionRepositoryInterface;
+use App\Service\Finance\Contract\AccountBalanceServiceInterface;
+use App\Service\Finance\Contract\TransactionServiceInterface;
+use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,11 +28,11 @@ class TransactionController extends AbstractController
     use ActiveSpaceControllerTrait;
 
     public function __construct(
-        private readonly TransactionService $transactionService,
-        private readonly TransactionRepository $transactionRepository,
-        private readonly AccountRepository $accountRepository,
-        private readonly AccountBalanceService $accountBalanceService,
-        private readonly SpaceResolver $spaceResolver,
+        private readonly TransactionServiceInterface $transactionService,
+        private readonly TransactionRepositoryInterface $transactionRepository,
+        private readonly AccountRepositoryInterface $accountRepository,
+        private readonly AccountBalanceServiceInterface $accountBalanceService,
+        private readonly SpaceResolverInterface $spaceResolver,
     ) {}
 
     #[Route('', name: 'index')]

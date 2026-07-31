@@ -13,7 +13,9 @@ sf-flooze/
 ├── src/
 │   ├── Entity/                    # Doctrine ORM entities (attribute mapping)
 │   ├── Repository/                # Custom Doctrine queries
+│   │   └── Contract/              # {Entity}RepositoryInterface (extends ObjectRepository)
 │   ├── Service/                   # Business logic (by domain)
+│   │   └── <Domain>/Contract/     # {X}ServiceInterface — one Contract/ per domain folder
 │   │   ├── AI/
 │   │   ├── Finance/
 │   │   ├── RealEstate/
@@ -196,6 +198,8 @@ ReminderLink (N) ──── (1) {any entity} [polymorphic]
 ---
 
 ## Service Layer
+
+Chaque service listé ci-dessous est accompagné de son interface `{Classe}Interface`, rangée dans le sous-dossier `Contract/` de son domaine, et n'est injecté que par elle (voir [`.claude/rules.md`](.claude/rules.md) → *Interfaces*). Même règle pour les repositories et les générateurs PDF.
 
 ```
 src/Service/

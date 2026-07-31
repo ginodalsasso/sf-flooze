@@ -6,13 +6,14 @@ namespace App\Repository;
 
 use App\Entity\Asset;
 use App\Entity\Space;
+use App\Repository\Contract\AssetRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Asset>
  */
-class AssetRepository extends ServiceEntityRepository
+final class AssetRepository extends ServiceEntityRepository implements AssetRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {

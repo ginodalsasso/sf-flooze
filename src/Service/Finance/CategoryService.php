@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Service\Finance;
 
 use App\Entity\Category;
+use App\Service\Finance\Contract\CategoryServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
-class CategoryService
+final class CategoryService implements CategoryServiceInterface
 {
     public function __construct(private readonly EntityManagerInterface $em) {}
 
@@ -17,7 +18,6 @@ class CategoryService
         $this->em->flush();
     }
 
-    /** Promotes children to the deleted category's parent before removing. */
     public function delete(Category $category): void
     {
         foreach ($category->getChildren() as $child) {

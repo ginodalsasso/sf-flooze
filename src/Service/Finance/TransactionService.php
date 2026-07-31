@@ -8,22 +8,20 @@ use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
+use App\Service\Finance\Contract\AccountBalanceServiceInterface;
+use App\Service\Finance\Contract\ExchangeRateServiceInterface;
+use App\Service\Finance\Contract\TransactionServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
-class TransactionService
+final class TransactionService implements TransactionServiceInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly AccountBalanceService $accountBalanceService,
-        private readonly ExchangeRateService $exchangeRateService,
+        private readonly AccountBalanceServiceInterface $accountBalanceService,
+        private readonly ExchangeRateServiceInterface $exchangeRateService,
     ) {}
 
-    /**
-     * Persist a new transaction and update account balance(s).
-     * Rejects non-positive amounts as a defense-in-depth measure.
-     *
-     * @throws \InvalidArgumentException if amount is not strictly positive or if funds are insufficient
-     */
+    /** Rejects non-positive amounts as a defense-in-depth measure. */
     public function save(TransactionInputDto $input): Transaction
     {
         $this->guardStrictlyPositive($input->amount);
@@ -42,12 +40,6 @@ class TransactionService
         return $transaction;
     }
 
-    /**
-     * Update an edited transaction: reverse old balance effect, apply new one.
-     * Rejects non-positive amounts as a defense-in-depth measure.
-     *
-     * @throws \InvalidArgumentException if new amount is not strictly positive
-     */
     public function update(Transaction $transaction, TransactionInputDto $input): void
     {
         $this->guardNotLinkedToAsset($transaction);
@@ -66,9 +58,6 @@ class TransactionService
         $this->em->flush();
     }
 
-    /**
-     * Soft-delete a transaction and reverse its balance effect.
-     */
     public function delete(Transaction $transaction): void
     {
         $this->guardNotLinkedToAsset($transaction);

@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Twig\Extension;
 
 use App\Entity\Account;
-use App\Service\Finance\AccountBalanceService;
+use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 final class AccountBalanceExtension extends AbstractExtension
 {
     public function __construct(
-        private readonly AccountBalanceService $accountBalanceService,
+        private readonly AccountBalanceServiceInterface $accountBalanceService,
     ) {}
 
     public function getFunctions(): array
