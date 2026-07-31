@@ -97,13 +97,18 @@ class TransactionService
     /** A credited amount is only meaningful on a transfer crossing two currencies. */
     private function resolveDestinationAmount(TransactionInputDto $input): ?string
     {
+
         if ($input->type !== TransactionTypeEnum::TRANSFER || $input->destinationAccount === null) {
             return null;
         }
 
-        return $input->destinationAccount->getCurrency() === $input->account->getCurrency()
+        $accountCurrency = $input->account->getCurrency();
+        $destinationCurrency = $input->destinationAccount->getCurrency();
+        $convertedAmount = $this->exchangeRateService->convert($input->amount, $accountCurrency, $destinationCurrency);
+
+        return $accountCurrency === $destinationCurrency
             ? null
-            : $input->destinationAmount;
+            : $convertedAmount;
     }
 
     /** Debit the source account and, on a transfer, credit the destination with what it actually receives. */

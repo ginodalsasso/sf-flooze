@@ -34,7 +34,10 @@ final readonly class AccountDetailDto
 
     public function isAssetAccount(): bool
     {
-        return \in_array($this->account->getType(), [\App\Enum\AccountTypeEnum::CRYPTO, \App\Enum\AccountTypeEnum::STOCK], true);
+        $crypto = \App\Enum\AccountTypeEnum::CRYPTO;
+        $stock = \App\Enum\AccountTypeEnum::STOCK;
+        
+        return \in_array($this->account->getType(), [$crypto, $stock], true);
     }
 
     public function monthlyNetFlow(): string

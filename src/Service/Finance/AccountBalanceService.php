@@ -24,7 +24,10 @@ readonly class AccountBalanceService
 
     public function isAssetHoldingAccount(Account $account): bool
     {
-        return \in_array($account->getType(), [AccountTypeEnum::CRYPTO, AccountTypeEnum::STOCK], true);
+        $assetTypes = [AccountTypeEnum::CRYPTO, AccountTypeEnum::STOCK];
+        $assetAccountTypes = array_map(fn($type) => $type->value, $assetTypes);
+        
+        return \in_array($account->getType(), $assetAccountTypes, true);
     }
 
     /**
@@ -39,11 +42,17 @@ readonly class AccountBalanceService
             return '0.00';
         }
 
-        return $this->exchangeRateService->convert(
-            $this->assetEntryRepository->getInvestedBalance($account),
-            $account->getSpace()->getCurrency(),
-            $account->getCurrency(),
+        $investedBalanceInSpaceCurrency = $this->assetEntryRepository->getInvestedBalance($account);
+        $spaceCurrency = $account->getSpace()->getCurrency();
+        $accountCurrency = $account->getCurrency();
+
+        $investedBalace = $this->exchangeRateService->convert(
+            $investedBalanceInSpaceCurrency,
+            $spaceCurrency,
+            $accountCurrency,
         );
+
+        return $investedBalace;
     }
 
     /**
@@ -54,6 +63,9 @@ readonly class AccountBalanceService
         return bcsub($account->getBalance(), $this->getInvestedBalance($account), 2);
     }
 
+    /**
+     * Whether the account has enough available funds to cover a given amount.
+     */
     public function hasAvailableFunds(Account $account, string $amount): bool
     {
         return bccomp($this->getAvailableBalance($account), $amount, 2) >= 0;
@@ -70,6 +82,7 @@ readonly class AccountBalanceService
      */
     public function guardAvailableFunds(Account $account, string $amount): void
     {
+        // Only asset-holding accounts have invested funds
         if (!$this->isAssetHoldingAccount($account)) {
             return;
         }

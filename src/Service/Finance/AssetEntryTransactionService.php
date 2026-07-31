@@ -89,7 +89,7 @@ final readonly class AssetEntryTransactionService
      */
     private function buildExpectedTransactions(AssetEntry $entry): array
     {
-        $expected = [];
+        $expectedTransactions = [];
 
         $account = $entry->getAccount();
         if ($account !== null) {
@@ -100,7 +100,7 @@ final readonly class AssetEntryTransactionService
             };
 
             if ($type !== null) {
-                $expected[] = [
+                $expectedTransactions[] = [
                     'account' => $account,
                     'type' => $type,
                     'amount' => $entry->getTotalAmountInSpaceCurrency(),
@@ -115,14 +115,14 @@ final readonly class AssetEntryTransactionService
                 AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => TransactionTypeEnum::INCOME,
             };
 
-            $expected[] = [
+            $expectedTransactions[] = [
                 'account' => $fundingAccount,
                 'type' => $type,
                 'amount' => $this->calculateFundingAmount($entry),
             ];
         }
 
-        return $expected;
+        return $expectedTransactions;
     }
 
     /**
@@ -137,7 +137,9 @@ final readonly class AssetEntryTransactionService
             }
         }
 
-        return [null, null];
+        $noneFound = [null, null];
+
+        return $noneFound;
     }
 
     /**
@@ -188,11 +190,13 @@ final readonly class AssetEntryTransactionService
      */
     private function toAccountCurrency(string $amount, Account $account): string
     {
-        return $this->exchangeRateService->convert(
+        $convertedAmount = $this->exchangeRateService->convert(
             $amount,
             $account->getSpace()->getCurrency(),
             $account->getCurrency(),
         );
+
+        return $convertedAmount;
     }
 
     private function fxRateOf(Account $account): string
@@ -206,17 +210,22 @@ final readonly class AssetEntryTransactionService
      */
     private function calculateFundingAmount(AssetEntry $entry): string
     {
-        $gross = $entry->getTotalAmountInSpaceCurrency();
-        $fees = $entry->getFees();
+        $grossAmount = $entry->getTotalAmountInSpaceCurrency();
+        $feesAmount = $entry->getFees();
 
-        return match ($entry->getKind()) {
-            AssetEntryKindEnum::BUY => bcadd($gross, $fees, 2),
-            AssetEntryKindEnum::SELL, AssetEntryKindEnum::DIVIDEND => (
-                bccomp(bcsub($gross, $fees, 2), '0', 2) >= 0
-                    ? bcsub($gross, $fees, 2)
-                    : '0.00'
-            ),
+        $buyAmount = bcadd($grossAmount, $feesAmount, 2);
+        $netAmount = bcsub($grossAmount, $feesAmount, 2);
+        $isNetPositive = bccomp($netAmount, '0', 2) >= 0;
+
+        $fundingAmount = match ($entry->getKind()) {
+            AssetEntryKindEnum::BUY => $buyAmount,
+            AssetEntryKindEnum::SELL,
+            AssetEntryKindEnum::DIVIDEND => $isNetPositive
+                ? $netAmount
+                : '0.00',
         };
+
+        return $fundingAmount;
     }
 
     /**
@@ -230,7 +239,9 @@ final readonly class AssetEntryTransactionService
             AssetEntryKindEnum::DIVIDEND => 'Dividende',
         };
 
-        return sprintf('%s %s', $kindLabel, $entry->getAsset()->getTicker());
+        $description = sprintf('%s %s', $kindLabel, $entry->getAsset()->getTicker());
+
+        return $description;
     }
 
     /**

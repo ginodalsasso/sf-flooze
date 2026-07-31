@@ -33,16 +33,25 @@ final class ExchangeRateService
             return '1.000000';
         }
 
-        return bcdiv(self::RATES_TO_EUR[$from->value], self::RATES_TO_EUR[$to->value], self::SCALE);
+        $fromRate = self::RATES_TO_EUR[$from->value];
+        $toRate = self::RATES_TO_EUR[$to->value];
+
+        $result = bcdiv($fromRate, $toRate, self::SCALE);
+
+        return $result;
     }
 
     /** Converts a monetary amount, rounded to 2 decimals for storage and display. */
     public function convert(string $amount, CurrencyEnum $from, CurrencyEnum $to): string
     {
         if ($from === $to) {
-            return bcadd($amount, '0', 2);
+            $addition = bcadd($amount, '0', 2);
+            return $addition;
         }
 
-        return bcmul($amount, $this->getRate($from, $to), 2);
+        $rate = $this->getRate($from, $to);
+        $result = bcmul($amount, $rate, 2);
+    
+        return $result;
     }
 }

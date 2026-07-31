@@ -126,7 +126,9 @@ class Category
         return $this;
     }
 
-    /** True when the category may be used on a transaction of this type (empty = all types) */
+    /** True when the category may be used on a transaction of this type (empty = all types) 
+     * ex: $category->appliesTo(TransactionTypeEnum::EXPENSE) will return true if the category can be used on an expense transaction.
+    */
     public function appliesTo(TransactionTypeEnum $type): bool
     {
         return $this->applicableTypes === [] || in_array($type->value, $this->applicableTypes, true);

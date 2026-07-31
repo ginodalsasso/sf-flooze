@@ -151,7 +151,9 @@ class AssetEntryService
     // Guard that a numeric string is strictly positive, throwing an exception if not.
     private function guardStrictlyPositive(?string $value, string $fieldName): void
     {
-        if ($value === null || bccomp($value, '0', 8) <= 0) {
+        $isPositive = $value !== null && bccomp($value, '0', 8) > 0;
+        
+        if (!$isPositive) {
             throw new \InvalidArgumentException(sprintf('%s must be strictly positive.', $fieldName));
         }
     }

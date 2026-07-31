@@ -29,7 +29,10 @@ class DashboardService
         foreach ($accounts as $account) {
             $totalBalance = bcadd(
                 $totalBalance,
-                $this->exchangeRateService->convert($account->getBalance(), $account->getCurrency(), $space->getCurrency()),
+                $this->exchangeRateService->convert(
+                    $account->getBalance(), 
+                    $account->getCurrency(), 
+                    $space->getCurrency()),
                 2,
             );
         }

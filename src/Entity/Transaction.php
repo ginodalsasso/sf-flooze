@@ -208,14 +208,21 @@ class Transaction
     /** True when $account receives the money — i.e. it is the destination of a transfer. */
     public function isIncomingFor(Account $account): bool
     {
-        return $this->destinationAccount !== null
-            && $this->destinationAccount->getId() === $account->getId();
+        if ($this->destinationAccount === null) {
+            return false;
+        }
+
+        return $this->destinationAccount->getId() === $account->getId();
     }
 
     /** Amount as it hits $account, expressed in that account's currency. */
     public function getAmountFor(Account $account): string
     {
-        return $this->isIncomingFor($account) ? $this->getCreditedAmount() : $this->amount;
+        if ($this->isIncomingFor($account)) {
+            return $this->getCreditedAmount();
+        }
+
+        return $this->amount;
     }
 
     public function getDate(): \DateTimeImmutable

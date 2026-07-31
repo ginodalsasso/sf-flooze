@@ -97,6 +97,7 @@ class Account
      *
      * The amount must be a numeric string so that BC math keeps 2-decimal
      * precision. This is the single source of truth for balance updates.
+     * ex: $account->adjustBalance('-10.00') will subtract 10 from the balance.
      */
     public function adjustBalance(string $amount): static
     {
@@ -106,15 +107,21 @@ class Account
         return $this;
     }
 
-    /** Apply the balance effect of a transaction ($type sign × $amount). */
+    /**
+     * Apply the balance effect of a transaction ($type sign × $amount).
+     * ex: $account->applyOperation(TransactionTypeEnum::EXPENSE, '10.00') will subtract 10 from the balance.
+     */
     public function applyOperation(TransactionTypeEnum $type, string $amount): static
     {
-        return $this->adjustBalance(bcmul($amount, (string) $type->balanceSign(), 2));
+        return $this->adjustBalance(bcmul($amount, (string) $type->balanceSign(), 2)); // ex: bcmul('10.00', '-1', 2) = '-10.00'
     }
 
-    /** Reverse the balance effect of a transaction (used when editing/deleting). */
+    /**
+     * Reverse the balance effect of a transaction (used when editing/deleting).
+     * ex: $account->reverseOperation(TransactionTypeEnum::EXPENSE, '10.00') will add 10 to the balance.
+     */
     public function reverseOperation(TransactionTypeEnum $type, string $amount): static
     {
-        return $this->adjustBalance(bcmul($amount, (string) (-$type->balanceSign()), 2));
+        return $this->adjustBalance(bcmul($amount, (string) (-$type->balanceSign()), 2)); // ex: bcmul('10.00', '1', 2) = '10.00'
     }
 }
