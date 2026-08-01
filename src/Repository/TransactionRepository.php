@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Dto\Finance\TransactionFilterDto;
+use App\Dto\Finance\TransactionTotalsDto;
 use App\Entity\Account;
 use App\Entity\Space;
 use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -27,39 +30,112 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
     /** The second leg of a movement, which only a transfer has. */
     private const CREDITED_ACCOUNT = "t.type = 'transfer' AND t.destinationAccount = :account";
 
+    /**
+     * Free text over the columns the list displays. Both account names are searched
+     * because a transfer shows them in the same cell. Requires the 'a', 'c' and 'da' joins.
+     */
+    private const TEXT_SEARCH = 'LOWER(t.description) LIKE :q OR LOWER(c.name) LIKE :q '
+        . 'OR LOWER(a.name) LIKE :q OR LOWER(da.name) LIKE :q';
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Transaction::class);
     }
 
-    /**
-     * @return Transaction[] active transactions for the space, most recent first.
-     *         An account filter matches both legs of a transfer: the destination
-     *         account is credited, so the movement belongs to its history too.
-     */
-    public function findBySpace(Space $space, ?TransactionTypeEnum $type = null, ?Account $account = null): array
+    /** @return Transaction[] active transactions of the space matching the filter, most recent first. */
+    public function findByFilter(Space $space, TransactionFilterDto $filter): array
     {
-        $qb = $this->createQueryBuilder('t')
+        $qb = $this->createSpaceScopedQb($space);
+        $this->applyFilter($qb, $filter);
+
+        return $qb
+            ->orderBy('t.date', 'DESC')
+            ->addOrderBy('t.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Count and income/expense totals of the same result set, aggregated by the database.
+     *
+     * Amounts are converted to the space currency (amount × fx_rate): accounts of the
+     * space may hold different currencies, so raw amounts cannot be added together.
+     */
+    public function sumByFilter(Space $space, TransactionFilterDto $filter): TransactionTotalsDto
+    {
+        $qb = $this->createSpaceScopedQb($space)
+            ->select(
+                'COUNT(t.id) AS nb',
+                'COALESCE(SUM(CASE WHEN t.type = :incomeType THEN t.amount * t.fxRate ELSE 0 END), 0) AS income',
+                'COALESCE(SUM(CASE WHEN t.type = :expenseType THEN t.amount * t.fxRate ELSE 0 END), 0) AS expense',
+            )
+            ->setParameter('incomeType', TransactionTypeEnum::INCOME)
+            ->setParameter('expenseType', TransactionTypeEnum::EXPENSE);
+
+        $this->applyFilter($qb, $filter);
+
+        $row = $qb->getQuery()->getSingleResult();
+
+        return new TransactionTotalsDto(
+            count: (int) $row['nb'],
+            income: bcadd((string) $row['income'], '0', 2),
+            expense: bcadd((string) $row['expense'], '0', 2),
+        );
+    }
+
+    /** Active transactions of the space, with the joins every filter and the list rely on. */
+    private function createSpaceScopedQb(Space $space): QueryBuilder
+    {
+        return $this->createQueryBuilder('t')
             ->join('t.account', 'a')
             ->leftJoin('t.category', 'c')
             ->leftJoin('t.destinationAccount', 'da')
             ->where('t.space = :space')
             ->andWhere('t.deletedAt IS NULL')
             ->andWhere(self::ON_ACTIVE_ACCOUNT)
-            ->setParameter('space', $space)
-            ->orderBy('t.date', 'DESC')
-            ->addOrderBy('t.createdAt', 'DESC');
+            ->setParameter('space', $space);
+    }
 
-        if ($type !== null) {
-            $qb->andWhere('t.type = :type')->setParameter('type', $type);
+    /**
+     * Narrows the query to the criteria that are set. An account matches both legs of a
+     * transfer: the destination account is credited, so the movement belongs to its
+     * history too. Amount bounds compare converted amounts, as the totals do.
+     */
+    private function applyFilter(QueryBuilder $qb, TransactionFilterDto $filter): void
+    {
+        if ($filter->type !== null) {
+            $qb->andWhere('t.type = :type')->setParameter('type', $filter->type);
         }
 
-        if ($account !== null) {
+        if ($filter->account !== null) {
             $qb->andWhere('t.account = :account OR (' . self::CREDITED_ACCOUNT . ')')
-                ->setParameter('account', $account);
+                ->setParameter('account', $filter->account);
         }
 
-        return $qb->getQuery()->getResult();
+        if ($filter->category !== null) {
+            $qb->andWhere('t.category = :category')->setParameter('category', $filter->category);
+        }
+
+        if ($filter->dateFrom !== null) {
+            $qb->andWhere('t.date >= :dateFrom')->setParameter('dateFrom', $filter->dateFrom);
+        }
+
+        if ($filter->dateTo !== null) {
+            $qb->andWhere('t.date <= :dateTo')->setParameter('dateTo', $filter->dateTo);
+        }
+
+        if ($filter->amountMin !== null) {
+            $qb->andWhere('t.amount * t.fxRate >= :amountMin')->setParameter('amountMin', $filter->amountMin);
+        }
+
+        if ($filter->amountMax !== null) {
+            $qb->andWhere('t.amount * t.fxRate <= :amountMax')->setParameter('amountMax', $filter->amountMax);
+        }
+
+        if ($filter->query !== null && $filter->query !== '') {
+            $qb->andWhere(self::TEXT_SEARCH)
+                ->setParameter('q', '%' . strtolower(addcslashes($filter->query, '%_\\')) . '%');
+        }
     }
 
     /** @return Transaction[] most recent N transactions for dashboard widget. */

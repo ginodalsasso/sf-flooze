@@ -3,6 +3,7 @@
 {% block stylesheets %}
     {{ parent() }}
     {% include 'finance/asset/_styles.html.twig' %}
+    {% include 'finance/transaction/_styles.html.twig' %}
 {% endblock %}
 
 {% block title %}{{ asset.ticker }} — Mon portefeuille — Flooze{% endblock %}
@@ -121,6 +122,17 @@
     {# Entries table #}
     <h2 class="asset-show-section-title">Historique des opérations</h2>
 
+    <div class="txn-filters">
+        {% include 'finance/_filter_bar.html.twig' with {
+            route: 'app_asset_show',
+            routeParams: {id: asset.id},
+            segments: assetKinds,
+            segmentParam: 'kind',
+            currentSegment: filter.kind,
+            showReset: not filter.isEmpty,
+        } only %}
+    </div>
+
     {% if entries|length > 0 %}
         <div class="txn-table-wrap">
             <table class="txn-table">
@@ -204,11 +216,19 @@
                 </tbody>
             </table>
         </div>
-    {% else %}
+    {% elseif filter.isEmpty %}
         <twig:EmptyState
             icon="bar-chart-2"
             text="Aucune opération"
             hint="Ce portefeuille n'a pas encore d'opérations enregistrées."
+        />
+    {% else %}
+        <twig:EmptyState
+            icon="search-x"
+            text="Aucun résultat"
+            hint="Aucune opération de cet actif ne correspond à cette sélection."
+            ctaLabel="Réinitialiser les filtres"
+            ctaHref="{{ path('app_asset_show', {id: asset.id}) }}"
         />
     {% endif %}
 

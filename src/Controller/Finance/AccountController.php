@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Controller\Finance;
 
 use App\Controller\ActiveSpaceControllerTrait;
+use App\Dto\Finance\TransactionFilterDto;
 use App\Entity\Account;
+use App\Enum\TransactionTypeEnum;
 use App\Form\Finance\AccountFormType;
+use App\Form\Finance\TransactionFilterFormType;
 use App\Repository\Contract\AccountRepositoryInterface;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use App\Service\Finance\Contract\AccountDetailServiceInterface;
@@ -45,12 +48,26 @@ class AccountController extends AbstractController
     }
 
     #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'])]
-    public function show(Account $account): Response
+    public function show(Request $request, Account $account): Response
     {
         $this->denyAccessUnlessGranted('VIEW', $account->getSpace());
 
+        // The account is the subject of the page: the form cannot offer it, so it cannot widen the list.
+        $filter = TransactionFilterDto::forAccount($account);
+        $filterForm = $this->createForm(TransactionFilterFormType::class, $filter, [
+            'space' => $account->getSpace(),
+            'with_account' => false,
+        ]);
+        $filterForm->handleRequest($request);
+
+        $filter->type = TransactionTypeEnum::tryFrom($request->query->getString('type'));
+
         return $this->render('finance/account/show.html.twig', [
-            'detail' => $this->accountDetailService->build($account),
+            'detail'           => $this->accountDetailService->build($account, $filter),
+            'filterForm'       => $filterForm,
+            'filter'           => $filter,
+            'transactionTypes' => TransactionTypeEnum::cases(),
+            'space'            => $account->getSpace(),
         ]);
     }
 

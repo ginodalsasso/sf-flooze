@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository\Contract;
 
+use App\Dto\Finance\AssetEntryFilterDto;
 use App\Entity\Account;
 use App\Entity\Asset;
 use App\Entity\AssetEntry;
@@ -14,8 +15,8 @@ use Doctrine\Persistence\ObjectRepository;
  */
 interface AssetEntryRepositoryInterface extends ObjectRepository
 {
-    /** @return AssetEntry[] active entries for the asset, most recent first */
-    public function findByAsset(Asset $asset): array;
+    /** @return AssetEntry[] active entries for the asset matching the filter, most recent first */
+    public function findByAsset(Asset $asset, ?AssetEntryFilterDto $filter = null): array;
 
     /** @return AssetEntry[] active buy entries for the asset, ordered by date (FIFO) */
     public function findBuysByAsset(Asset $asset): array;

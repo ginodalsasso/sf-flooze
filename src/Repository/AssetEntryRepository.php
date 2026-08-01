@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Dto\Finance\AssetEntryFilterDto;
 use App\Entity\Account;
 use App\Entity\Asset;
 use App\Entity\AssetEntry;
@@ -23,18 +24,30 @@ final class AssetEntryRepository extends ServiceEntityRepository implements Asse
     }
 
     /**
-     * @return AssetEntry[] active entries for the asset, most recent first
+     * @return AssetEntry[] active entries for the asset matching the filter, most recent first
      */
-    public function findByAsset(Asset $asset): array
+    public function findByAsset(Asset $asset, ?AssetEntryFilterDto $filter = null): array
     {
-        return $this->createQueryBuilder('e')
+        $qb = $this->createQueryBuilder('e')
             ->where('e.asset = :asset')
             ->andWhere('e.deletedAt IS NULL')
             ->setParameter('asset', $asset)
             ->orderBy('e.date', 'DESC')
-            ->addOrderBy('e.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('e.createdAt', 'DESC');
+
+        if ($filter?->kind !== null) {
+            $qb->andWhere('e.kind = :kind')->setParameter('kind', $filter->kind);
+        }
+
+        if ($filter?->dateFrom !== null) {
+            $qb->andWhere('e.date >= :dateFrom')->setParameter('dateFrom', $filter->dateFrom);
+        }
+
+        if ($filter?->dateTo !== null) {
+            $qb->andWhere('e.date <= :dateTo')->setParameter('dateTo', $filter->dateTo);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     /**

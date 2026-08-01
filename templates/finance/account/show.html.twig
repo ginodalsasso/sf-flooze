@@ -96,8 +96,34 @@
     {# Transactions list #}
     <h2 class="acc-show-section-title">Mouvements</h2>
 
+    {% include 'finance/transaction/_filters.html.twig' with {
+        route: 'app_account_show',
+        routeParams: {id: detail.account.id},
+    } %}
+
     {% if detail.hasTransactions %}
         <div class="txn-table-wrap">
+            <div class="txn-summary">
+                <span class="txn-summary__count">
+                    {{ detail.totals.count }} mouvement{{ detail.totals.count > 1 ? 's' : '' }}
+                </span>
+                {% if filter.type is null or filter.type.value != 'transfer' %}
+                    <span class="txn-summary__item">
+                        Revenus <strong class="txn-amount--income">{{ detail.totals.income|money(space.currency) }}</strong>
+                    </span>
+                    <span class="txn-summary__item">
+                        Dépenses <strong class="txn-amount--expense">{{ detail.totals.expense|money(space.currency) }}</strong>
+                    </span>
+                    <span class="txn-summary__item">
+                        Net
+                        <strong class="{{ detail.totals.net starts with '-' ? 'txn-amount--negative' : 'txn-amount--positive' }}">
+                            {{ detail.totals.net|money(space.currency) }}
+                        </strong>
+                    </span>
+                    <span class="txn-summary__note">Sur la sélection · virements exclus des totaux</span>
+                {% endif %}
+            </div>
+
             <table class="txn-table">
                 <thead>
                     <tr>
@@ -175,13 +201,21 @@
                 </tbody>
             </table>
         </div>
-    {% else %}
+    {% elseif filter.isEmpty %}
         <twig:EmptyState
             icon="arrow-left-right"
             text="Aucun mouvement"
             hint="Ce compte n'a pas encore de transactions enregistrées."
             ctaLabel="Nouvelle transaction"
             ctaHref="{{ path('app_transaction_new') }}"
+        />
+    {% else %}
+        <twig:EmptyState
+            icon="search-x"
+            text="Aucun résultat"
+            hint="Aucun mouvement de ce compte ne correspond à cette recherche."
+            ctaLabel="Réinitialiser les filtres"
+            ctaHref="{{ path('app_account_show', {id: detail.account.id}) }}"
         />
     {% endif %}
 </div>

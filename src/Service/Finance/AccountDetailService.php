@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Finance;
 
 use App\Dto\Finance\AccountDetailDto;
+use App\Dto\Finance\TransactionFilterDto;
 use App\Entity\Account;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\Contract\TransactionRepositoryInterface;
@@ -18,14 +19,16 @@ final class AccountDetailService implements AccountDetailServiceInterface
         private readonly AccountBalanceServiceInterface $accountBalanceService,
     ) {}
 
-    public function build(Account $account): AccountDetailDto
+    public function build(Account $account, TransactionFilterDto $filter): AccountDetailDto
     {
         $startOfMonth = new \DateTimeImmutable('first day of this month midnight');
         $startOfNextMonth = new \DateTimeImmutable('first day of next month midnight');
+        $space = $account->getSpace();
 
         return new AccountDetailDto(
             account: $account,
-            transactions: $this->transactionRepository->findBySpace($account->getSpace(), null, $account),
+            transactions: $this->transactionRepository->findByFilter($space, $filter),
+            totals: $this->transactionRepository->sumByFilter($space, $filter),
             monthlyIncome: $this->transactionRepository->sumByAccountAndTypeAndDateRange(
                 $account,
                 TransactionTypeEnum::INCOME,

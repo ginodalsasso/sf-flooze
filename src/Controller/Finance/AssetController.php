@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Controller\Finance;
 
 use App\Controller\ActiveSpaceControllerTrait;
+use App\Dto\Finance\AssetEntryFilterDto;
 use App\Dto\Finance\AssetEntryInputDto;
 use App\Dto\Finance\AssetListItemDto;
 use App\Entity\Asset;
+use App\Enum\AssetEntryKindEnum;
 use App\Form\Finance\AssetDividendFormType;
 use App\Form\Finance\AssetFormType;
 use App\Form\Finance\AssetSellFormType;
@@ -62,15 +64,29 @@ class AssetController extends AbstractController
     }
 
     #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'])]
-    public function show(Asset $asset): Response
+    public function show(Request $request, Asset $asset): Response
     {
         $this->denyAccessUnlessGranted('VIEW', $asset->getSpace());
 
+        // Only links feed this filter, so parsing the query string directly is enough here.
+        $filter = new AssetEntryFilterDto();
+        $filter->kind = AssetEntryKindEnum::tryFrom($request->query->getString('kind'));
+        $filter->dateFrom = $this->parseDate($request->query->getString('date_from'));
+        $filter->dateTo = $this->parseDate($request->query->getString('date_to'));
+
         return $this->render('finance/asset/show.html.twig', [
-            'asset'   => $asset,
-            'entries' => $this->assetEntryRepository->findByAsset($asset),
-            'metrics' => $this->assetMetricsService->compute($asset),
+            'asset'      => $asset,
+            'entries'    => $this->assetEntryRepository->findByAsset($asset, $filter),
+            'metrics'    => $this->assetMetricsService->compute($asset),
+            'filter'     => $filter,
+            'assetKinds' => AssetEntryKindEnum::cases(),
         ]);
+    }
+
+    /** Null on anything that is not a plain Y-m-d date, so a forged param cannot break the page. */
+    private function parseDate(string $value): ?\DateTimeImmutable
+    {
+        return \DateTimeImmutable::createFromFormat('!Y-m-d', $value) ?: null;
     }
 
     #[Route('/new', name: 'new')]

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Controller\Finance;
 
 use App\Controller\ActiveSpaceControllerTrait;
+use App\Dto\Finance\TransactionFilterDto;
 use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
 use App\Form\Finance\AssetTransactionFormType;
 use App\Form\Finance\ClassicTransactionFormType;
-use App\Repository\Contract\AccountRepositoryInterface;
+use App\Form\Finance\TransactionFilterFormType;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use App\Service\Finance\Contract\TransactionServiceInterface;
@@ -30,7 +31,6 @@ class TransactionController extends AbstractController
     public function __construct(
         private readonly TransactionServiceInterface $transactionService,
         private readonly TransactionRepositoryInterface $transactionRepository,
-        private readonly AccountRepositoryInterface $accountRepository,
         private readonly AccountBalanceServiceInterface $accountBalanceService,
         private readonly SpaceResolverInterface $spaceResolver,
     ) {}
@@ -43,22 +43,21 @@ class TransactionController extends AbstractController
             return $space;
         }
 
-        $typeFilter    = $request->query->get('type');
-        $accountFilter = $request->query->getInt('account');
+        // The form only offers entities of the space, so a forged id leaves the criterion unset.
+        $filter = new TransactionFilterDto();
+        $filterForm = $this->createForm(TransactionFilterFormType::class, $filter, ['space' => $space]);
+        $filterForm->handleRequest($request);
 
-        $type    = $typeFilter    ? TransactionTypeEnum::tryFrom($typeFilter) : null;
-        $account = $accountFilter ? $this->accountRepository->find($accountFilter) : null;
-
-        // Ensure the filtered account belongs to the current space (compare IDs, not object identity)
-        if ($account !== null && $account->getSpace()->getId() !== $space->getId()) {
-            $account = null;
-        }
+        // Submitted by the segmented control rather than by a form field: an unknown value is simply ignored.
+        $filter->type = TransactionTypeEnum::tryFrom($request->query->getString('type'));
 
         return $this->render('finance/transaction/index.html.twig', [
-            'transactions'  => $this->transactionRepository->findBySpace($space, $type, $account),
-            'accounts'      => $this->accountRepository->findBySpace($space),
-            'typeFilter'    => $type,
-            'accountFilter' => $account,
+            'transactions'     => $this->transactionRepository->findByFilter($space, $filter),
+            'totals'           => $this->transactionRepository->sumByFilter($space, $filter),
+            'filterForm'       => $filterForm,
+            'filter'           => $filter,
+            'transactionTypes' => TransactionTypeEnum::cases(),
+            'space'            => $space,
         ]);
     }
 

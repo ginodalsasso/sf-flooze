@@ -18,37 +18,31 @@
 <div class="page-content">
     <twig:Flash />
 
-    {# Filters #}
-    <div class="txn-filters">
-        <a href="{{ path('app_transaction_index') }}"
-           class="txn-filter-btn{{ typeFilter is null and accountFilter is null ? ' txn-filter-btn--active' : '' }}">
-            <i data-lucide="list"></i> Tout
-        </a>
-        <a href="{{ path('app_transaction_index', {type: 'income'}) }}"
-           class="txn-filter-btn{{ typeFilter and typeFilter.value == 'income' ? ' txn-filter-btn--active' : '' }}">
-            <i data-lucide="arrow-down-left"></i> Revenus
-        </a>
-        <a href="{{ path('app_transaction_index', {type: 'expense'}) }}"
-           class="txn-filter-btn{{ typeFilter and typeFilter.value == 'expense' ? ' txn-filter-btn--active' : '' }}">
-            <i data-lucide="arrow-up-right"></i> Dépenses
-        </a>
-        <a href="{{ path('app_transaction_index', {type: 'transfer'}) }}"
-           class="txn-filter-btn{{ typeFilter and typeFilter.value == 'transfer' ? ' txn-filter-btn--active' : '' }}">
-            <i data-lucide="arrow-left-right"></i> Virements
-        </a>
-
-        {% if accounts|length > 0 %}
-            {% for account in accounts %}
-                <a href="{{ path('app_transaction_index', {account: account.id}) }}"
-                   class="txn-filter-btn{{ accountFilter and accountFilter.id == account.id ? ' txn-filter-btn--active' : '' }}">
-                    <i data-lucide="{{ account.type.icon() }}"></i> {{ account.name }}
-                </a>
-            {% endfor %}
-        {% endif %}
-    </div>
+    {% include 'finance/transaction/_filters.html.twig' with {route: 'app_transaction_index', routeParams: {}} %}
 
     {% if transactions|length > 0 %}
         <div class="txn-table-wrap">
+            <div class="txn-summary">
+                <span class="txn-summary__count">
+                    {{ totals.count }} transaction{{ totals.count > 1 ? 's' : '' }}
+                </span>
+                {% if filter.type is null or filter.type.value != 'transfer' %}
+                    <span class="txn-summary__item">
+                        Revenus <strong class="txn-amount--income">{{ totals.income|money(space.currency) }}</strong>
+                    </span>
+                    <span class="txn-summary__item">
+                        Dépenses <strong class="txn-amount--expense">{{ totals.expense|money(space.currency) }}</strong>
+                    </span>
+                    <span class="txn-summary__item">
+                        Net
+                        <strong class="{{ totals.net starts with '-' ? 'txn-amount--negative' : 'txn-amount--positive' }}">
+                            {{ totals.net|money(space.currency) }}
+                        </strong>
+                    </span>
+                    <span class="txn-summary__note">Virements exclus des totaux</span>
+                {% endif %}
+            </div>
+
             <table class="txn-table">
                 <thead>
                     <tr>
@@ -124,13 +118,21 @@
                 </tbody>
             </table>
         </div>
-    {% else %}
+    {% elseif filter.isEmpty %}
         <twig:EmptyState
             icon="arrow-left-right"
             text="Aucune transaction"
             hint="Enregistre ton premier mouvement financier pour commencer le suivi."
             ctaLabel="Nouvelle transaction"
             ctaHref="{{ path('app_transaction_new') }}"
+        />
+    {% else %}
+        <twig:EmptyState
+            icon="search-x"
+            text="Aucun résultat"
+            hint="Aucune transaction ne correspond à cette recherche. Élargis la période ou retire un critère."
+            ctaLabel="Réinitialiser les filtres"
+            ctaHref="{{ path('app_transaction_index') }}"
         />
     {% endif %}
 </div>

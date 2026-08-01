@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Repository\Contract;
 
+use App\Dto\Finance\TransactionFilterDto;
+use App\Dto\Finance\TransactionTotalsDto;
 use App\Entity\Account;
 use App\Entity\Space;
 use App\Entity\Transaction;
@@ -15,11 +17,11 @@ use Doctrine\Persistence\ObjectRepository;
  */
 interface TransactionRepositoryInterface extends ObjectRepository
 {
-    /**
-     * @return Transaction[] active transactions for the space, most recent first.
-     *         An account filter matches both legs of a transfer.
-     */
-    public function findBySpace(Space $space, ?TransactionTypeEnum $type = null, ?Account $account = null): array;
+    /** @return Transaction[] active transactions of the space matching the filter, most recent first. */
+    public function findByFilter(Space $space, TransactionFilterDto $filter): array;
+
+    /** Count and income/expense totals of the same result set, in the space currency. */
+    public function sumByFilter(Space $space, TransactionFilterDto $filter): TransactionTotalsDto;
 
     /** @return Transaction[] most recent N transactions for dashboard widget. */
     public function findRecentBySpace(Space $space, int $limit = 10): array;

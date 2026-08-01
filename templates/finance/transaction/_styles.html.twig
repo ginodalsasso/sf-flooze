@@ -1,31 +1,214 @@
 <style>
-/* ── Filters ──────────────────────────────────────────── */
+/* ── Filter card ───────────────────────────────────────── */
 .txn-filters {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 16px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
 }
 
-.txn-filter-btn {
+.txn-filters__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.txn-filters__legend {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  color: var(--fg-3);
+}
+
+.txn-filters__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+  text-decoration: none;
+  transition: color .15s;
+}
+.txn-filters__reset:hover { color: var(--sage-400); }
+.txn-filters__reset i { width: 14px; height: 14px; }
+
+/* ── Search field ──────────────────────────────────────── */
+.txn-search { position: relative; }
+
+.txn-search__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--fg-3);
+  pointer-events: none;
+}
+
+.txn-search__input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 9px 12px 9px 36px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--fg-1);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.txn-search__input::placeholder { color: var(--fg-3); }
+.txn-search__input:focus {
+  border-color: var(--sage-400);
+  box-shadow: 0 0 0 2px rgba(200,213,194,.15);
+}
+.txn-search__input::-webkit-search-cancel-button { filter: grayscale(1) opacity(.6); cursor: pointer; }
+
+/* ── Type segments ─────────────────────────────────────── */
+.txn-segments {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+}
+
+.txn-segment {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
-  border-radius: 9999px;
+  padding: 6px 12px;
+  border-radius: 8px;
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   font-weight: 500;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-elevated);
   color: var(--fg-2);
   text-decoration: none;
-  transition: border-color .15s, color .15s;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.txn-segment:hover { background: var(--bg-overlay); color: var(--fg-1); }
+.txn-segment i { width: 14px; height: 14px; }
+
+.txn-segment--active,
+.txn-segment--active:hover {
+  background: rgba(200,213,194,.14);
+  color: var(--sage-400);
 }
 
-.txn-filter-btn:hover { color: var(--fg-1); border-color: var(--fg-3); }
-.txn-filter-btn--active { background: rgba(200,213,194,.12); border-color: #C8D5C2; color: #C8D5C2; }
+/* ── Period chips ──────────────────────────────────────── */
+.txn-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.txn-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.txn-chip:hover { color: var(--fg-1); border-color: var(--border-strong); }
+.txn-chip--active,
+.txn-chip--active:hover {
+  background: rgba(200,213,194,.10);
+  border-color: var(--sage-400);
+  color: var(--sage-400);
+}
+
+/* ── Advanced panel ────────────────────────────────────── */
+.txn-filters__more {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.txn-filters__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-2);
+  cursor: pointer;
+  list-style: none;
+}
+.txn-filters__summary::-webkit-details-marker { display: none; }
+.txn-filters__summary:hover { color: var(--fg-1); }
+.txn-filters__summary i { width: 14px; height: 14px; }
+
+.txn-filters__chevron { transition: transform .15s; }
+.txn-filters__more[open] .txn-filters__chevron { transform: rotate(180deg); }
+
+.txn-filters__count {
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: rgba(200,213,194,.14);
+  color: var(--sage-400);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.txn-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  padding-top: 14px;
+}
+
+/* The grid owns the spacing between fields. */
+.txn-filters__grid .form-group { margin-bottom: 0; }
+
+.txn-filters__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+/* ── Summary of the filtered set: header strip of the table card ── */
+.txn-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.txn-summary__count { color: var(--fg-1); font-weight: 500; }
+.txn-summary__item strong {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.txn-summary__note { margin-left: auto; font-size: 11px; font-style: italic; }
 
 /* ── Table ─────────────────────────────────────────────── */
 .txn-table-wrap {
@@ -96,8 +279,9 @@
   white-space: nowrap;
   text-align: right;
 }
-.txn-amount--positive { color: #A8C4A0; }
-.txn-amount--negative { color: #C2A89A; }
+/* Table rows are coloured by transaction type, aggregates by the sign of the total. */
+.txn-amount--income,  .txn-amount--positive { color: var(--color-positive); }
+.txn-amount--expense, .txn-amount--negative { color: var(--color-negative); }
 .txn-amount--transfer { color: var(--fg-2); }
 
 /* Actions */

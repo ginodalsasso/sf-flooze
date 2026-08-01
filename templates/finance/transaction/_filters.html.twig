@@ -1,0 +1,50 @@
+{# Transaction search card: text, type segments, period presets and advanced panel.
+   Reused by the account detail page, which passes its own route and hides the account field. #}
+{% set advancedCount = filter.countAdvancedCriteria %}
+
+{{ form_start(filterForm, {action: path(route, routeParams), attr: {class: 'txn-filters'}}) }}
+
+    {# The type is carried by the segment links, not by a form field: this keeps it on submit. #}
+    <input type="hidden" name="type" value="{{ filter.type ? filter.type.value : '' }}">
+
+    <div class="txn-search">
+        <i data-lucide="search" class="txn-search__icon"></i>
+        {{ form_widget(filterForm.q, {attr: {class: 'txn-search__input'}}) }}
+    </div>
+
+    {% include 'finance/_filter_bar.html.twig' with {
+        route: route,
+        routeParams: routeParams,
+        segments: transactionTypes,
+        segmentParam: 'type',
+        currentSegment: filter.type,
+        showReset: not filter.isEmpty,
+    } only %}
+
+    <details class="txn-filters__more"{{ filter.hasAdvancedCriteria ? ' open' : '' }}>
+        <summary class="txn-filters__summary">
+            <i data-lucide="sliders-horizontal"></i>
+            Filtres avancés
+            {% if advancedCount > 0 %}<span class="txn-filters__count">{{ advancedCount }}</span>{% endif %}
+            <i data-lucide="chevron-down" class="txn-filters__chevron"></i>
+        </summary>
+
+        <div class="txn-filters__grid">
+            {% if filterForm.account is defined %}
+                <twig:Form:Field field="{{ filterForm.account }}" label="Compte" />
+            {% endif %}
+            <twig:Form:Field field="{{ filterForm.category }}" label="Catégorie" />
+            <twig:Form:Field field="{{ filterForm.date_from }}" label="Du" />
+            <twig:Form:Field field="{{ filterForm.date_to }}" label="Au" />
+            <twig:Form:Field field="{{ filterForm.amount_min }}"
+                             label="Montant min ({{ space.currency.value }})"
+                             hint="Converti dans la devise de l'espace" />
+            <twig:Form:Field field="{{ filterForm.amount_max }}" label="Montant max ({{ space.currency.value }})" />
+        </div>
+
+        <div class="txn-filters__actions">
+            <twig:Button type="submit" icon="check" label="Appliquer" />
+        </div>
+    </details>
+
+{{ form_end(filterForm) }}
