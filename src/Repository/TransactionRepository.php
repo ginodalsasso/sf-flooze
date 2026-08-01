@@ -22,7 +22,10 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
      * still active, otherwise soft-deleting the source would hide a movement that the
      * destination account was really credited with. Requires the 'a' and 'da' joins.
      */
-    private const ON_ACTIVE_ACCOUNT = 'a.deletedAt IS NULL OR (t.destinationAccount IS NOT NULL AND da.deletedAt IS NULL)';
+    private const ON_ACTIVE_ACCOUNT = "a.deletedAt IS NULL OR (t.type = 'transfer' AND t.destinationAccount IS NOT NULL AND da.deletedAt IS NULL)";
+
+    /** The second leg of a movement, which only a transfer has. */
+    private const CREDITED_ACCOUNT = "t.type = 'transfer' AND t.destinationAccount = :account";
 
     public function __construct(ManagerRegistry $registry)
     {
@@ -52,7 +55,7 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
         }
 
         if ($account !== null) {
-            $qb->andWhere('t.account = :account OR t.destinationAccount = :account')
+            $qb->andWhere('t.account = :account OR (' . self::CREDITED_ACCOUNT . ')')
                 ->setParameter('account', $account);
         }
 
@@ -131,6 +134,45 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
     }
 
     /**
+     * Net movement of every active transaction touching the account, in its own currency.
+     *
+     * A transaction is either outgoing (the account is the source: income adds, expense and
+     * transfer subtract) or incoming (the account is credited as the destination of a transfer,
+     * with destination_amount when the currencies differ). Only a transfer credits a destination:
+     * income and expense rows may carry a stale destination_account_id and must ignore it.
+     *
+     * The source leg is matched first, so the ELSE branch can only be reached by an incoming
+     * transfer — including the degenerate case of a row pointing at the same account twice.
+     *
+     * $excludedTransaction is left out of the total although still stored: passing the row being
+     * edited gives the balance as it will be once the new values are saved.
+     */
+    public function getBalanceDelta(Account $account, ?Transaction $excludedTransaction = null): string
+    {
+        $qb = $this->createQueryBuilder('t')
+            ->select('SUM(
+                CASE
+                    WHEN t.account = :account AND t.type = :income THEN t.amount
+                    WHEN t.account = :account THEN t.amount * -1
+                    ELSE COALESCE(t.destinationAmount, t.amount)
+                END
+            )')
+            ->where('t.account = :account OR (' . self::CREDITED_ACCOUNT . ')')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('account', $account)
+            ->setParameter('income', TransactionTypeEnum::INCOME);
+
+        if ($excludedTransaction?->getId() !== null) {
+            $qb->andWhere('t.id != :excluded')->setParameter('excluded', $excludedTransaction->getId());
+        }
+
+        $delta = $qb->getQuery()->getSingleScalarResult();
+
+        // SUM returns null when no row matches: an account without movement has a zero delta.
+        return bcadd((string) ($delta ?? '0'), '0', 2);
+    }
+
+    /**
      * Number of active transactions moving money on the account, incoming transfers included:
      * they credit its balance, so they make it just as computed as an outgoing one.
      */
@@ -138,7 +180,7 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
     {
         return (int) $this->createQueryBuilder('t')
             ->select('COUNT(t.id)')
-            ->where('t.account = :account OR t.destinationAccount = :account')
+            ->where('t.account = :account OR (' . self::CREDITED_ACCOUNT . ')')
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('account', $account)
             ->getQuery()

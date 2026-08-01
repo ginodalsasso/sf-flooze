@@ -38,6 +38,7 @@ final class AccountDetailService implements AccountDetailServiceInterface
                 $startOfMonth,
                 $startOfNextMonth,
             ),
+            balance: $this->accountBalanceService->getCurrentBalance($account),
             investedBalance: $this->accountBalanceService->getInvestedBalance($account),
             availableBalance: $this->accountBalanceService->getAvailableBalance($account),
         );

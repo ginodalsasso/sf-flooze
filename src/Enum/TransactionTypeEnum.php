@@ -49,14 +49,4 @@ enum TransactionTypeEnum: string
             self::TRANSFER => 'info',
         };
     }
-
-    /** Sign multiplier to apply to account balance: +1 for income, -1 for expense/transfer */
-    public function balanceSign(): int
-    {
-        return match($this) {
-            self::INCOME   => 1,
-            self::EXPENSE  => -1,
-            self::TRANSFER => -1,
-        };
-    }
 }

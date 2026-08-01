@@ -29,10 +29,8 @@ final class TransactionService implements TransactionServiceInterface
         $transaction = new Transaction();
         $this->applyFromDto($transaction, $input);
 
-        $this->guardSpendableFunds($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        $this->guardSpendableFunds($transaction);
         $this->guardValidTransfer($transaction);
-
-        $this->applyBalanceEffect($transaction);
 
         $this->em->persist($transaction);
         $this->em->flush();
@@ -45,15 +43,11 @@ final class TransactionService implements TransactionServiceInterface
         $this->guardNotLinkedToAsset($transaction);
         $this->guardStrictlyPositive($input->amount);
 
-        $this->reverseBalanceEffect($transaction);
-
         $this->applyFromDto($transaction, $input);
 
-        // Ensure the new source account has enough available funds before applying the new effect.
-        $this->guardSpendableFunds($transaction->getAccount(), $transaction->getType(), $transaction->getAmount());
+        // The row still holds its previous values in database: they must not weigh on the new guard.
+        $this->guardSpendableFunds($transaction, excludedTransaction: $transaction);
         $this->guardValidTransfer($transaction);
-
-        $this->applyBalanceEffect($transaction);
 
         $this->em->flush();
     }
@@ -61,8 +55,6 @@ final class TransactionService implements TransactionServiceInterface
     public function delete(Transaction $transaction): void
     {
         $this->guardNotLinkedToAsset($transaction);
-
-        $this->reverseBalanceEffect($transaction);
 
         $transaction->softDelete();
         $this->em->flush();
@@ -73,7 +65,7 @@ final class TransactionService implements TransactionServiceInterface
         $transaction
             ->setSpace($input->space)
             ->setAccount($input->account)
-            ->setDestinationAccount($input->destinationAccount)
+            ->setDestinationAccount($this->resolveDestinationAccount($input))
             ->setType($input->type)
             ->setAmount($input->amount)
             ->setFxRate($this->exchangeRateService->getRate($input->account->getCurrency(), $input->space->getCurrency()))
@@ -81,6 +73,15 @@ final class TransactionService implements TransactionServiceInterface
             ->setDate($input->date)
             ->setDescription($input->description)
             ->setCategory($input->category);
+    }
+
+    /**
+     * Only a transfer has a destination. The form exposes the field whatever the type is
+     * selected, so a value posted with another type is discarded rather than stored.
+     */
+    private function resolveDestinationAccount(TransactionInputDto $input): ?Account
+    {
+        return $input->type === TransactionTypeEnum::TRANSFER ? $input->destinationAccount : null;
     }
 
     /** A credited amount is only meaningful on a transfer crossing two currencies. */
@@ -100,25 +101,6 @@ final class TransactionService implements TransactionServiceInterface
             : $convertedAmount;
     }
 
-    /** Debit the source account and, on a transfer, credit the destination with what it actually receives. */
-    private function applyBalanceEffect(Transaction $transaction): void
-    {
-        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
-
-        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
-            $transaction->getDestinationAccount()->applyOperation(TransactionTypeEnum::INCOME, $transaction->getCreditedAmount());
-        }
-    }
-
-    private function reverseBalanceEffect(Transaction $transaction): void
-    {
-        $transaction->getAccount()->reverseOperation($transaction->getType(), $transaction->getAmount());
-
-        if ($transaction->getType() === TransactionTypeEnum::TRANSFER && $transaction->getDestinationAccount() !== null) {
-            $transaction->getDestinationAccount()->reverseOperation(TransactionTypeEnum::INCOME, $transaction->getCreditedAmount());
-        }
-    }
-
     /**
      * Guard that a numeric string is strictly positive, throwing an exception if not.
      */
@@ -131,14 +113,20 @@ final class TransactionService implements TransactionServiceInterface
     }
 
     /**
-     * Guard that the account has sufficient available funds for the transaction.
+     * Guard that the source account has sufficient available funds for the transaction.
      * Income transactions are exempt from this check.
      */
-    private function guardSpendableFunds(Account $account, TransactionTypeEnum $type, string $amount): void
+    private function guardSpendableFunds(Transaction $transaction, ?Transaction $excludedTransaction = null): void
     {
-        if ($type !== TransactionTypeEnum::INCOME) {
-            $this->accountBalanceService->guardAvailableFunds($account, $amount);
+        if ($transaction->getType() === TransactionTypeEnum::INCOME) {
+            return;
         }
+
+        $this->accountBalanceService->guardAvailableFunds(
+            $transaction->getAccount(),
+            $transaction->getAmount(),
+            $excludedTransaction,
+        );
     }
 
     /**

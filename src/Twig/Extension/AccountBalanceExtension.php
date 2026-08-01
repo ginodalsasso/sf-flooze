@@ -18,10 +18,16 @@ final class AccountBalanceExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
+            new TwigFunction('account_balance', [$this, 'getCurrentBalance']),
             new TwigFunction('account_invested_balance', [$this, 'getInvestedBalance']),
             new TwigFunction('account_available_balance', [$this, 'getAvailableBalance']),
             new TwigFunction('account_is_asset', [$this, 'isAssetAccount']),
         ];
+    }
+
+    public function getCurrentBalance(Account $account): string
+    {
+        return $this->accountBalanceService->getCurrentBalance($account);
     }
 
     public function getInvestedBalance(Account $account): string

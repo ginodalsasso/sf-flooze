@@ -39,8 +39,9 @@
                     </div>
 
                     <div>
-                        <p class="acc-card-balance{% if account.balance < 0 %} acc-card-balance--negative{% elseif account.balance > 0 %} acc-card-balance--positive{% endif %}">
-                            {{ account.balance|number_format(2) }} {{ account.currency.value }}
+                        {% set balance = account_balance(account) %}
+                        <p class="acc-card-balance{% if balance < 0 %} acc-card-balance--negative{% elseif balance > 0 %} acc-card-balance--positive{% endif %}">
+                            {{ balance|number_format(2) }} {{ account.currency.value }}
                         </p>
                         {% if account_is_asset(account) %}
                             <p class="acc-card-currency">{{ account.currency.value }} · {{ account_invested_balance(account)|number_format(2, ',', ' ') }} investi</p>

@@ -23,6 +23,7 @@ final readonly class AccountDetailDto
         public array $transactions,
         public string $monthlyIncome,
         public string $monthlyExpense,
+        public string $balance = '0.00',
         public string $investedBalance = '0.00',
         public string $availableBalance = '0.00',
     ) {}

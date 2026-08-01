@@ -37,8 +37,8 @@
             {% if detail.isAssetAccount %}
                 <div class="acc-show-balances">
                     <div class="acc-show-balance-item">
-                        <p class="acc-card-balance{% if detail.account.balance < 0 %} acc-card-balance--negative{% elseif detail.account.balance > 0 %} acc-card-balance--positive{% endif %}">
-                            {{ detail.account.balance|money(detail.account.currency) }}
+                        <p class="acc-card-balance{% if detail.balance < 0 %} acc-card-balance--negative{% elseif detail.balance > 0 %} acc-card-balance--positive{% endif %}">
+                            {{ detail.balance|money(detail.account.currency) }}
                         </p>
                         <p class="acc-card-currency">Solde total</p>
                     </div>
@@ -56,7 +56,7 @@
                     </div>
                 </div>
             {% else %}
-                {% set balance = detail.account.balance %}
+                {% set balance = detail.balance %}
                 <p class="acc-card-balance{% if balance < 0 %} acc-card-balance--negative{% elseif balance > 0 %} acc-card-balance--positive{% endif %}">
                     {{ balance|money(detail.account.currency) }}
                 </p>

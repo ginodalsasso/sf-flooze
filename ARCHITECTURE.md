@@ -213,14 +213,14 @@ AI/
 └── AIMetricsService.php          # OCR confidence logging
 
 Finance/
-├── TransactionService.php        # CRUD + balance management (manual transactions)
+├── TransactionService.php        # CRUD + guards (manual transactions)
 ├── CategoryService.php           # Hierarchy + flag management
 ├── AssetService.php              # Asset CRUD
 ├── AssetEntryService.php         # Buy/sell/dividend ledger + P&L (FIFO)
 ├── AssetEntryTransactionService.php # Keeps Transaction rows in sync with AssetEntry
 ├── AssetMetricsService.php       # Aggregated metrics (qty, avg price, cost basis)
 ├── AccountService.php            # Account CRUD + soft-delete
-├── AccountBalanceService.php     # invested vs available balance split
+├── AccountBalanceService.php     # current balance + invested vs available split
 ├── ExchangeRateService.php       # Single source of FX rates (space currency conversions)
 └── AccountDetailService.php      # Per-account detail DTO (monthly stats)
 
@@ -392,7 +392,7 @@ Empty array = tous types (legacy rows). Les selects de transaction groupent les 
 
 `Space.currency` est la **devise de référence** : tout total qui traverse plusieurs comptes s'y exprime. Elle se choisit à la création d'un space et n'est plus modifiable — la changer invaliderait tous les `fx_rate` déjà figés.
 
-`Account.balance` reste **dans la devise du compte**, pour rester rapprochable avec un relevé bancaire. Seuls les agrégats convertissent.
+Le solde d'un compte reste **dans la devise du compte**, pour rester rapprochable avec un relevé bancaire. Seuls les agrégats convertissent.
 
 Deux taux distincts, à ne pas confondre :
 
@@ -414,6 +414,18 @@ Conséquence à ne pas oublier : **toute query filtrant par compte doit matcher 
 ```
 
 Entre deux devises, la banque seule connaît le taux appliqué : `destination_amount` porte le montant **réellement crédité**, dans la devise du compte destinataire. Il est `NULL` quand les deux comptes partagent la même devise, et obligatoire sinon (`TransactionService::guardValidTransfer`).
+
+### 9. Solde d'un compte — calculé, jamais stocké
+
+`account.opening_balance` est le solde **avant** le suivi dans Flooze : saisi à la création, il ne bouge que si l'utilisateur le corrige. Le solde courant se dérive :
+
+```
+solde = opening_balance + Σ(mouvements actifs du compte)
+```
+
+`TransactionRepository::getBalanceDelta()` calcule la somme en une requête (jambe sortante signée par le type, jambe entrante créditée de `destination_amount`), `AccountBalanceService::getCurrentBalance()` y ajoute l'ouverture. **Aucun service n'écrit un solde** : un bug d'écriture ne peut plus laisser d'écart durable, et supprimer la transaction fautive suffit à rétablir la valeur juste.
+
+Conséquence : ne jamais réintroduire de colonne `balance` ni de méthode qui incrémente un solde. Pour un solde à une date donnée, filtrer la même requête sur `t.date`.
 
 ---
 
@@ -458,7 +470,7 @@ templates/
 |---|---|:-:|
 | `user` | email, password, roles (JSON) — pas de `space_id` | — |
 | `space` | user_id, name, type, currency (devise de référence) — pas de `space_id` (racine) | — |
-| `account` | name, type, balance, currency | ✓ |
+| `account` | name, type, opening_balance, currency | ✓ |
 | `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, fx_rate, destination_amount (nullable), date, description, metadata (JSON) | ✓ |
 | `category` | parent_id (nullable), name, is_deductible, is_declarable | — |
 | `asset` | ticker, name, currency, type | — |

@@ -19,7 +19,7 @@ interface AssetEntryServiceInterface
      */
     public function recordEntry(AssetEntryInputDto $input): AssetEntry;
 
-    /** Soft-delete an entry and reverse its linked transaction balance effects. */
+    /** Soft-delete an entry along with its linked transactions. */
     public function delete(AssetEntry $entry): void;
 
     /** Realized P&L for a sell entry in space currency using FIFO, null if not a sell. */

@@ -64,7 +64,6 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
         // Remaining transactions no longer match the entry: soft-delete them.
         foreach ($existing as $orphan) {
             $entry->removeTransaction($orphan);
-            $this->reverseBalanceEffect($orphan);
             $orphan->softDelete();
         }
     }
@@ -73,7 +72,6 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
     public function deleteForEntry(AssetEntry $entry): void
     {
         foreach ($entry->getTransactions()->toArray() as $transaction) {
-            $this->reverseBalanceEffect($transaction);
             $transaction->softDelete();
         }
     }
@@ -151,15 +149,10 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
 
         $entry->addTransaction($transaction);
         $this->em->persist($transaction);
-        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
     }
 
     private function updateTransaction(Transaction $transaction, AssetEntry $entry, ExpectedTransactionDto $expected): void
     {
-        $oldAccount = $transaction->getAccount();
-        $oldType = $transaction->getType();
-        $oldAmount = $transaction->getAmount();
-
         $transaction
             ->setAccount($expected->account)
             ->setType($expected->type)
@@ -167,9 +160,6 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
             ->setFxRate($this->fxRateOf($expected->account))
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry));
-
-        $oldAccount->reverseOperation($oldType, $oldAmount);
-        $transaction->getAccount()->applyOperation($transaction->getType(), $transaction->getAmount());
     }
 
     /**
@@ -230,13 +220,5 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
         $description = sprintf('%s %s', $kindLabel, $entry->getAsset()->getTicker());
 
         return $description;
-    }
-
-    /**
-     * Reverse the balance effect of a transaction on its account.
-     */
-    private function reverseBalanceEffect(Transaction $transaction): void
-    {
-        $transaction->getAccount()->reverseOperation($transaction->getType(), $transaction->getAmount());
     }
 }

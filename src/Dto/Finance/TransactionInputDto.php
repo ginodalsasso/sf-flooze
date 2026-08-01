@@ -14,7 +14,7 @@ use App\Enum\TransactionTypeEnum;
  * Input DTO for creating or editing a manual transaction.
  *
  * It decouples the form from the Transaction entity and lets the service decide
- * how to map the data (especially for balance updates).
+ * how to map the data.
  */
 class TransactionInputDto
 {

@@ -10,6 +10,7 @@ use App\Enum\TransactionTypeEnum;
 use App\Repository\Contract\AccountRepositoryInterface;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use App\Service\Dashboard\Contract\DashboardServiceInterface;
+use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use App\Service\Finance\Contract\ExchangeRateServiceInterface;
 
 final class DashboardService implements DashboardServiceInterface
@@ -17,6 +18,7 @@ final class DashboardService implements DashboardServiceInterface
     public function __construct(
         private readonly AccountRepositoryInterface $accountRepository,
         private readonly TransactionRepositoryInterface $transactionRepository,
+        private readonly AccountBalanceServiceInterface $accountBalanceService,
         private readonly ExchangeRateServiceInterface $exchangeRateService,
     ) {}
 
@@ -30,8 +32,8 @@ final class DashboardService implements DashboardServiceInterface
             $totalBalance = bcadd(
                 $totalBalance,
                 $this->exchangeRateService->convert(
-                    $account->getBalance(), 
-                    $account->getCurrency(), 
+                    $this->accountBalanceService->getCurrentBalance($account),
+                    $account->getCurrency(),
                     $space->getCurrency()),
                 2,
             );

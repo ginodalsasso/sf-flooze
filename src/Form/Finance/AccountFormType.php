@@ -19,7 +19,7 @@ class AccountFormType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $balanceLocked = $options['balance_locked'];
+        $currencyLocked = $options['currency_locked'];
 
         $builder
             ->add('name', TextType::class, [
@@ -33,22 +33,22 @@ class AccountFormType extends AbstractType
                 'class' => AccountTypeEnum::class,
                 'choice_label' => fn(AccountTypeEnum $t) => $t->label(),
             ])
-            ->add('balance', NumberType::class, [
+            // Always editable: it is only a starting point, correcting it rewrites no transaction.
+            ->add('openingBalance', NumberType::class, [
                 'scale' => 2,
                 'html5' => false,
-                'disabled' => $balanceLocked,
                 'attr' => ['placeholder' => '0,00'],
-                'help' => $balanceLocked ? 'Le solde ne peut pas être modifié directement car des transactions existent sur ce compte.' : null,
-                'constraints' => $balanceLocked ? [] : [
-                    new Assert\NotNull(message: 'Le solde ne peut pas être vide.'),
+                'help' => 'Solde du compte avant son suivi dans Flooze. Les transactions s\'y ajoutent pour former le solde actuel.',
+                'constraints' => [
+                    new Assert\NotNull(message: 'Le solde initial ne peut pas être vide.'),
                 ],
             ])
             ->add('currency', EnumType::class, [
                 'class' => CurrencyEnum::class,
                 'choice_label' => fn(CurrencyEnum $c) => $c->display(),
-                // Locked with the balance: changing it would reinterpret every amount already recorded.
-                'disabled' => $balanceLocked,
-                'help' => $balanceLocked ? 'La devise ne peut plus être modifiée car des transactions existent sur ce compte.' : null,
+                // Changing it would reinterpret every amount already recorded on the account.
+                'disabled' => $currencyLocked,
+                'help' => $currencyLocked ? 'La devise ne peut plus être modifiée car des transactions existent sur ce compte.' : null,
             ]);
     }
 
@@ -56,8 +56,8 @@ class AccountFormType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Account::class,
-            'balance_locked' => false,
+            'currency_locked' => false,
         ]);
-        $resolver->setAllowedTypes('balance_locked', 'bool');
+        $resolver->setAllowedTypes('currency_locked', 'bool');
     }
 }

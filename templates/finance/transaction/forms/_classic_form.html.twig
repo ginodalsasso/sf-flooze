@@ -2,7 +2,8 @@
     novalidate: 'novalidate',
     'data-controller': 'transfer-guard',
     'data-transfer-guard-source-id-value': form.account.vars.id,
-    'data-transfer-guard-dest-id-value': form.destinationAccount.vars.id
+    'data-transfer-guard-dest-id-value': form.destinationAccount.vars.id,
+    'data-transfer-guard-type-id-value': form.type.vars.id
 }}) }}
 
     <div class="form-section txn-form-grid">
@@ -21,11 +22,10 @@
 
     <div class="form-section txn-form-grid">
         <twig:Form:Field field="{{ form.category }}" label="Catégorie" />
-        <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire"
-                         hint="Uniquement pour les virements entre comptes" />
     </div>
 
-    <div class="form-section txn-form-grid">
+    <div class="form-section txn-form-grid" data-transfer-guard-target="destination">
+        <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire" />
         <twig:Form:Field field="{{ form.destinationAmount }}" label="Montant crédité sur le compte destinataire"
                          hint="Uniquement si le compte destinataire est dans une autre devise" />
     </div>

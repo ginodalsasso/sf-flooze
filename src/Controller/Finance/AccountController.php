@@ -82,8 +82,8 @@ class AccountController extends AbstractController
     {
         $this->denyAccessUnlessGranted('EDIT', $account->getSpace());
 
-        $balanceLocked = $this->transactionRepository->countByAccount($account) > 0;
-        $form = $this->createForm(AccountFormType::class, $account, ['balance_locked' => $balanceLocked]);
+        $currencyLocked = $this->transactionRepository->countByAccount($account) > 0;
+        $form = $this->createForm(AccountFormType::class, $account, ['currency_locked' => $currencyLocked]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

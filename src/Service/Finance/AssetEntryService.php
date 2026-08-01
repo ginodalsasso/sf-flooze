@@ -21,7 +21,7 @@ final class AssetEntryService implements AssetEntryServiceInterface
         private readonly AssetEntryTransactionServiceInterface $transactionService,
     ) {}
 
-    /** The linked account balances are updated by the Doctrine entity listener, not here. */
+    /** The linked transactions are created by the Doctrine entity listener, not here. */
     public function recordEntry(AssetEntryInputDto $input): AssetEntry
     {
         $this->validate($input);

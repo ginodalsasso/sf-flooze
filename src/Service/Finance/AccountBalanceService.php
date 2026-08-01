@@ -5,24 +5,36 @@ declare(strict_types=1);
 namespace App\Service\Finance;
 
 use App\Entity\Account;
+use App\Entity\Transaction;
 use App\Enum\AccountTypeEnum;
 use App\Repository\Contract\AssetEntryRepositoryInterface;
+use App\Repository\Contract\TransactionRepositoryInterface;
 use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use App\Service\Finance\Contract\ExchangeRateServiceInterface;
 
 /**
- * Computes the split between invested and available funds for an account.
+ * Computes account balances from their transactions.
  *
- * Asset-holding accounts (CRYPTO, STOCK) track both a total balance and an
- * invested balance derived from their linked AssetEntry rows. The available
- * balance is what the user can actually spend or transfer out.
+ * The current balance is derived, never stored: only the opening balance lives on the
+ * entity. Asset-holding accounts (CRYPTO, STOCK) split it further into an invested part,
+ * derived from their linked AssetEntry rows, and an available part the user can spend.
  */
 final readonly class AccountBalanceService implements AccountBalanceServiceInterface
 {
     public function __construct(
         private AssetEntryRepositoryInterface $assetEntryRepository,
+        private TransactionRepositoryInterface $transactionRepository,
         private ExchangeRateServiceInterface $exchangeRateService,
     ) {}
+
+    public function getCurrentBalance(Account $account, ?Transaction $excludedTransaction = null): string
+    {
+        return bcadd(
+            $account->getOpeningBalance(),
+            $this->transactionRepository->getBalanceDelta($account, $excludedTransaction),
+            2,
+        );
+    }
 
     public function isAssetHoldingAccount(Account $account): bool
     {
@@ -52,14 +64,14 @@ final readonly class AccountBalanceService implements AccountBalanceServiceInter
         return $investedBalace;
     }
 
-    public function getAvailableBalance(Account $account): string
+    public function getAvailableBalance(Account $account, ?Transaction $excludedTransaction = null): string
     {
-        return bcsub($account->getBalance(), $this->getInvestedBalance($account), 2);
+        return bcsub($this->getCurrentBalance($account, $excludedTransaction), $this->getInvestedBalance($account), 2);
     }
 
-    public function hasAvailableFunds(Account $account, string $amount): bool
+    public function hasAvailableFunds(Account $account, string $amount, ?Transaction $excludedTransaction = null): bool
     {
-        return bccomp($this->getAvailableBalance($account), $amount, 2) >= 0;
+        return bccomp($this->getAvailableBalance($account, $excludedTransaction), $amount, 2) >= 0;
     }
 
     /**
@@ -67,14 +79,14 @@ final readonly class AccountBalanceService implements AccountBalanceServiceInter
      * — overdraft and credit operations are valid in personal finance. Only
      * asset accounts enforce a floor because "invested" funds are not liquid.
      */
-    public function guardAvailableFunds(Account $account, string $amount): void
+    public function guardAvailableFunds(Account $account, string $amount, ?Transaction $excludedTransaction = null): void
     {
         // Only asset-holding accounts have invested funds
         if (!$this->isAssetHoldingAccount($account)) {
             return;
         }
 
-        if (!$this->hasAvailableFunds($account, $amount)) {
+        if (!$this->hasAvailableFunds($account, $amount, $excludedTransaction)) {
             throw new \InvalidArgumentException("Impossible d'utiliser des fonds investis. Seuls les fonds disponibles peuvent être utilisés.");
         }
     }

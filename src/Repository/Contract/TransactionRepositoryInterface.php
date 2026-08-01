@@ -40,6 +40,12 @@ interface TransactionRepositoryInterface extends ObjectRepository
         \DateTimeImmutable $end,
     ): string;
 
+    /**
+     * Net movement of every active transaction touching the account, in its own currency.
+     * $excludedTransaction is left out of the total although still stored.
+     */
+    public function getBalanceDelta(Account $account, ?Transaction $excludedTransaction = null): string;
+
     /** Number of active transactions moving money on the account, incoming transfers included. */
     public function countByAccount(Account $account): int;
 }

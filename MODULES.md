@@ -65,7 +65,7 @@ User fills TransactionFormType (amount, date, category, account)
     ↓
 AutoCategoryListener.prePersist → Ollama gemma3 → category hint (if no category selected)
     ↓
-Transaction persisted → Account.balance updated (via TransactionService)
+Transaction persisted (via TransactionService) → account balance recomputed on read
     ↓
 Transaction appears in account view and category reports
 ```

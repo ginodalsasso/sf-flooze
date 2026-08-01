@@ -19,6 +19,6 @@ interface AssetEntryTransactionServiceInterface
     /** Synchronises linked transactions when the AssetEntry is edited. */
     public function updateForEntry(AssetEntry $entry): void;
 
-    /** Soft-delete linked transactions and reverse their balance effects. */
+    /** Soft-delete the transactions linked to the entry. */
     public function deleteForEntry(AssetEntry $entry): void;
 }

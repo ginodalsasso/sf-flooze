@@ -6,7 +6,6 @@ namespace App\Entity;
 
 use App\Enum\AccountTypeEnum;
 use App\Enum\CurrencyEnum;
-use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
 use App\Trait\SoftDeleteTrait;
 use App\Trait\SpaceScopeTrait;
@@ -33,8 +32,9 @@ class Account
     #[ORM\Column(type: 'string', enumType: AccountTypeEnum::class)]
     private AccountTypeEnum $type;
 
-    #[ORM\Column(type: 'decimal', precision: 15, scale: 2)]
-    private string $balance = '0.00';
+    /** Solde du compte avant que Flooze ne le suive. Le solde courant se calcule, il ne se stocke pas. */
+    #[ORM\Column(name: 'opening_balance', type: 'decimal', precision: 15, scale: 2)]
+    private string $openingBalance = '0.00';
 
     #[ORM\Column(type: 'string', enumType: CurrencyEnum::class)]
     private CurrencyEnum $currency;
@@ -68,14 +68,14 @@ class Account
         return $this;
     }
 
-    public function getBalance(): string
+    public function getOpeningBalance(): string
     {
-        return $this->balance;
+        return $this->openingBalance;
     }
 
-    public function setBalance(string $balance): static
+    public function setOpeningBalance(string $openingBalance): static
     {
-        $this->balance = $balance;
+        $this->openingBalance = $openingBalance;
 
         return $this;
     }
@@ -90,38 +90,5 @@ class Account
         $this->currency = $currency;
 
         return $this;
-    }
-
-    /**
-     * Add an amount (positive or negative) to the current balance.
-     *
-     * The amount must be a numeric string so that BC math keeps 2-decimal
-     * precision. This is the single source of truth for balance updates.
-     * ex: $account->adjustBalance('-10.00') will subtract 10 from the balance.
-     */
-    public function adjustBalance(string $amount): static
-    {
-        // bcadd: add numeric strings, scale 2 keeps cents precision.
-        $this->balance = bcadd($this->balance, $amount, 2);
-
-        return $this;
-    }
-
-    /**
-     * Apply the balance effect of a transaction ($type sign × $amount).
-     * ex: $account->applyOperation(TransactionTypeEnum::EXPENSE, '10.00') will subtract 10 from the balance.
-     */
-    public function applyOperation(TransactionTypeEnum $type, string $amount): static
-    {
-        return $this->adjustBalance(bcmul($amount, (string) $type->balanceSign(), 2)); // ex: bcmul('10.00', '-1', 2) = '-10.00'
-    }
-
-    /**
-     * Reverse the balance effect of a transaction (used when editing/deleting).
-     * ex: $account->reverseOperation(TransactionTypeEnum::EXPENSE, '10.00') will add 10 to the balance.
-     */
-    public function reverseOperation(TransactionTypeEnum $type, string $amount): static
-    {
-        return $this->adjustBalance(bcmul($amount, (string) (-$type->balanceSign()), 2)); // ex: bcmul('10.00', '1', 2) = '10.00'
     }
 }

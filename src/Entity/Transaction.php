@@ -208,11 +208,17 @@ class Transaction
     /** True when $account receives the money — i.e. it is the destination of a transfer. */
     public function isIncomingFor(Account $account): bool
     {
-        if ($this->destinationAccount === null) {
+        if (!$this->isTransfer() || $this->destinationAccount === null) {
             return false;
         }
 
         return $this->destinationAccount->getId() === $account->getId();
+    }
+
+    /** Only a transfer credits a destination account: on any other type the field is meaningless. */
+    public function isTransfer(): bool
+    {
+        return $this->type === TransactionTypeEnum::TRANSFER;
     }
 
     /** Amount as it hits $account, expressed in that account's currency. */

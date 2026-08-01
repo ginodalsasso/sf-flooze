@@ -121,6 +121,9 @@
 
 .txn-form-full { grid-column: 1 / -1; }
 
+/* An author display rule outranks the UA [hidden] one: cancel the grid explicitly. */
+.txn-form-grid[hidden] { display: none; }
+
 .txn-balance-hint {
   margin-top: 6px;
   font-family: 'DM Sans', sans-serif;
