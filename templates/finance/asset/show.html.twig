@@ -172,7 +172,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if entry.kind != 'dividend' %}
+                                {% if entry.kind.affectsQuantity %}
                                     <span class="txn-account">{{ entry.unitPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}</span>
                                 {% else %}
                                     <span class="txn-account txn-account--muted">—</span>

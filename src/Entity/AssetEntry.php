@@ -13,6 +13,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * An entry in an asset's history, which may be a buy, sell or dividend.
+ * The quantity and unit price are interpreted differently depending on the kind:
+ * - buy/sell: quantity is a unit count, unit price is a per-unit price
+ * - dividend: quantity is a cash amount, unit price is always 1
+ */
 #[ORM\Entity(repositoryClass: AssetEntryRepository::class)]
 #[ORM\Table(name: 'asset_entry')]
 #[ORM\HasLifecycleCallbacks]

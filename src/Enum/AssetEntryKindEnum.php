@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * The kind of an asset entry, which determines how its quantity and unit price are interpreted.
+ */
 enum AssetEntryKindEnum: string
 {
     case BUY = 'buy';
@@ -47,7 +50,7 @@ enum AssetEntryKindEnum: string
         };
     }
 
-    /** Whether this entry affects the held quantity */
+    /** Whether `quantity` holds a unit count (buy/sell) rather than a cash amount (dividend) */
     public function affectsQuantity(): bool
     {
         return match($this) {

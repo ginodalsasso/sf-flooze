@@ -26,13 +26,15 @@ final class AssetEntryService implements AssetEntryServiceInterface
     {
         $this->validate($input);
 
+        [$quantity, $unitPrice] = $this->encodeAmount($input);
+
         $entry = new AssetEntry();
         $entry->setAsset($input->asset)
             ->setSpace($input->space)
             ->setDate($input->date)
             ->setKind($input->kind)
-            ->setQuantity($input->quantity ?? $input->amount ?? '0')
-            ->setUnitPrice($input->unitPrice ?? '1')
+            ->setQuantity($quantity)
+            ->setUnitPrice($unitPrice)
             ->setFxRate($input->fxRate)
             ->setFees($input->fees)
             ->setAccount($input->account)
@@ -110,19 +112,28 @@ final class AssetEntryService implements AssetEntryServiceInterface
         return $total;
     }
 
-    // Guard methods for validating input data
+    /**
+     * Encode the quantity and unit price for storage, based on the kind of asset entry.
+     * @return array{string, string}
+     */
+    private function encodeAmount(AssetEntryInputDto $input): array
+    {
+        [$quantity, $unitPrice] = match ($input->kind) {
+            AssetEntryKindEnum::BUY,
+            AssetEntryKindEnum::SELL     => [$input->quantity, $input->unitPrice],
+            AssetEntryKindEnum::DIVIDEND => [$input->amount, '1'],
+        };
+
+        return [$quantity, $unitPrice];
+    }
+
     private function validate(AssetEntryInputDto $input): void
     {
-        switch ($input->kind) {
-            case AssetEntryKindEnum::BUY:
-            case AssetEntryKindEnum::SELL:
-                $this->guardStrictlyPositive($input->quantity, sprintf('%s quantity', ucfirst($input->kind->value)));
-                $this->guardStrictlyPositive($input->unitPrice, sprintf('%s unit price', ucfirst($input->kind->value)));
-                break;
-            case AssetEntryKindEnum::DIVIDEND:
-                $this->guardStrictlyPositive($input->amount, 'Dividend amount');
-                break;
-        }
+        match ($input->kind) {
+            AssetEntryKindEnum::BUY,
+            AssetEntryKindEnum::SELL     => $this->guardTrade($input),
+            AssetEntryKindEnum::DIVIDEND => $this->guardStrictlyPositive($input->amount, 'Dividend amount'),
+        };
 
         if ($input->kind === AssetEntryKindEnum::SELL && $input->quantity !== null) {
             $heldQty = $this->entryRepository->getTotalQuantity($input->asset);
@@ -134,6 +145,14 @@ final class AssetEntryService implements AssetEntryServiceInterface
                 ));
             }
         }
+    }
+
+    private function guardTrade(AssetEntryInputDto $input): void
+    {
+        $kindLabel = ucfirst($input->kind->value);
+
+        $this->guardStrictlyPositive($input->quantity, sprintf('%s quantity', $kindLabel));
+        $this->guardStrictlyPositive($input->unitPrice, sprintf('%s unit price', $kindLabel));
     }
 
     // Guard that a numeric string is strictly positive, throwing an exception if not.

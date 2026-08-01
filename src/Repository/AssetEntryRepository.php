@@ -93,6 +93,7 @@ final class AssetEntryRepository extends ServiceEntityRepository implements Asse
             ->select('SUM(e.fees)')
             ->where('e.asset = :asset')
             ->andWhere('e.deletedAt IS NULL')
+            ->setParameter('asset', $asset)
             ->getQuery()
             ->getSingleScalarResult();
 
