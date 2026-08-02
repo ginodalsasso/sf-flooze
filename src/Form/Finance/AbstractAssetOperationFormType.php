@@ -16,12 +16,16 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 abstract class AbstractAssetOperationFormType extends AbstractType
 {
-    protected function addSharedFields(FormBuilderInterface $builder, Space $space, Asset $asset): void
-    {
+    /** A buy debits the funding account while a sell credits it: only the wording differs. */
+    protected function addSharedFields(
+        FormBuilderInterface $builder,
+        Space $space,
+        Asset $asset,
+        string $fundingPlaceholder = 'Choisir un compte de destination',
+    ): void {
         $requiredAccountType = $asset->getType()->requiredAccountType();
 
         $builder
@@ -68,7 +72,7 @@ abstract class AbstractAssetOperationFormType extends AbstractType
             ->add('fundingAccount', EntityType::class, [
                 'class' => Account::class,
                 'required' => true,
-                'placeholder' => 'Choisir un compte de destination',
+                'placeholder' => $fundingPlaceholder,
                 'query_builder' => fn(AccountRepository $repo) => $repo->createQueryBuilder('a')
                     ->where('a.space = :space')
                     ->andWhere('a.deletedAt IS NULL')
@@ -84,30 +88,43 @@ abstract class AbstractAssetOperationFormType extends AbstractType
             ]);
     }
 
+    /**
+     * Quantity and unit price of a trade. The price is never prefilled: it is the price of the
+     * day, which the caller displays alongside the last known one rather than assuming.
+     */
+    protected function addTradeFields(FormBuilderInterface $builder, ?string $maxQuantity = null): void
+    {
+        $quantityAttr = ['placeholder' => '0,00000000'];
+
+        if ($maxQuantity !== null) {
+            $quantityAttr['max'] = (float) $maxQuantity;
+        }
+
+        $builder
+            ->add('quantity', NumberType::class, [
+                'scale' => 8,
+                'html5' => false,
+                'attr' => $quantityAttr,
+                'constraints' => [
+                    new Assert\NotNull(message: 'La quantité ne peut pas être vide.'),
+                    new Assert\GreaterThan(value: 0, message: 'La quantité doit être supérieure à 0.'),
+                ],
+            ])
+            ->add('unitPrice', NumberType::class, [
+                'scale' => 4,
+                'html5' => false,
+                'attr' => ['placeholder' => '0,0000'],
+                'constraints' => [
+                    new Assert\NotNull(message: 'Le prix unitaire ne peut pas être vide.'),
+                    new Assert\GreaterThan(value: 0, message: 'Le prix doit être supérieur à 0.'),
+                ],
+            ]);
+    }
+
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'constraints' => [new Assert\Callback([$this, 'validateAccounts'])],
-        ]);
         $resolver->setRequired(['space', 'asset']);
         $resolver->setAllowedTypes('space', Space::class);
         $resolver->setAllowedTypes('asset', Asset::class);
-    }
-
-    public function validateAccounts(mixed $data, ExecutionContextInterface $context): void
-    {
-        $form = $context->getRoot();
-        if (!$form instanceof \Symfony\Component\Form\FormInterface) {
-            return;
-        }
-
-        $account = $form->get('account')->getData();
-        $fundingAccount = $form->get('fundingAccount')->getData();
-
-        if ($account instanceof Account && $fundingAccount instanceof Account && $account->getId() === $fundingAccount->getId()) {
-            $context->buildViolation('Le compte de détention et le compte de destination doivent être différents.')
-                ->atPath('fundingAccount')
-                ->addViolation();
-        }
     }
 }

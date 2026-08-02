@@ -95,6 +95,13 @@
         <div class="asset-show-actions">
             <twig:Button
                 as="a"
+                href="{{ path('app_asset_buy', {id: asset.id}) }}"
+                icon="arrow-down-right"
+                label="Acheter"
+                variant="secondary"
+            />
+            <twig:Button
+                as="a"
                 href="{{ path('app_asset_sell', {id: asset.id}) }}"
                 icon="arrow-up-right"
                 label="Vendre"

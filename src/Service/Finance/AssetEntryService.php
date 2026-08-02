@@ -9,8 +9,10 @@ use App\Entity\Asset;
 use App\Entity\AssetEntry;
 use App\Enum\AssetEntryKindEnum;
 use App\Repository\Contract\AssetEntryRepositoryInterface;
+use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use App\Service\Finance\Contract\AssetEntryServiceInterface;
 use App\Service\Finance\Contract\AssetEntryTransactionServiceInterface;
+use App\Service\Finance\Contract\ExchangeRateServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class AssetEntryService implements AssetEntryServiceInterface
@@ -19,6 +21,8 @@ final class AssetEntryService implements AssetEntryServiceInterface
         private readonly EntityManagerInterface $em,
         private readonly AssetEntryRepositoryInterface $entryRepository,
         private readonly AssetEntryTransactionServiceInterface $transactionService,
+        private readonly AccountBalanceServiceInterface $accountBalanceService,
+        private readonly ExchangeRateServiceInterface $exchangeRateService,
     ) {}
 
     /** The linked transactions are created by the Doctrine entity listener, not here. */
@@ -40,6 +44,8 @@ final class AssetEntryService implements AssetEntryServiceInterface
             ->setAccount($input->account)
             ->setFundingAccount($input->fundingAccount)
             ->setNote($input->note);
+
+        $this->guardFundingFunds($entry);
 
         $this->em->persist($entry);
         $this->em->flush();
@@ -145,6 +151,30 @@ final class AssetEntryService implements AssetEntryServiceInterface
                 ));
             }
         }
+    }
+
+    /**
+     * On an asset-holding account only the uninvested part is spendable: this is what allows an
+     * internal buy (funding account = holding account) while blocking one paid with invested funds.
+     */
+    private function guardFundingFunds(AssetEntry $entry): void
+    {
+        $fundingAccount = $entry->getFundingAccount();
+
+        if ($entry->getKind() !== AssetEntryKindEnum::BUY || $fundingAccount === null) {
+            return;
+        }
+
+        $spentInSpaceCurrency = bcadd($entry->getTotalAmountInSpaceCurrency(), $entry->getFees(), 2);
+
+        $this->accountBalanceService->guardAvailableFunds(
+            $fundingAccount,
+            $this->exchangeRateService->convert(
+                $spentInSpaceCurrency,
+                $entry->getSpace()->getCurrency(),
+                $fundingAccount->getCurrency(),
+            ),
+        );
     }
 
     private function guardTrade(AssetEntryInputDto $input): void

@@ -219,6 +219,7 @@ Finance/
 ├── AssetEntryService.php         # Buy/sell/dividend ledger + P&L (FIFO)
 ├── AssetEntryTransactionService.php # Keeps Transaction rows in sync with AssetEntry
 ├── AssetMetricsService.php       # Aggregated metrics (qty, avg price, cost basis)
+├── AssetPriceService.php         # Single source of asset unit prices (market API plugs in here)
 ├── AccountService.php            # Account CRUD + soft-delete
 ├── AccountBalanceService.php     # current balance + invested vs available split
 ├── ExchangeRateService.php       # Single source of FX rates (space currency conversions)

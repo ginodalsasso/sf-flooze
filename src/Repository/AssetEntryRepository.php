@@ -67,6 +67,22 @@ final class AssetEntryRepository extends ServiceEntityRepository implements Asse
             ->getResult();
     }
 
+    /** Dividends carry no unit price, so they never speak for the value of the asset. */
+    public function findLatestTrade(Asset $asset): ?AssetEntry
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.asset = :asset')
+            ->andWhere('e.kind IN (:kinds)')
+            ->andWhere('e.deletedAt IS NULL')
+            ->setParameter('asset', $asset)
+            ->setParameter('kinds', [AssetEntryKindEnum::BUY, AssetEntryKindEnum::SELL])
+            ->orderBy('e.date', 'DESC')
+            ->addOrderBy('e.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     /** Net quantity held (buy - sell), excluding soft-deleted entries. */
     public function getTotalQuantity(Asset $asset): string
     {

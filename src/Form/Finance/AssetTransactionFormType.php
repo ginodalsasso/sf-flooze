@@ -37,7 +37,6 @@ class AssetTransactionFormType extends AbstractTransactionFormType
                 'choices' => [TransactionTypeEnum::EXPENSE, TransactionTypeEnum::TRANSFER],
                 'choice_label' => fn(TransactionTypeEnum $t) => $t->assetLabel(),
                 'label' => 'Type d\'opération',
-                'data' => TransactionTypeEnum::EXPENSE,
             ])
             ->add('account', EntityType::class, [
                 'class' => Account::class,

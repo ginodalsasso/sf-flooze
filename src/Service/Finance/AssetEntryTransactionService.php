@@ -51,7 +51,7 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
 
         // Update existing transactions that still target the same account.
         foreach ($expected as $expectedTx) {
-            [$match, $key] = $this->findTransactionByAccount($existing, $expectedTx->account);
+            [$match, $key] = $this->findTransaction($existing, $expectedTx);
 
             if ($match !== null) {
                 unset($existing[$key]);
@@ -118,13 +118,15 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
     }
 
     /**
+     * Both legs land on the same account when the buy is internal: the type tells them apart.
+     *
      * @param Transaction[] $transactions
      * @return array{0: Transaction|null, 1: int|string|null}
      */
-    private function findTransactionByAccount(array $transactions, Account $account): array
+    private function findTransaction(array $transactions, ExpectedTransactionDto $expected): array
     {
         foreach ($transactions as $key => $transaction) {
-            if ($transaction->getAccount() === $account) {
+            if ($transaction->getAccount() === $expected->account && $transaction->getType() === $expected->type) {
                 return [$transaction, $key];
             }
         }

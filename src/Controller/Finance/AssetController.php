@@ -10,6 +10,7 @@ use App\Dto\Finance\AssetEntryInputDto;
 use App\Dto\Finance\AssetListItemDto;
 use App\Entity\Asset;
 use App\Enum\AssetEntryKindEnum;
+use App\Form\Finance\AssetBuyFormType;
 use App\Form\Finance\AssetDividendFormType;
 use App\Form\Finance\AssetFormType;
 use App\Form\Finance\AssetSellFormType;
@@ -18,6 +19,7 @@ use App\Repository\Contract\AssetEntryRepositoryInterface;
 use App\Repository\Contract\AssetRepositoryInterface;
 use App\Service\Finance\Contract\AssetEntryServiceInterface;
 use App\Service\Finance\Contract\AssetMetricsServiceInterface;
+use App\Service\Finance\Contract\AssetPriceServiceInterface;
 use App\Service\Finance\Contract\AssetServiceInterface;
 use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,6 +37,7 @@ class AssetController extends AbstractController
         private readonly AssetServiceInterface $assetService,
         private readonly AssetEntryServiceInterface $assetEntryService,
         private readonly AssetMetricsServiceInterface $assetMetricsService,
+        private readonly AssetPriceServiceInterface $assetPriceService,
         private readonly AssetRepositoryInterface $assetRepository,
         private readonly AssetEntryRepositoryInterface $assetEntryRepository,
         private readonly AccountRepositoryInterface $accountRepository,
@@ -114,21 +117,27 @@ class AssetController extends AbstractController
             $this->assetService->save($asset);
 
             // Create initial buy entry from the form data, linked to the selected accounts
-            $this->assetEntryService->recordEntry(AssetEntryInputDto::buy(
-                asset: $asset,
-                space: $space,
-                date: $form->get('entryDate')->getData(),
-                quantity: (string) $form->get('entryQuantity')->getData(),
-                unitPrice: (string) $form->get('entryUnitPrice')->getData(),
-                fxRate: (string) $form->get('entryFxRate')->getData(),
-                fees: (string) $form->get('entryFees')->getData(),
-                account: $form->get('account')->getData(),
-                fundingAccount: $form->get('fundingAccount')->getData(),
-            ));
+            try {
+                $this->assetEntryService->recordEntry(AssetEntryInputDto::buy(
+                    asset: $asset,
+                    space: $space,
+                    date: $form->get('entryDate')->getData(),
+                    quantity: (string) $form->get('entryQuantity')->getData(),
+                    unitPrice: (string) $form->get('entryUnitPrice')->getData(),
+                    fxRate: (string) $form->get('entryFxRate')->getData(),
+                    fees: (string) $form->get('entryFees')->getData(),
+                    account: $form->get('account')->getData(),
+                    fundingAccount: $form->get('fundingAccount')->getData(),
+                ));
 
-            $this->addFlash('success', 'Actif "' . $asset->getTicker() . '" ajouté avec position d\'achat initiale.');
+                $this->addFlash('success', 'Actif "' . $asset->getTicker() . '" ajouté avec position d\'achat initiale.');
 
-            return $this->redirectToRoute('app_asset_show', ['id' => $asset->getId()]);
+                return $this->redirectToRoute('app_asset_show', ['id' => $asset->getId()]);
+            } catch (\InvalidArgumentException $e) {
+                // The asset only exists to carry this buy: it goes away with it.
+                $this->assetService->delete($asset);
+                $this->addFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('finance/asset/new.html.twig', ['form' => $form]);
@@ -152,6 +161,47 @@ class AssetController extends AbstractController
         return $this->render('finance/asset/edit.html.twig', [
             'form'  => $form,
             'asset' => $asset,
+        ]);
+    }
+
+    /** Buying more of an existing position: the price is the one of the day, not the average cost. */
+    #[Route('/{id}/buy', name: 'buy', requirements: ['id' => '\d+'])]
+    public function buy(Request $request, Asset $asset): Response
+    {
+        $this->denyAccessUnlessGranted('EDIT', $asset->getSpace());
+
+        $space = $asset->getSpace();
+        $form = $this->createForm(AssetBuyFormType::class, null, ['space' => $space, 'asset' => $asset]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $this->assetEntryService->recordEntry(AssetEntryInputDto::buy(
+                    asset: $asset,
+                    space: $space,
+                    date: $form->get('date')->getData(),
+                    quantity: (string) $form->get('quantity')->getData(),
+                    unitPrice: (string) $form->get('unitPrice')->getData(),
+                    fxRate: (string) $form->get('fxRate')->getData(),
+                    fees: (string) $form->get('fees')->getData(),
+                    account: $form->get('account')->getData(),
+                    fundingAccount: $form->get('fundingAccount')->getData(),
+                    note: $form->get('note')->getData(),
+                ));
+
+                $this->addFlash('success', 'Achat enregistré pour "' . $asset->getTicker() . '".');
+
+                return $this->redirectToRoute('app_asset_show', ['id' => $asset->getId()]);
+            } catch (\InvalidArgumentException|\RuntimeException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
+        }
+
+        return $this->render('finance/asset/buy.html.twig', [
+            'form'         => $form,
+            'asset'        => $asset,
+            'metrics'      => $this->assetMetricsService->compute($asset),
+            'currentPrice' => $this->assetPriceService->getCurrentPrice($asset),
         ]);
     }
 

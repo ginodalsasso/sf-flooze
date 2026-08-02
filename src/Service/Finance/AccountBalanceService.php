@@ -38,10 +38,7 @@ final readonly class AccountBalanceService implements AccountBalanceServiceInter
 
     public function isAssetHoldingAccount(Account $account): bool
     {
-        $assetTypes = [AccountTypeEnum::CRYPTO, AccountTypeEnum::STOCK];
-        $assetAccountTypes = array_map(fn($type) => $type->value, $assetTypes);
-        
-        return \in_array($account->getType(), $assetAccountTypes, true);
+        return \in_array($account->getType(), [AccountTypeEnum::CRYPTO, AccountTypeEnum::STOCK], true);
     }
 
     /** AssetEntry amounts are in the space currency: converted back before comparison to the account balance. */
@@ -87,7 +84,14 @@ final readonly class AccountBalanceService implements AccountBalanceServiceInter
         }
 
         if (!$this->hasAvailableFunds($account, $amount, $excludedTransaction)) {
-            throw new \InvalidArgumentException("Impossible d'utiliser des fonds investis. Seuls les fonds disponibles peuvent être utilisés.");
+            throw new \InvalidArgumentException(sprintf(
+                'Fonds disponibles insuffisants sur %s : %s %s requis, %s %s non investis. Les fonds investis ne peuvent pas être utilisés.',
+                $account->getName(),
+                $amount,
+                $account->getCurrency()->value,
+                $this->getAvailableBalance($account, $excludedTransaction),
+                $account->getCurrency()->value,
+            ));
         }
     }
 }

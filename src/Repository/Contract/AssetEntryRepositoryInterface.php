@@ -21,6 +21,9 @@ interface AssetEntryRepositoryInterface extends ObjectRepository
     /** @return AssetEntry[] active buy entries for the asset, ordered by date (FIFO) */
     public function findBuysByAsset(Asset $asset): array;
 
+    /** Most recent active buy or sell, the only entries carrying a unit price. */
+    public function findLatestTrade(Asset $asset): ?AssetEntry;
+
     /** Net quantity held (buy - sell), excluding soft-deleted entries. */
     public function getTotalQuantity(Asset $asset): string;
 

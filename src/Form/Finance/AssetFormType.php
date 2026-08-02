@@ -161,13 +161,6 @@ class AssetFormType extends AbstractType
         }
 
         $account = $form->get('account')->getData();
-        $fundingAccount = $form->get('fundingAccount')->getData();
-
-        if ($account instanceof Account && $fundingAccount instanceof Account && $account->getId() === $fundingAccount->getId()) {
-            $context->buildViolation('Le compte de détention et le compte de paiement doivent être différents.')
-                ->atPath('fundingAccount')
-                ->addViolation();
-        }
 
         if (!$account instanceof Account) {
             return;
