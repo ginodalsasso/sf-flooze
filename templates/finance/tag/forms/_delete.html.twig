@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_tag_delete', {id: tag.id}) }}"
+      onsubmit="return confirm('Supprimer « {{ tag.name }} » ?\n\nIl sera retiré des transactions qui le portent ; elles ne sont pas supprimées.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('tag_delete_' ~ tag.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>

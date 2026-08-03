@@ -25,6 +25,7 @@ final class TransactionService implements TransactionServiceInterface
     public function save(TransactionInputDto $input): Transaction
     {
         $this->guardStrictlyPositive($input->amount);
+        $this->guardInputInSpace($input);
 
         $transaction = new Transaction();
         $this->applyFromDto($transaction, $input);
@@ -42,6 +43,7 @@ final class TransactionService implements TransactionServiceInterface
     {
         $this->guardNotLinkedToAsset($transaction);
         $this->guardStrictlyPositive($input->amount);
+        $this->guardInputInSpace($input);
 
         $this->applyFromDto($transaction, $input);
 
@@ -72,7 +74,33 @@ final class TransactionService implements TransactionServiceInterface
             ->setDestinationAmount($this->resolveDestinationAmount($input))
             ->setDate($input->date)
             ->setDescription($input->description)
-            ->setCategory($input->category);
+            ->setCategory($input->category)
+            ->replaceTags($input->tags);
+    }
+
+    /**
+     * Rejects an input whose account, destination account, category or tag belongs to another space.
+     *
+     * The form only offers entities of the space, but the request is forgeable: a posted id
+     * proves nothing about its owner.
+     */
+    private function guardInputInSpace(TransactionInputDto $input): void
+    {
+        $owners = [
+            'compte' => $input->account->getSpace(),
+            'compte destinataire' => $input->destinationAccount?->getSpace(),
+            'catégorie' => $input->category?->getSpace(),
+        ];
+
+        foreach ($input->tags as $tag) {
+            $owners['tag « ' . $tag->getName() . ' »'] = $tag->getSpace();
+        }
+
+        foreach ($owners as $label => $owner) {
+            if ($owner !== null && $owner->getId() !== $input->space->getId()) {
+                throw new \InvalidArgumentException(sprintf('Élément hors de cet espace : %s.', $label));
+            }
+        }
     }
 
     /**

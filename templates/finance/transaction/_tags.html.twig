@@ -1,0 +1,10 @@
+{# Tag pills of a transaction, each linking to the list filtered on it. #}
+{% if transaction.tags|length > 0 %}
+    <div class="tag-pills">
+        {% for tag in transaction.tags %}
+            <a class="tag-pill" href="{{ path('app_transaction_index', {tag: tag.id}) }}">
+                <i data-lucide="hash"></i>{{ tag.name }}
+            </a>
+        {% endfor %}
+    </div>
+{% endif %}

@@ -72,6 +72,7 @@
                                         Lié à l'actif {{ txn.assetEntry.asset.ticker }}
                                     </div>
                                 {% endif %}
+                                {% include 'finance/transaction/_tags.html.twig' with {transaction: txn} only %}
                             </td>
                             <td>
                                 <span class="txn-account">{{ txn.account.name }}</span>

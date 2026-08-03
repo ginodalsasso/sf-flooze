@@ -23,6 +23,13 @@ interface TransactionRepositoryInterface extends ObjectRepository
     /** Count and income/expense totals of the same result set, in the space currency. */
     public function sumByFilter(Space $space, TransactionFilterDto $filter): TransactionTotalsDto;
 
+    /**
+     * Number of active transactions carrying each tag of the space, keyed by tag id.
+     *
+     * @return array<int, int>
+     */
+    public function countByTag(Space $space): array;
+
     /** @return Transaction[] most recent N transactions for dashboard widget. */
     public function findRecentBySpace(Space $space, int $limit = 10): array;
 

@@ -150,6 +150,7 @@
                                         {{ isIncoming ? '← ' ~ txn.account.name : '→ ' ~ txn.destinationAccount.name }}
                                     </div>
                                 {% endif %}
+                                {% include 'finance/transaction/_tags.html.twig' with {transaction: txn} only %}
                             </td>
                             <td>
                                 {% set categoryLabel = txn.categoryLabel %}

@@ -22,6 +22,8 @@
 
     <div class="form-section txn-form-grid">
         <twig:Form:Field field="{{ form.category }}" label="Catégorie" />
+        <twig:Form:Field field="{{ form.tags }}" label="Tags"
+                         hint="Projet ou événement — Ctrl/⌘ pour en choisir plusieurs" />
     </div>
 
     <div class="form-section txn-form-grid" data-transfer-guard-target="destination">

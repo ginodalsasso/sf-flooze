@@ -1,0 +1,42 @@
+<style>
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 820px;
+}
+
+.tag-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.tag-row-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-size: 14px;
+  color: var(--fg-1);
+}
+
+.tag-row-name i { width: 14px; height: 14px; color: var(--fg-3); flex-shrink: 0; }
+
+.tag-row-usage {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+  text-decoration: none;
+  white-space: nowrap;
+}
+a.tag-row-usage:hover { color: var(--sage-400); }
+
+.tag-row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tag-row-actions form { margin: 0; }
+</style>

@@ -121,6 +121,7 @@ src/Entity/
 ├── Account.php               # Finance: bank/cash/crypto/saving account
 ├── Transaction.php           # Finance: income/expense/transfer
 ├── Category.php              # Finance: hierarchical, fiscal flags, applicable transaction types
+├── Tag.php                   # Finance: free cross-cutting label on transactions (no fiscal meaning)
 ├── Asset.php                 # Finance: stocks, crypto, ETF (ticker, name, currency, type)
 ├── AssetEntry.php            # Finance: ledger row for a buy/sell/dividend operation
 │
@@ -154,6 +155,7 @@ User (1) ──── (N) Space
 Space (1) ──── (N) Account
 Space (1) ──── (N) Asset
 Space (1) ──── (N) Category
+Space (1) ──── (N) Tag
 Space (1) ──── (N) Property
 Space (1) ──── (N) Client
 Space (1) ──── (N) TaxYear
@@ -165,6 +167,7 @@ Account (1) ──── (N) AssetEntry [holding account, nullable]
 Account (1) ──── (N) AssetEntry [funding account, nullable]
 Category (1) ──── (N) Transaction
 Category (1) ──── (N) Category [parent_id self-referential]
+Transaction (N) ──── (N) Tag [pivot transaction_tag, owning side Transaction]
 Account (1) ──── (N) Transaction [destination_account_id, nullable, for transfers]
 Transaction (N) ──── (0..1) AssetEntry [asset_entry_id, SET NULL on hard delete]
 Asset (1) ──── (N) AssetEntry
@@ -385,11 +388,31 @@ Same pattern as DocumentLink. Reminders can be linked to Property, Lease, TaxYea
 Empty array = tous types (legacy rows). Les selects de transaction groupent les catégories par ce scope
 (`group_by`), et `AbstractTransactionFormType::validateCategoryType()` rejette une catégorie hors scope.
 
-### 6. Invoice Sequential Numbering
+### 6. Tag ≠ Category
+
+Deux axes **orthogonaux**, à ne jamais fusionner :
+
+| | `Category` | `Tag` |
+|---|---|---|
+| Cardinalité | 1 par transaction | 0..N |
+| Répond à | *quelle est la nature du flux ?* | *à quoi ça se rattache ?* (projet, événement, personne) |
+| Portée fiscale | oui (`is_deductible`, `is_declarable`, `applicable_types`) | **aucune** |
+| Structure | hiérarchique (`parent_id`) | plat, jetable |
+
+Règles qui tiennent la séparation :
+
+- Un tag n'a **ni hiérarchie, ni flags fiscaux, ni `applicable_types`** — sinon c'est une seconde taxonomie concurrente et deux sources de vérité pour la déductibilité.
+- Le module Tax ne lit **jamais** un tag.
+- Le pivot `transaction_tag` ne porte pas de `space_id` : ses deux côtés sont déjà scopés, et `TransactionService::guardTagsInSpace()` revalide l'appartenance avant persist.
+- Le filtre par tag s'écrit `:tag MEMBER OF t.tags`, **jamais** en `JOIN` : le même QueryBuilder sert à `sumByFilter()`, et une jointure ManyToMany duplique les lignes donc fausse les totaux.
+
+Filtre **mono-tag** assumé : une transaction porte rarement plus d'un projet, et croiser deux projets a peu de sens. Passer au multi-tag ne touche que `TransactionFilterDto`, son FormType et `applyFilter()`.
+
+### 7. Invoice Sequential Numbering
 
 `InvoiceService::generateNumber(Space $space, int $year)` queries the max existing number for the space+year, then increments. Format: `FAC-2025-001`.
 
-### 7. Multi-devise
+### 8. Multi-devise
 
 `Space.currency` est la **devise de référence** : tout total qui traverse plusieurs comptes s'y exprime. Elle se choisit à la création d'un space et n'est plus modifiable — la changer invaliderait tous les `fx_rate` déjà figés.
 
@@ -404,7 +427,7 @@ Deux taux distincts, à ne pas confondre :
 
 `ExchangeRateService` est le **seul** détenteur des taux (table en `private const`). Brancher une API de taux ne touche que cette classe : aucun appelant, aucune colonne. La table devient alors le fallback offline.
 
-### 8. Virements — une ligne, deux comptes
+### 9. Virements — une ligne, deux comptes
 
 Un virement est **une seule `Transaction`** portant `account_id` (débité) et `destination_account_id` (crédité). Il n'y a pas de double-entry.
 
@@ -416,7 +439,7 @@ Conséquence à ne pas oublier : **toute query filtrant par compte doit matcher 
 
 Entre deux devises, la banque seule connaît le taux appliqué : `destination_amount` porte le montant **réellement crédité**, dans la devise du compte destinataire. Il est `NULL` quand les deux comptes partagent la même devise, et obligatoire sinon (`TransactionService::guardValidTransfer`).
 
-### 9. Solde d'un compte — calculé, jamais stocké
+### 10. Solde d'un compte — calculé, jamais stocké
 
 `account.opening_balance` est le solde **avant** le suivi dans Flooze : saisi à la création, il ne bouge que si l'utilisateur le corrige. Le solde courant se dérive :
 
@@ -474,6 +497,8 @@ templates/
 | `account` | name, type, opening_balance, currency | ✓ |
 | `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, fx_rate, destination_amount (nullable), date, description, metadata (JSON) | ✓ |
 | `category` | parent_id (nullable), name, is_deductible, is_declarable | — |
+| `tag` | name (unique par space) | ✓ |
+| `transaction_tag` | transaction_id, tag_id (pivot, ON DELETE CASCADE) | — |
 | `asset` | ticker, name, currency, type | — |
 | `asset_entry` | asset_id, account_id (nullable), funding_account_id (nullable), date, kind (buy\|sell\|dividend), quantity, unit_price, fx_rate, fees, note | ✓ |
 | `property` | name, address, type, purchase_price, purchase_date | ✓ |

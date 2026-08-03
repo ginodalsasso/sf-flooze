@@ -10,6 +10,8 @@ use App\Repository\TransactionRepository;
 use App\Trait\SoftDeleteTrait;
 use App\Trait\SpaceScopeTrait;
 use App\Trait\TimestampTrait;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TransactionRepository::class)]
@@ -42,6 +44,13 @@ class Transaction
     #[ORM\JoinColumn(name: 'category_id', nullable: true)]
     private ?Category $category = null;
 
+    /** @var Collection<int, Tag> */
+    #[ORM\ManyToMany(targetEntity: Tag::class)]
+    #[ORM\JoinTable(name: 'transaction_tag')]
+    #[ORM\JoinColumn(name: 'transaction_id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'tag_id', onDelete: 'CASCADE')]
+    private Collection $tags;
+
     #[ORM\Column(type: 'string', enumType: TransactionTypeEnum::class)]
     private TransactionTypeEnum $type;
 
@@ -64,6 +73,11 @@ class Transaction
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $metadata = null;
+
+    public function __construct()
+    {
+        $this->tags = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -143,6 +157,38 @@ class Transaction
         }
 
         return null;
+    }
+
+    public function getTags(): Collection
+    {
+        return $this->tags;
+    }
+
+    public function addTag(Tag $tag): static
+    {
+        if (!$this->tags->contains($tag)) {
+            $this->tags->add($tag);
+        }
+
+        return $this;
+    }
+
+    public function removeTag(Tag $tag): static
+    {
+        $this->tags->removeElement($tag);
+
+        return $this;
+    }
+
+    public function replaceTags(array $tags): static
+    {
+        $this->tags->clear();
+
+        foreach ($tags as $tag) {
+            $this->addTag($tag);
+        }
+
+        return $this;
     }
 
     public function getType(): TransactionTypeEnum

@@ -1,0 +1,13 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.name }}" label="Nom du tag"
+                         hint="Un projet, un événement, une personne — la nature de la dépense reste du ressort de la catégorie" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_tag_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

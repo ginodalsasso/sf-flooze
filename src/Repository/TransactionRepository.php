@@ -116,6 +116,12 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
             $qb->andWhere('t.category = :category')->setParameter('category', $filter->category);
         }
 
+        // MEMBER OF and not a join: the same query builder feeds sumByFilter(), and joining a
+        // ManyToMany would duplicate rows on multi-tag transactions, inflating the totals.
+        if ($filter->tag !== null) {
+            $qb->andWhere(':tag MEMBER OF t.tags')->setParameter('tag', $filter->tag);
+        }
+
         if ($filter->dateFrom !== null) {
             $qb->andWhere('t.date >= :dateFrom')->setParameter('dateFrom', $filter->dateFrom);
         }
@@ -136,6 +142,29 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
             $qb->andWhere(self::TEXT_SEARCH)
                 ->setParameter('q', '%' . strtolower(addcslashes($filter->query, '%_\\')) . '%');
         }
+    }
+
+    /**
+     * Number of active transactions carrying each tag of the space, keyed by tag id.
+     * Tags used by nothing are absent: the caller reads a missing key as zero.
+     *
+     * @return array<int, int>
+     */
+    public function countByTag(Space $space): array
+    {
+        $rows = $this->createQueryBuilder('t')
+            ->select('tg.id AS tagId', 'COUNT(t.id) AS nb')
+            ->join('t.tags', 'tg')
+            ->where('t.space = :space')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('space', $space)
+            ->groupBy('tg.id')
+            ->getQuery()
+            ->getResult();
+
+        $tagCounts = array_column($rows, 'nb', 'tagId');
+
+        return array_map(intval(...), $tagCounts);
     }
 
     /** @return Transaction[] most recent N transactions for dashboard widget. */

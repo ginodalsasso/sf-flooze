@@ -7,6 +7,7 @@ namespace App\Dto\Finance;
 use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Space;
+use App\Entity\Tag;
 use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
 
@@ -28,6 +29,7 @@ class TransactionInputDto
     public \DateTimeImmutable $date;
     public ?string $description = null;
     public ?Category $category = null;
+    public array $tags = [];
     public Space $space;
 
     public static function fromTransaction(Transaction $transaction, Space $space): self
@@ -42,6 +44,7 @@ class TransactionInputDto
         $dto->date = $transaction->getDate();
         $dto->description = $transaction->getDescription();
         $dto->category = $transaction->getCategory();
+        $dto->tags = $transaction->getTags()->toArray();
         $dto->space = $space;
 
         return $dto;

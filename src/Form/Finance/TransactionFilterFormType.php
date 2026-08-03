@@ -8,8 +8,10 @@ use App\Dto\Finance\TransactionFilterDto;
 use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Space;
+use App\Entity\Tag;
 use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
+use App\Repository\TagRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -46,6 +48,13 @@ class TransactionFilterFormType extends AbstractType
                 'required' => false,
                 'placeholder' => 'Toutes les catégories',
                 'query_builder' => fn(CategoryRepository $repo) => $repo->createSpaceScopedQb($space),
+                'choice_label' => 'name',
+            ])
+            ->add('tag', EntityType::class, [
+                'class' => Tag::class,
+                'required' => false,
+                'placeholder' => 'Tous les tags',
+                'query_builder' => fn(TagRepository $repo) => $repo->createSpaceScopedQb($space),
                 'choice_label' => 'name',
             ])
             ->add('date_from', DateType::class, [

@@ -8,9 +8,11 @@ use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Space;
+use App\Entity\Tag;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
+use App\Repository\TagRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -59,6 +61,13 @@ abstract class AbstractTransactionFormType extends AbstractType
                 'query_builder' => fn(CategoryRepository $repo) => $repo->createSpaceScopedQb($space),
                 'choice_label' => 'name',
                 'group_by' => $this->categoryGroup(...),
+            ])
+            ->add('tags', EntityType::class, [
+                'class' => Tag::class,
+                'required' => false,
+                'multiple' => true,
+                'query_builder' => fn(TagRepository $repo) => $repo->createSpaceScopedQb($space),
+                'choice_label' => 'name',
             ])
             ->add('destinationAccount', EntityType::class, [
                 'class' => Account::class,

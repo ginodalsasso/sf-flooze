@@ -217,6 +217,18 @@ padding: 2px 8px;
 border-radius: 6px;
 ```
 
+### Tag pill (`.tag-pill`)
+Étiquette transverse d'une transaction, cliquable pour filtrer la liste. Contour et non aplat,
+pour ne pas se confondre avec un badge sémantique ni avec la catégorie.
+```css
+border: 1px solid var(--border-strong);
+border-radius: 9999px;
+padding: 1px 8px;
+font-size: 11px;
+color: var(--fg-2);
+/* hover : bordure + texte sage-400 */
+```
+
 ---
 
 ## Navigation / Sidebar

@@ -84,6 +84,7 @@ php bin/console lint:twig templates/            # templates valides
 - **Tout flux monétaire passe par `Transaction`** — `RentPayment` et `LoanPayment` génèrent automatiquement leur `Transaction` via `LinkedTransactionListener`. Source de vérité unique pour le module Finance.
 - **Multi-devise : `Space.currency` de référence, solde du compte dans la devise du compte** — seuls les agrégats convertissent. Taux historique figé sur la ligne (`transaction.fx_rate`), taux spot via `ExchangeRateService` (seul détenteur des taux, point de branchement d'une API).
 - **Le solde d'un compte se calcule, il ne se stocke pas** — `account.opening_balance` + Σ des transactions, via `AccountBalanceService::getCurrentBalance()`. Aucun service n'écrit un solde : pas d'accumulateur, donc pas d'écart possible. Ne jamais réintroduire de colonne `balance`.
+- **`Tag` ≠ `Category`** — la catégorie dit la *nature* du flux (une seule, hiérarchique, portée fiscale) ; le tag dit le *contexte* (0..N, plat, aucune portée fiscale, jamais lu par le module Tax). Filtre mono-tag écrit en `MEMBER OF`, jamais en `JOIN` — une jointure ManyToMany duplique les lignes et fausse les totaux.
 - **Virement = 1 `Transaction`, 2 comptes** (`account_id` + `destination_account_id`), pas de double-entry. Toute query filtrant par compte doit matcher **les deux jambes**.
 
 ---

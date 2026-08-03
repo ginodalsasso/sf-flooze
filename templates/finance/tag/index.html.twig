@@ -1,0 +1,55 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/tag/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Tags — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Tags"
+    subtitle="Regroupe des transactions autour d'un projet ou d'un événement, quelle que soit leur catégorie"
+    ctaLabel="Nouveau tag"
+    ctaHref="{{ path('app_tag_new') }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% if tags|length > 0 %}
+        <div class="tag-list">
+            {% for tag in tags %}
+                {% set count = usage[tag.id] ?? 0 %}
+                <div class="tag-row">
+                    <div class="tag-row-name">
+                        <i data-lucide="hash"></i>
+                        {{ tag.name }}
+                    </div>
+                    {% if count > 0 %}
+                        <a class="tag-row-usage" href="{{ path('app_transaction_index', {tag: tag.id}) }}">
+                            {{ count }} transaction{{ count > 1 ? 's' : '' }}
+                        </a>
+                    {% else %}
+                        <span class="tag-row-usage">Inutilisé</span>
+                    {% endif %}
+                    <div class="tag-row-actions">
+                        <twig:Button as="a" href="{{ path('app_tag_edit', {id: tag.id}) }}"
+                                     icon="pencil" label="Modifier" variant="secondary" />
+                        {% include 'finance/tag/forms/_delete.html.twig' with {tag: tag} %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="hash"
+            text="Aucun tag"
+            hint="Un tag relie des transactions de catégories différentes autour d'un même projet : vacances-2026, travaux-cuisine…"
+            ctaLabel="Créer un tag"
+            ctaHref="{{ path('app_tag_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ namespace App\Dto\Finance;
 
 use App\Entity\Account;
 use App\Entity\Category;
+use App\Entity\Tag;
 use App\Enum\TransactionTypeEnum;
 
 /**
@@ -21,6 +22,7 @@ class TransactionFilterDto
     public ?TransactionTypeEnum $type = null;
     public ?Account $account = null;
     public ?Category $category = null;
+    public ?Tag $tag = null;
     public ?\DateTimeImmutable $dateFrom = null;
     public ?\DateTimeImmutable $dateTo = null;
 
@@ -46,6 +48,7 @@ class TransactionFilterDto
         return count(array_filter([
             $this->accountIsScope ? null : $this->account,
             $this->category,
+            $this->tag,
             $this->dateFrom,
             $this->dateTo,
             $this->amountMin,

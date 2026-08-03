@@ -82,6 +82,10 @@
             <i data-lucide="tag"></i>
             Catégories
         </a>
+        <a href="{{ path('app_tag_index') }}" class="nav-item{{ _route starts with 'app_tag_' ? ' is-active' : '' }}">
+            <i data-lucide="hash"></i>
+            Tags
+        </a>
         <a href="{{ path('app_asset_index') }}" class="nav-item{{ _route starts with 'app_asset_' ? ' is-active' : '' }}">
             <i data-lucide="trending-up"></i>
             Actifs

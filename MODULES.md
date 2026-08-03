@@ -31,6 +31,13 @@ id, space_id, parent_id (FK self-referential), name, is_deductible (bool),
 is_declarable (bool), created_at, updated_at
 ```
 
+**Tag**
+```
+id, space_id, name (unique par space), created_at, updated_at
+```
+Étiquette transverse (projet, événement) posée sur une transaction, sans portée fiscale.
+Voir [ARCHITECTURE.md](ARCHITECTURE.md) → *Tag ≠ Category*.
+
 **Asset**
 ```
 id, space_id, ticker, name, quantity (decimal), avg_price (decimal), currency,
@@ -54,6 +61,7 @@ Space (1) → (N) Asset
 Account (1) → (N) Transaction
 Category (1) → (N) Transaction
 Category (0..1) → (N) Category  [parent_id hierarchy]
+Transaction (N) → (N) Tag        [pivot transaction_tag]
 Transaction (1) → (0..1) Transaction  [destination for transfers]
 ```
 
