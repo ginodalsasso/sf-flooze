@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Service\Finance;
 
 use App\Enum\CurrencyEnum;
+use App\Service\Finance\Contract\ExchangeRateApiClientInterface;
 use App\Service\Finance\Contract\ExchangeRateServiceInterface;
 
 /**
  * Single source of exchange rates for the whole application.
  *
- * Rates are held here rather than on CurrencyEnum so that plugging a live rate
- * API later changes this class only: no caller and no schema is impacted. The
- * table below then becomes the offline fallback.
+ * Rates come from the exchange rate provider, at the requested date. The table below is the
+ * offline fallback: an unreachable provider must degrade the rate, never block an operation.
  */
 final class ExchangeRateService implements ExchangeRateServiceInterface
 {
@@ -27,32 +27,32 @@ final class ExchangeRateService implements ExchangeRateServiceInterface
 
     private const SCALE = 6;
 
-    /** Rate converting an amount from $from to $to. */
-    public function getRate(CurrencyEnum $from, CurrencyEnum $to): string
+    public function __construct(
+        private readonly ExchangeRateApiClientInterface $exchangeRateApiClient,
+    ) {}
+
+    public function getRate(CurrencyEnum $from, CurrencyEnum $to, ?\DateTimeImmutable $date = null): string
     {
         if ($from === $to) {
             return '1.000000';
         }
 
-        $fromRate = self::RATES_TO_EUR[$from->value];
-        $toRate = self::RATES_TO_EUR[$to->value];
+        $publishedRate = $this->exchangeRateApiClient->fetchRate($from, $to, $date ?? new \DateTimeImmutable('today'));
 
-        $result = bcdiv($fromRate, $toRate, self::SCALE);
-
-        return $result;
+        return $publishedRate ?? $this->fallbackRate($from, $to);
     }
 
-    /** Converts a monetary amount, rounded to 2 decimals for storage and display. */
-    public function convert(string $amount, CurrencyEnum $from, CurrencyEnum $to): string
+    public function convert(string $amount, CurrencyEnum $from, CurrencyEnum $to, ?\DateTimeImmutable $date = null): string
     {
         if ($from === $to) {
-            $addition = bcadd($amount, '0', 2);
-            return $addition;
+            return bcadd($amount, '0', 2);
         }
 
-        $rate = $this->getRate($from, $to);
-        $result = bcmul($amount, $rate, 2);
-    
-        return $result;
+        return bcmul($amount, $this->getRate($from, $to, $date), 2);
+    }
+
+    private function fallbackRate(CurrencyEnum $from, CurrencyEnum $to): string
+    {
+        return bcdiv(self::RATES_TO_EUR[$from->value], self::RATES_TO_EUR[$to->value], self::SCALE);
     }
 }

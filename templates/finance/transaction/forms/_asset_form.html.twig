@@ -29,11 +29,7 @@
                          hint="Projet ou événement — Ctrl/⌘ pour en choisir plusieurs" />
     </div>
 
-    <div class="form-section txn-form-grid" data-transfer-guard-target="destination">
-        <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire" />
-        <twig:Form:Field field="{{ form.destinationAmount }}" label="Montant reçu"
-                         hint="Uniquement si le compte destinataire est dans une autre devise" />
-    </div>
+    {% include 'finance/transaction/forms/_destination_fields.html.twig' %}
 
     <div class="form-actions">
         <twig:Button as="a" href="{{ redirect_to ?? path('app_transaction_index') }}" label="Annuler" variant="secondary" />

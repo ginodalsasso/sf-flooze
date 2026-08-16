@@ -143,8 +143,8 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
             ->setSpace($entry->getSpace())
             ->setAccount($expected->account)
             ->setType($expected->type)
-            ->setAmount($this->toAccountCurrency($expected->amount, $expected->account))
-            ->setFxRate($this->fxRateOf($expected->account))
+            ->setAmount($this->toAccountCurrency($expected->amount, $expected->account, $entry->getDate()))
+            ->setFxRate($this->fxRateOf($expected->account, $entry->getDate()))
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry))
             ->setAssetEntry($entry);
@@ -158,8 +158,8 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
         $transaction
             ->setAccount($expected->account)
             ->setType($expected->type)
-            ->setAmount($this->toAccountCurrency($expected->amount, $expected->account))
-            ->setFxRate($this->fxRateOf($expected->account))
+            ->setAmount($this->toAccountCurrency($expected->amount, $expected->account, $entry->getDate()))
+            ->setFxRate($this->fxRateOf($expected->account, $entry->getDate()))
             ->setDate($entry->getDate())
             ->setDescription($this->buildDescription($entry));
     }
@@ -168,20 +168,21 @@ final readonly class AssetEntryTransactionService implements AssetEntryTransacti
      * AssetEntry amounts are expressed in the space currency, account balances in the
      * account currency: the amount must be converted before it can move a balance.
      */
-    private function toAccountCurrency(string $amount, Account $account): string
+    private function toAccountCurrency(string $amount, Account $account, \DateTimeImmutable $date): string
     {
         $convertedAmount = $this->exchangeRateService->convert(
             $amount,
             $account->getSpace()->getCurrency(),
             $account->getCurrency(),
+            $date,
         );
 
         return $convertedAmount;
     }
 
-    private function fxRateOf(Account $account): string
+    private function fxRateOf(Account $account, \DateTimeImmutable $date): string
     {
-        return $this->exchangeRateService->getRate($account->getCurrency(), $account->getSpace()->getCurrency());
+        return $this->exchangeRateService->getRate($account->getCurrency(), $account->getSpace()->getCurrency(), $date);
     }
 
     /**

@@ -1,0 +1,52 @@
+{# Async currency converter. Rates come from app_exchange_rate_convert, never from the page. #}
+<div class="panel-card fx-converter"
+     data-controller="currency-converter"
+     data-currency-converter-url-value="{{ path('app_exchange_rate_convert') }}">
+
+    <div class="panel-card-header">
+        <h3 class="section-title">Convertisseur</h3>
+        <i data-lucide="arrow-left-right" class="fx-converter__badge"></i>
+    </div>
+
+    <div class="fx-converter__field">
+        <input type="text"
+               inputmode="decimal"
+               value="100"
+               placeholder="0,00"
+               aria-label="Montant à convertir"
+               class="fx-converter__amount"
+               data-currency-converter-target="amount"
+               data-action="input->currency-converter#schedule">
+        <select aria-label="Devise de départ"
+                class="fx-converter__currency"
+                data-currency-converter-target="from"
+                data-action="change->currency-converter#convert">
+            {% for currency in currencies %}
+                <option value="{{ currency.value }}"{{ currency == baseCurrency ? ' selected' : '' }}>{{ currency.value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="fx-converter__swap-row">
+        <button type="button"
+                class="fx-converter__swap"
+                aria-label="Inverser les devises"
+                data-action="currency-converter#swap">
+            <i data-lucide="arrow-up-down"></i>
+        </button>
+    </div>
+
+    <div class="fx-converter__field fx-converter__field--result">
+        <output class="fx-converter__result" data-currency-converter-target="result">—</output>
+        <select aria-label="Devise d'arrivée"
+                class="fx-converter__currency"
+                data-currency-converter-target="to"
+                data-action="change->currency-converter#convert">
+            {% for currency in currencies %}
+                <option value="{{ currency.value }}"{{ currency == quoteCurrency ? ' selected' : '' }}>{{ currency.value }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <p class="fx-converter__rate" data-currency-converter-target="rate"></p>
+</div>

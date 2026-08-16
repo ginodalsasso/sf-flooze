@@ -51,4 +51,126 @@
 .dashboard-recent-amount--income { color: var(--color-positive); }
 .dashboard-recent-amount--expense { color: var(--color-negative); }
 .dashboard-recent-amount--transfer { color: var(--fg-2); }
+
+/* ── Currency converter ────────────────────────────────── */
+.fx-converter__badge {
+  width: 14px;
+  height: 14px;
+  color: var(--fg-3);
+}
+
+.fx-converter__field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 4px 4px 4px 12px;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.fx-converter__field:focus-within {
+  border-color: var(--sage-400);
+  box-shadow: 0 0 0 2px rgba(200,213,194,.15);
+}
+
+.fx-converter__field--result {
+  background: transparent;
+  border-style: dashed;
+}
+
+.fx-converter__amount,
+.fx-converter__result {
+  flex: 1;
+  min-width: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg-1);
+  background: none;
+  border: none;
+  outline: none;
+  padding: 5px 0;
+}
+
+.fx-converter__amount::placeholder { color: var(--fg-3); }
+
+.fx-converter__result {
+  color: var(--sage-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity .15s;
+}
+
+.fx-converter__currency {
+  flex-shrink: 0;
+  appearance: none;
+  background: var(--bg-surface) var(--select-chevron) no-repeat right 8px center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 26px 5px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-2);
+  outline: none;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+
+.fx-converter__currency:hover,
+.fx-converter__currency:focus { color: var(--fg-1); border-color: var(--border-strong); }
+
+/* The rule sits behind the button so the swap reads as the hinge between both fields. */
+.fx-converter__swap-row {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  margin: 8px 0;
+}
+
+.fx-converter__swap-row::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--border);
+}
+
+.fx-converter__swap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: color .15s, border-color .15s, transform .15s;
+}
+
+.fx-converter__swap:hover {
+  color: var(--sage-400);
+  border-color: var(--sage-400);
+  transform: rotate(180deg);
+}
+
+.fx-converter__swap i { width: 13px; height: 13px; }
+
+.fx-converter__rate {
+  margin-top: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--fg-3);
+  text-align: center;
+  min-height: 16px;
+}
+
+.fx-converter--pending .fx-converter__result { opacity: .45; }
 </style>

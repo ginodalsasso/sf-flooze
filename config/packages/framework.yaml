@@ -7,6 +7,16 @@ framework:
         cookie_httponly: true
         cookie_samesite: strict
 
+    http_client:
+        scoped_clients:
+            # Exchange rates (ECB reference rates, no API key). Timeouts are short on purpose:
+            # a rate lookup runs inside a transaction save and must never hang the request —
+            # ExchangeRateService falls back to its offline table when the call fails.
+            exchange_rate.client:
+                base_uri: 'https://api.frankfurter.dev/v2/'
+                timeout: 3
+                max_duration: 5
+
     rate_limiter:
         two_per_minute:
             policy: 'fixed_window'

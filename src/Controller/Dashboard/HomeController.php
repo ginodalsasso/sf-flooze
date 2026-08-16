@@ -6,6 +6,7 @@ namespace App\Controller\Dashboard;
 
 use App\Controller\ActiveSpaceControllerTrait;
 use App\Entity\User;
+use App\Enum\CurrencyEnum;
 use App\Service\Dashboard\Contract\DashboardServiceInterface;
 use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -37,6 +38,15 @@ class HomeController extends AbstractController
             'spaces' => $user->getSpaces()->toArray(),
             'active_space' => $activeSpace,
             'summary' => $this->dashboardService->summarize($activeSpace),
+            'currencies' => CurrencyEnum::cases(),
+            'baseCurrency' => $activeSpace->getCurrency(),
+            'quoteCurrency' => $this->quoteCurrency($activeSpace->getCurrency()),
         ]);
+    }
+
+    /** Target currency of the converter: preselecting the space currency on both sides would show nothing. */
+    private function quoteCurrency(CurrencyEnum $base): CurrencyEnum
+    {
+        return $base === CurrencyEnum::EUR ? CurrencyEnum::USD : CurrencyEnum::EUR;
     }
 }

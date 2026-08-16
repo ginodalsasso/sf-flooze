@@ -1,0 +1,6 @@
+{# Destination side of a transfer. Hidden by transfer-guard until the type is a transfer. #}
+<div class="form-section txn-form-grid" data-transfer-guard-target="destination">
+    <twig:Form:Field field="{{ form.destinationAccount }}" label="Compte destinataire" />
+    <twig:Form:Field field="{{ form.destinationAmount }}" label="Montant reçu (facultatif)"
+                     hint="Devise différente : converti au taux officiel de la date de l'opération. Renseigne-le pour imposer le montant exact crédité par ta banque, vide-le pour revenir au taux." />
+</div>

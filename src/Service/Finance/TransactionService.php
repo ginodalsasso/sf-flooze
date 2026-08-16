@@ -70,7 +70,7 @@ final class TransactionService implements TransactionServiceInterface
             ->setDestinationAccount($this->resolveDestinationAccount($input))
             ->setType($input->type)
             ->setAmount($input->amount)
-            ->setFxRate($this->exchangeRateService->getRate($input->account->getCurrency(), $input->space->getCurrency()))
+            ->setFxRate($this->exchangeRateService->getRate($input->account->getCurrency(), $input->space->getCurrency(), $input->date))
             ->setDestinationAmount($this->resolveDestinationAmount($input))
             ->setDate($input->date)
             ->setDescription($input->description)
@@ -112,7 +112,13 @@ final class TransactionService implements TransactionServiceInterface
         return $input->type === TransactionTypeEnum::TRANSFER ? $input->destinationAccount : null;
     }
 
-    /** A credited amount is only meaningful on a transfer crossing two currencies. */
+    /**
+     * A credited amount is only meaningful on a transfer crossing two currencies.
+     *
+     * A user-supplied amount wins: only the bank knows the spread it actually applied, and the
+     * reference rate ignores it. Left empty, the rate of the transfer date is used — that date
+     * and not today's, so re-editing an old transfer never re-prices it.
+     */
     private function resolveDestinationAmount(TransactionInputDto $input): ?string
     {
 
@@ -122,11 +128,16 @@ final class TransactionService implements TransactionServiceInterface
 
         $accountCurrency = $input->account->getCurrency();
         $destinationCurrency = $input->destinationAccount->getCurrency();
-        $convertedAmount = $this->exchangeRateService->convert($input->amount, $accountCurrency, $destinationCurrency);
 
-        return $accountCurrency === $destinationCurrency
-            ? null
-            : $convertedAmount;
+        if ($accountCurrency === $destinationCurrency) {
+            return null;
+        }
+
+        if ($input->destinationAmount !== null) {
+            return bcadd($input->destinationAmount, '0', 2);
+        }
+
+        return $this->exchangeRateService->convert($input->amount, $accountCurrency, $destinationCurrency, $input->date);
     }
 
     /**
@@ -176,11 +187,12 @@ final class TransactionService implements TransactionServiceInterface
             return;
         }
 
+        // Resolved from the rate when not supplied, so null here means the conversion produced nothing.
         $credited = $transaction->getDestinationAmount();
 
         if ($credited === null || bccomp($credited, '0', 2) <= 0) {
             throw new \InvalidArgumentException(sprintf(
-                'Virement entre devises différentes : le montant crédité en %s est obligatoire et doit être supérieur à 0.',
+                'Virement entre devises différentes : le montant crédité en %s doit être supérieur à 0.',
                 $destination->getCurrency()->value,
             ));
         }
