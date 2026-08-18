@@ -10,24 +10,31 @@ use App\Entity\Space;
 use App\Enum\AssetTypeEnum;
 use App\Enum\CurrencyEnum;
 use App\Repository\AccountRepository;
+use App\Service\Finance\Contract\CryptoPriceApiClientInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Event\PreSubmitEvent;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Form for creating a new Asset with its initial buy entry.
- * The quantity, avgPrice, date, fxRate and fees fields are mapped to the
- * 'entry' option and used by AssetEntryService to create the first buy.
+ * The quantity, avgPrice, date, fxRate and fees fields are not mapped to the
+ * Asset and are used by AssetEntryService to create the first buy.
  */
 class AssetFormType extends AbstractType
 {
+    public function __construct(
+        private readonly CryptoPriceApiClientInterface $cryptoPriceApiClient,
+    ) {}
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         /** @var Space $space */
@@ -88,8 +95,17 @@ class AssetFormType extends AbstractType
                 'constraints' => [
                     new Assert\NotNull(message: 'Un compte de paiement est obligatoire.'),
                 ],
-            ])
-            // Initial buy entry fields (not mapped to Asset)
+            ]);
+
+        if ($options['with_initial_entry']) {
+            $this->addInitialEntryFields($builder);
+        }
+    }
+
+    /** Not mapped to Asset: AssetEntryService turns them into the first buy. */
+    private function addInitialEntryFields(FormBuilderInterface $builder): void
+    {
+        $builder
             ->add('entryDate', DateType::class, [
                 'mapped' => false,
                 'widget' => 'single_text',
@@ -112,6 +128,7 @@ class AssetFormType extends AbstractType
                 'scale' => 4,
                 'html5' => false,
                 'attr' => ['placeholder' => '0,0000'],
+                'help' => 'Pour une crypto, le cours du marché s\'applique automatiquement : la valeur saisie ici est ignorée.',
                 'constraints' => [
                     new Assert\NotNull(message: 'Le prix unitaire ne peut pas être vide.'),
                     new Assert\GreaterThan(value: 0, message: 'Le prix doit être supérieur à 0.'),
@@ -138,7 +155,37 @@ class AssetFormType extends AbstractType
                     new Assert\NotNull(message: 'Les frais ne peuvent pas être vides.'),
                     new Assert\GreaterThanOrEqual(value: 0, message: 'Les frais ne peuvent pas être négatifs.'),
                 ],
-            ]);
+            ])
+            ->addEventListener(FormEvents::PRE_SUBMIT, $this->imposeCryptoPrice(...));
+    }
+
+    /**
+     * The initial buy price of a crypto is the market price, not a figure the user types: it is
+     * overwritten before validation, so what the browser posts in that field never reaches the
+     * ledger. Without a quote — offline and never fetched — the typed price stands, otherwise
+     * no crypto could be recorded at all.
+     */
+    private function imposeCryptoPrice(PreSubmitEvent $event): void
+    {
+        $data = $event->getData();
+
+        if (!is_array($data) || ($data['type'] ?? null) !== AssetTypeEnum::CRYPTO->value) {
+            return;
+        }
+
+        $currency = CurrencyEnum::tryFrom((string) ($data['currency'] ?? ''));
+        $ticker = trim((string) ($data['ticker'] ?? ''));
+
+        if ($currency === null || $ticker === '') {
+            return;
+        }
+
+        $price = $this->cryptoPriceApiClient->fetchPrice($ticker, $currency);
+
+        if ($price !== null) {
+            $data['entryUnitPrice'] = $price->unitPrice;
+            $event->setData($data);
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -151,6 +198,8 @@ class AssetFormType extends AbstractType
         ]);
         $resolver->setRequired('space');
         $resolver->setAllowedTypes('space', Space::class);
+        $resolver->setDefault('with_initial_entry', true);
+        $resolver->setAllowedTypes('with_initial_entry', 'bool');
     }
 
     public function validateAccountType(Asset $asset, ExecutionContextInterface $context): void

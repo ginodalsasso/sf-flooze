@@ -23,6 +23,7 @@
             <p class="form-hint form-hint--lg">
                 Quantité détenue : <strong>{{ metrics.totalQuantity|number_format(8, ',', ' ')|replace({',00000000': ''}) }}</strong> unités
             </p>
+            {% include 'finance/asset/_current_price.html.twig' with {priceLabel: 'réellement obtenu'} %}
         </div>
 
         {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}

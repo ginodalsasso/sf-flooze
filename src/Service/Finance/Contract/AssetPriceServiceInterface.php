@@ -13,6 +13,11 @@ use App\Entity\Asset;
  */
 interface AssetPriceServiceInterface
 {
-    /** Latest known price of one unit, null when the asset has never been traded. */
+    /**
+     * Latest known price of one unit, null when no price is known at all.
+     *
+     * The DTO says where the price comes from: callers must never present a stale price
+     * as a live one, nor block on a provider that cannot answer.
+     */
     public function getCurrentPrice(Asset $asset): ?AssetPriceDto;
 }

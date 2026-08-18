@@ -26,13 +26,7 @@
                     · PRU brut : <strong>{{ metrics.averagePrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}</strong>
                 {% endif %}
             </p>
-            {% if currentPrice %}
-                <p class="form-hint">
-                    Dernier prix connu : <strong>{{ currentPrice.unitPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}</strong>
-                    (opération du {{ currentPrice.asOf|date('d/m/Y') }}).
-                    Le cours a pu évoluer depuis : saisissez le prix réellement payé aujourd'hui.
-                </p>
-            {% endif %}
+            {% include 'finance/asset/_current_price.html.twig' with {priceLabel: 'réellement payé'} %}
         </div>
 
         {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}

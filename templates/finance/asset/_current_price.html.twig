@@ -1,0 +1,20 @@
+{# Known price of the asset. Says where the figure comes from: a stale price must never pass for a live one. #}
+{# currentPrice: AssetPriceDto|null · asset: Asset · priceLabel: wording of the price to type #}
+{% if currentPrice %}
+    <p class="form-hint">
+        <twig:Badge
+            label="{{ currentPrice.source.label() }}"
+            variant="{{ currentPrice.source.badgeVariant() }}"
+        />
+        <strong>{{ currentPrice.unitPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}</strong>
+        {% if currentPrice.source.isLive() %}
+            — relevé à {{ currentPrice.asOf|date('H:i') }} et prérempli ci-dessous. Corrigez-le si le prix {{ priceLabel }} diffère.
+        {% elseif currentPrice.source.value == 'cached' %}
+            — relevé le {{ currentPrice.asOf|date('d/m/Y à H:i') }}. Le service de cotation est injoignable :
+            saisissez vous-même le prix {{ priceLabel }}.
+        {% else %}
+            — opération du {{ currentPrice.asOf|date('d/m/Y') }}. Le cours a pu évoluer depuis :
+            saisissez vous-même le prix {{ priceLabel }}.
+        {% endif %}
+    </p>
+{% endif %}

@@ -17,6 +17,14 @@ framework:
                 timeout: 3
                 max_duration: 5
 
+            # Crypto spot prices (CoinGecko public API, key optional). Same short timeouts:
+            # CryptoPriceApiClient serves its last cached quote when the call fails, so the
+            # asset pages must never wait on an unreachable provider.
+            crypto_price.client:
+                base_uri: 'https://api.coingecko.com/api/v3/'
+                timeout: 3
+                max_duration: 5
+
     rate_limiter:
         two_per_minute:
             policy: 'fixed_window'

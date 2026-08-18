@@ -148,7 +148,11 @@ class AssetController extends AbstractController
     {
         $this->denyAccessUnlessGranted('EDIT', $asset->getSpace());
 
-        $form = $this->createForm(AssetFormType::class, $asset, ['space' => $asset->getSpace()]);
+        // Editing an asset does not re-record its first buy: that section would go nowhere.
+        $form = $this->createForm(AssetFormType::class, $asset, [
+            'space'               => $asset->getSpace(),
+            'with_initial_entry'  => false,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -171,7 +175,12 @@ class AssetController extends AbstractController
         $this->denyAccessUnlessGranted('EDIT', $asset->getSpace());
 
         $space = $asset->getSpace();
-        $form = $this->createForm(AssetBuyFormType::class, null, ['space' => $space, 'asset' => $asset]);
+        $currentPrice = $this->assetPriceService->getCurrentPrice($asset);
+        $form = $this->createForm(AssetBuyFormType::class, null, [
+            'space'         => $space,
+            'asset'         => $asset,
+            'current_price' => $currentPrice,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -201,7 +210,7 @@ class AssetController extends AbstractController
             'form'         => $form,
             'asset'        => $asset,
             'metrics'      => $this->assetMetricsService->compute($asset),
-            'currentPrice' => $this->assetPriceService->getCurrentPrice($asset),
+            'currentPrice' => $currentPrice,
         ]);
     }
 
@@ -211,7 +220,12 @@ class AssetController extends AbstractController
         $this->denyAccessUnlessGranted('EDIT', $asset->getSpace());
 
         $space = $asset->getSpace();
-        $form = $this->createForm(AssetSellFormType::class, null, ['space' => $space, 'asset' => $asset]);
+        $currentPrice = $this->assetPriceService->getCurrentPrice($asset);
+        $form = $this->createForm(AssetSellFormType::class, null, [
+            'space'         => $space,
+            'asset'         => $asset,
+            'current_price' => $currentPrice,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -244,9 +258,10 @@ class AssetController extends AbstractController
         }
 
         return $this->render('finance/asset/sell.html.twig', [
-            'form'    => $form,
-            'asset'   => $asset,
-            'metrics' => $this->assetMetricsService->compute($asset),
+            'form'         => $form,
+            'asset'        => $asset,
+            'metrics'      => $this->assetMetricsService->compute($asset),
+            'currentPrice' => $currentPrice,
         ]);
     }
 

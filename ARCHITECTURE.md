@@ -222,7 +222,8 @@ Finance/
 ├── AssetEntryService.php         # Buy/sell/dividend ledger + P&L (FIFO)
 ├── AssetEntryTransactionService.php # Keeps Transaction rows in sync with AssetEntry
 ├── AssetMetricsService.php       # Aggregated metrics (qty, avg price, cost basis)
-├── AssetPriceService.php         # Single source of asset unit prices (market API plugs in here)
+├── AssetPriceService.php         # Single source of asset unit prices (crypto = marché, sinon dernière opération)
+├── CryptoPriceApiClient.php      # Cours crypto spot + recherche du catalogue (CoinGecko), cache offline
 ├── AccountService.php            # Account CRUD + soft-delete
 ├── AccountBalanceService.php     # current balance + invested vs available split
 ├── ExchangeRateService.php       # Single source of FX rates (space currency conversions)
@@ -450,6 +451,20 @@ solde = opening_balance + Σ(mouvements actifs du compte)
 `TransactionRepository::getBalanceDelta()` calcule la somme en une requête (jambe sortante signée par le type, jambe entrante créditée de `destination_amount`), `AccountBalanceService::getCurrentBalance()` y ajoute l'ouverture. **Aucun service n'écrit un solde** : un bug d'écriture ne peut plus laisser d'écart durable, et supprimer la transaction fautive suffit à rétablir la valeur juste.
 
 Conséquence : ne jamais réintroduire de colonne `balance` ni de méthode qui incrémente un solde. Pour un solde à une date donnée, filtrer la même requête sur `t.date`.
+
+### 11. Cours des actifs — jamais bloquants, toujours datés
+
+`AssetPriceService` est le **seul** détenteur des cours, comme `ExchangeRateService` l'est des taux. Pour une crypto il interroge `CryptoPriceApiClient` (CoinGecko) ; pour tout le reste — et pour une crypto que le fournisseur ne sait pas coter — il retombe sur le prix unitaire de la dernière opération enregistrée.
+
+`CryptoPriceApiClient` garde **deux entrées de cache par paire** : une *gate* à durée courte qui espace les appels (60 s après un échec, 5 min après un succès), et le cours lui-même, **sans expiration**. Un fournisseur injoignable dégrade donc vers le dernier cours lu, jamais vers rien : l'appli reste utilisable hors ligne. Le ticker est résolu en identifiant CoinGecko via `/search` (mapping mis en cache 30 jours) — **aucune colonne** n'est ajoutée à `asset`.
+
+`AssetPriceDto` porte la source (`market` / `cached` / `trade`) et sa date. Deux règles côté UI :
+- un cours périmé ne se présente jamais comme un cours en direct — le badge le dit ;
+- seul un cours `market` préremplit le prix unitaire d'un achat ou d'une vente. Un cours périmé se ressaisit à la main, sinon il partirait en base sans que l'utilisateur l'ait voulu.
+
+**Création d'un actif crypto.** `CryptoMarketController` expose deux endpoints JSON (`/finance/crypto/search`, `/finance/crypto/price`) qui alimentent le contrôleur Stimulus `crypto-picker`. La recherche remplit `ticker` et `name`, qui restent éditables : une crypto inconnue du fournisseur se saisit à la main, et hors ligne la recherche renvoie une liste vide plutôt qu'une erreur.
+
+Le prix de l'**achat initial** d'une crypto n'est pas saisi : `AssetFormType` l'écrase en `PRE_SUBMIT` avec le cours du marché, donc avant validation et quoi que poste le navigateur. Le champ affiché n'est qu'un rendu — c'est bien le serveur qui impose la valeur. Exception unique : sans aucun cours connu (hors ligne, jamais relevé), la saisie manuelle reprend la main, sinon aucune crypto ne pourrait plus être enregistrée.
 
 ---
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Form\Finance;
 
+use App\Dto\Finance\AssetPriceDto;
 use App\Entity\Account;
 use App\Entity\Asset;
 use App\Entity\Space;
@@ -89,10 +90,10 @@ abstract class AbstractAssetOperationFormType extends AbstractType
     }
 
     /**
-     * Quantity and unit price of a trade. The price is never prefilled: it is the price of the
-     * day, which the caller displays alongside the last known one rather than assuming.
+     * Quantity and unit price of a trade. The price is prefilled only from a live market quote,
+     * which is the price of the day; anything older is displayed by the caller and retyped.
      */
-    protected function addTradeFields(FormBuilderInterface $builder, ?string $maxQuantity = null): void
+    protected function addTradeFields(FormBuilderInterface $builder, ?string $maxQuantity = null, ?string $suggestedUnitPrice = null): void
     {
         $quantityAttr = ['placeholder' => '0,00000000'];
 
@@ -114,6 +115,7 @@ abstract class AbstractAssetOperationFormType extends AbstractType
                 'scale' => 4,
                 'html5' => false,
                 'attr' => ['placeholder' => '0,0000'],
+                'data' => $suggestedUnitPrice,
                 'constraints' => [
                     new Assert\NotNull(message: 'Le prix unitaire ne peut pas être vide.'),
                     new Assert\GreaterThan(value: 0, message: 'Le prix doit être supérieur à 0.'),
@@ -121,10 +123,20 @@ abstract class AbstractAssetOperationFormType extends AbstractType
             ]);
     }
 
+    /** Only a live quote may be suggested: a stale price prefilled would get submitted unnoticed. */
+    protected function suggestedUnitPrice(array $options): ?string
+    {
+        $price = $options['current_price'];
+
+        return $price?->source->isLive() ? $price->unitPrice : null;
+    }
+
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setRequired(['space', 'asset']);
         $resolver->setAllowedTypes('space', Space::class);
         $resolver->setAllowedTypes('asset', Asset::class);
+        $resolver->setDefault('current_price', null);
+        $resolver->setAllowedTypes('current_price', ['null', AssetPriceDto::class]);
     }
 }

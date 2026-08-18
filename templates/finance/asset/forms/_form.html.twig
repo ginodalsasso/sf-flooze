@@ -1,17 +1,42 @@
+{% set cryptoType = constant('App\\Enum\\AssetTypeEnum::CRYPTO').value %}
+
 {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+<div data-controller="crypto-picker"
+     data-crypto-picker-search-url-value="{{ path('app_crypto_search') }}"
+     data-crypto-picker-price-url-value="{{ path('app_crypto_price') }}"
+     data-crypto-picker-crypto-type-value="{{ cryptoType }}">
 
     <div class="form-section acc-form-row">
         <twig:Form:Field field="{{ form.ticker }}" label="Ticker"
-                         hint="Code boursier de l'actif : AAPL, BTC, MSFT, EURUSD…" />
-        <twig:Form:Field field="{{ form.type }}" label="Type d'actif" />
+                         hint="Code boursier de l'actif : AAPL, BTC, MSFT, EURUSD…"
+                         attr="{{ {'data-crypto-picker-target': 'ticker', 'data-action': 'input->crypto-picker#scheduleQuote'} }}" />
+        <twig:Form:Field field="{{ form.type }}" label="Type d'actif"
+                         attr="{{ {'data-crypto-picker-target': 'type', 'data-action': 'change->crypto-picker#toggle'} }}" />
+    </div>
+
+    {# Crypto only: the provider's catalogue fills ticker and name. Both stay editable, so an
+       asset the provider does not know can still be created by hand. #}
+    <div class="form-section crypto-picker" data-crypto-picker-target="search" hidden>
+        <div class="form-group">
+            <label for="crypto-picker-query" class="form-label-app">Rechercher une crypto</label>
+            <input type="text" id="crypto-picker-query" autocomplete="off"
+                   placeholder="Bitcoin, ETH, Solana…"
+                   data-crypto-picker-target="query"
+                   data-action="input->crypto-picker#scheduleSearch">
+            <ul class="crypto-picker-results" data-crypto-picker-target="results" hidden></ul>
+            <span class="form-hint" data-crypto-picker-target="status"></span>
+        </div>
     </div>
 
     <div class="form-section">
-        <twig:Form:Field field="{{ form.name }}" label="Nom de l'actif" />
+        <twig:Form:Field field="{{ form.name }}" label="Nom de l'actif"
+                         attr="{{ {'data-crypto-picker-target': 'name'} }}" />
     </div>
 
     <div class="form-section acc-form-row">
-        <twig:Form:Field field="{{ form.currency }}" label="Devise de l'actif" />
+        <twig:Form:Field field="{{ form.currency }}" label="Devise de l'actif"
+                         attr="{{ {'data-crypto-picker-target': 'currency', 'data-action': 'change->crypto-picker#refreshQuote'} }}" />
         <twig:Form:Field field="{{ form.account }}" label="Compte de détention"
                          hint="Le compte doit correspondre au type d'actif (crypto, actions/ETF...)." />
     </div>
@@ -21,26 +46,41 @@
                          hint="Compte débité pour financer cet achat. Il peut s'agir du compte de détention lui-même : seuls ses fonds non investis seront utilisés." />
     </div>
 
-    <hr class="form-divider">
-    <h3 class="form-section-title">Achat initial</h3>
+    {% if form.entryDate is defined %}
+        <hr class="form-divider">
+        <h3 class="form-section-title">Achat initial</h3>
 
-    <div class="form-section acc-form-row">
-        <twig:Form:Field field="{{ form.entryDate }}" label="Date d'achat" />
-        <twig:Form:Field field="{{ form.entryQuantity }}" label="Quantité achetée" />
-    </div>
+        <div class="form-section acc-form-row">
+            <twig:Form:Field field="{{ form.entryDate }}" label="Date d'achat" />
+            <twig:Form:Field field="{{ form.entryQuantity }}" label="Quantité achetée" />
+        </div>
 
-    <div class="form-section acc-form-row">
-        <twig:Form:Field field="{{ form.entryUnitPrice }}" label="Prix unitaire" />
-        <twig:Form:Field field="{{ form.entryFxRate }}" label="Taux de change" hint="Si la devise de l’actif diffère de l’euro, renseignez le taux de change (ex. : 0,920000) ; sinon, indiquez 1,000000." />
-    </div>
+        <div class="form-section acc-form-row">
+            <div data-crypto-picker-target="manualPrice">
+                <twig:Form:Field field="{{ form.entryUnitPrice }}" label="Prix unitaire" />
+            </div>
 
-    <div class="form-section acc-form-row">
-        <twig:Form:Field field="{{ form.entryFees }}" label="Frais de transaction" />
-    </div>
+            {# Crypto: the price is read from the market, not typed. Shown read-only because the
+               server re-reads it on submit — anything posted in the field above is discarded. #}
+            <div class="form-group crypto-quote" data-crypto-picker-target="quote" hidden>
+                <span class="form-label-app">Prix unitaire — cours appliqué</span>
+                <p class="crypto-quote-value" data-crypto-picker-target="quoteValue">—</p>
+                <span class="form-hint" data-crypto-picker-target="quoteHint"></span>
+            </div>
 
-    <div class="form-actions">
-        <twig:Button as="a" href="{{ path('app_asset_index') }}" label="Annuler" variant="secondary" />
-        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
-    </div>
+            <twig:Form:Field field="{{ form.entryFxRate }}" label="Taux de change" hint="Si la devise de l’actif diffère de l’euro, renseignez le taux de change (ex. : 0,920000) ; sinon, indiquez 1,000000." />
+        </div>
+
+        <div class="form-section acc-form-row">
+            <twig:Form:Field field="{{ form.entryFees }}" label="Frais de transaction" />
+        </div>
+    {% endif %}
+
+</div>
+
+<div class="form-actions">
+    <twig:Button as="a" href="{{ path('app_asset_index') }}" label="Annuler" variant="secondary" />
+    <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+</div>
 
 {{ form_end(form) }}

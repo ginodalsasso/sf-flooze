@@ -32,5 +32,9 @@ services:
         arguments:
             $features: '%app.features%'
 
+    App\Service\Finance\CryptoPriceApiClient:
+        arguments:
+            $cryptoPriceApiKey: '%env(CRYPTO_PRICE_API_KEY)%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

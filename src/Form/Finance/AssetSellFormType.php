@@ -23,6 +23,10 @@ class AssetSellFormType extends AbstractAssetOperationFormType
         $asset = $options['asset'];
 
         $this->addSharedFields($builder, $space, $asset);
-        $this->addTradeFields($builder, maxQuantity: $this->entryRepository->getTotalQuantity($asset));
+        $this->addTradeFields(
+            $builder,
+            maxQuantity: $this->entryRepository->getTotalQuantity($asset),
+            suggestedUnitPrice: $this->suggestedUnitPrice($options),
+        );
     }
 }

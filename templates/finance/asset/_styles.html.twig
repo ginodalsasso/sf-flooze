@@ -216,4 +216,62 @@
 
 .form-section--lg { margin-bottom: 20px; }
 .form-section--sm { margin-bottom: 8px; }
+
+/* ── Crypto picker ─────────────────────────────────────── */
+/* .form-group sets display:flex, which outranks the UA rule for [hidden]. */
+.crypto-picker[hidden],
+.crypto-quote[hidden],
+.crypto-picker-results[hidden],
+[data-crypto-picker-target="manualPrice"][hidden] { display: none; }
+
+.crypto-picker-results {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.crypto-picker-result {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  cursor: pointer;
+}
+
+.crypto-picker-results li:last-child .crypto-picker-result { border-bottom: none; }
+
+.crypto-picker-result:hover { background: var(--bg-surface); }
+
+.crypto-picker-result-ticker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-1);
+  letter-spacing: .04em;
+}
+
+.crypto-picker-result-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--fg-3);
+}
+
+.crypto-quote-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-1);
+  margin: 0;
+  padding: 9px 0;
+}
 </style>

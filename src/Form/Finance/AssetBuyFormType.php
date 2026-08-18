@@ -18,6 +18,6 @@ class AssetBuyFormType extends AbstractAssetOperationFormType
         $asset = $options['asset'];
 
         $this->addSharedFields($builder, $space, $asset, fundingPlaceholder: 'Choisir un compte de paiement');
-        $this->addTradeFields($builder);
+        $this->addTradeFields($builder, suggestedUnitPrice: $this->suggestedUnitPrice($options));
     }
 }

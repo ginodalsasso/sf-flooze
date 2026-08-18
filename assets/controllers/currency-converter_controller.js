@@ -34,7 +34,7 @@ export default class extends Controller {
         this.timer = setTimeout(() => this.convert(), this.debounceValue);
     }
 
-    swap() {
+    swap() { // Swap the two currencies and convert again.
         [this.fromTarget.value, this.toTarget.value] = [this.toTarget.value, this.fromTarget.value];
         this.convert();
     }
