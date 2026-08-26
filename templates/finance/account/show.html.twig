@@ -141,7 +141,7 @@
                         {% set isIncoming = txn.incomingFor(detail.account) %}
                         <tr>
                             <td>
-                                <span class="txn-date">{{ txn.date|date('d/m/Y') }}</span>
+                                <span class="txn-date">{{ txn.date|date_short }}</span>
                             </td>
                             <td>
                                 <div class="txn-desc">{{ txn.description ?? '—' }}</div>

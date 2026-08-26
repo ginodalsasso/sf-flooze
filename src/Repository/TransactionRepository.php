@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Dto\DateRangeDto;
 use App\Dto\Finance\TransactionFilterDto;
 use App\Dto\Finance\TransactionTotalsDto;
 use App\Entity\Account;
@@ -192,8 +193,7 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
     public function sumBySpaceAndTypeAndDateRange(
         Space $space,
         TransactionTypeEnum $type,
-        \DateTimeImmutable $start,
-        \DateTimeImmutable $end,
+        DateRangeDto $range,
     ): string {
         $result = $this->createQueryBuilder('t')
             ->select('SUM(t.amount * t.fxRate)')
@@ -206,8 +206,8 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
             ->andWhere('a.deletedAt IS NULL')
             ->setParameter('space', $space)
             ->setParameter('type', $type)
-            ->setParameter('start', $start)
-            ->setParameter('end', $end)
+            ->setParameter('start', $range->from)
+            ->setParameter('end', $range->toExclusive)
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -218,8 +218,7 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
     public function sumByAccountAndTypeAndDateRange(
         Account $account,
         TransactionTypeEnum $type,
-        \DateTimeImmutable $start,
-        \DateTimeImmutable $end,
+        DateRangeDto $range,
     ): string {
         $result = $this->createQueryBuilder('t')
             ->select('SUM(t.amount)')
@@ -230,8 +229,8 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
             ->andWhere('t.deletedAt IS NULL')
             ->setParameter('account', $account)
             ->setParameter('type', $type)
-            ->setParameter('start', $start)
-            ->setParameter('end', $end)
+            ->setParameter('start', $range->from)
+            ->setParameter('end', $range->toExclusive)
             ->getQuery()
             ->getSingleScalarResult();
 

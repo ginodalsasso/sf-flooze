@@ -1,5 +1,10 @@
 twig:
     file_name_pattern: '*.twig'
+    # Formats live in App\Service\Date\DateFormatter, reached through the date_short / date_long /
+    # date_time / time_short filters. Only the timezone is declared here, for anything Twig
+    # renders on its own.
+    date:
+        timezone: '%app.timezone%'
 
 when@test:
     twig:

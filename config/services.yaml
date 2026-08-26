@@ -8,6 +8,12 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     email_sender: '%env(EMAIL_SENDER)%'
+    # Applied by App\Kernel::boot() and by Twig (config/packages/twig.yaml). Without it,
+    # the timezone falls back to the machine's php.ini and dev/prod compute different days.
+    app.timezone: '%env(APP_TIMEZONE)%'
+    # Locale of the dates the UI displays. Deliberately not kernel.default_locale, which stays
+    # 'en' for framework messages while every screen is written in French.
+    app.date_locale: 'fr_FR'
     # Feature flags that can be disabled per environment (see App\Service\Feature\FeatureFlags
     # and the overrides in config/services_<env>.yaml).
     app.features:
@@ -31,6 +37,11 @@ services:
     App\Service\Feature\FeatureFlags:
         arguments:
             $features: '%app.features%'
+
+    App\Service\Date\DateFormatter:
+        arguments:
+            $locale: '%app.date_locale%'
+            $timezone: '%app.timezone%'
 
     App\Service\Finance\CryptoPriceApiClient:
         arguments:

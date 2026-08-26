@@ -6,6 +6,8 @@ namespace App\Trait;
 
 use Doctrine\ORM\Mapping as ORM;
 
+use function Symfony\Component\Clock\now;
+
 trait SoftDeleteTrait
 {
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
@@ -23,7 +25,7 @@ trait SoftDeleteTrait
 
     public function softDelete(): void
     {
-        $this->deletedAt = new \DateTimeImmutable();
+        $this->deletedAt = now();
     }
 
     public function restore(): void

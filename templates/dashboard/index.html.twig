@@ -8,7 +8,7 @@
 {% block title %}Tableau de bord — Flooze{% endblock %}
 
 {% block content %}
-<twig:PageHeader :title="'Bonjour, ' ~ app.user.firstName" :subtitle="'now'|date('l d F Y')" />
+<twig:PageHeader :title="'Bonjour, ' ~ app.user.firstName" :subtitle="today()|date_long" />
 
 <div class="page-content">
     {% if active_space %}
@@ -152,7 +152,7 @@
                             {% for txn in summary.recentTransactions %}
                                 <li class="dashboard-recent-item">
                                     <div class="dashboard-recent-main">
-                                        <span class="dashboard-recent-date">{{ txn.date|date('d/m/Y') }}</span>
+                                        <span class="dashboard-recent-date">{{ txn.date|date_short }}</span>
                                         <span class="dashboard-recent-desc">{{ txn.description ?? '—' }}</span>
                                     </div>
                                     <span class="dashboard-recent-amount dashboard-recent-amount--{{ txn.type.value }}">

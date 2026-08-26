@@ -7,6 +7,7 @@ namespace App\Service\Finance;
 use App\Enum\CurrencyEnum;
 use App\Service\Finance\Contract\ExchangeRateApiClientInterface;
 use App\Service\Finance\Contract\ExchangeRateServiceInterface;
+use Symfony\Component\Clock\ClockInterface;
 
 /**
  * Single source of exchange rates for the whole application.
@@ -29,6 +30,7 @@ final class ExchangeRateService implements ExchangeRateServiceInterface
 
     public function __construct(
         private readonly ExchangeRateApiClientInterface $exchangeRateApiClient,
+        private readonly ClockInterface $clock,
     ) {}
 
     public function getRate(CurrencyEnum $from, CurrencyEnum $to, ?\DateTimeImmutable $date = null): string
@@ -37,7 +39,11 @@ final class ExchangeRateService implements ExchangeRateServiceInterface
             return '1.000000';
         }
 
-        $publishedRate = $this->exchangeRateApiClient->fetchRate($from, $to, $date ?? new \DateTimeImmutable('today'));
+        $publishedRate = $this->exchangeRateApiClient->fetchRate(
+            $from,
+            $to,
+            $date ?? $this->clock->now()->modify('midnight'),
+        );
 
         return $publishedRate ?? $this->fallbackRate($from, $to);
     }

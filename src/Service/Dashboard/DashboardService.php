@@ -6,12 +6,14 @@ namespace App\Service\Dashboard;
 
 use App\Dto\Dashboard\DashboardSummaryDto;
 use App\Entity\Space;
+use App\Enum\PeriodEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\Contract\AccountRepositoryInterface;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use App\Service\Dashboard\Contract\DashboardServiceInterface;
 use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use App\Service\Finance\Contract\ExchangeRateServiceInterface;
+use Symfony\Component\Clock\ClockInterface;
 
 final class DashboardService implements DashboardServiceInterface
 {
@@ -20,6 +22,7 @@ final class DashboardService implements DashboardServiceInterface
         private readonly TransactionRepositoryInterface $transactionRepository,
         private readonly AccountBalanceServiceInterface $accountBalanceService,
         private readonly ExchangeRateServiceInterface $exchangeRateService,
+        private readonly ClockInterface $clock,
     ) {}
 
     public function summarize(Space $space): DashboardSummaryDto
@@ -39,21 +42,18 @@ final class DashboardService implements DashboardServiceInterface
             );
         }
 
-        $startOfMonth = new \DateTimeImmutable('first day of this month midnight');
-        $startOfNextMonth = new \DateTimeImmutable('first day of next month midnight');
+        $month = PeriodEnum::THIS_MONTH->range($this->clock->now());
 
         $monthlyIncome = $this->transactionRepository->sumBySpaceAndTypeAndDateRange(
             $space,
             TransactionTypeEnum::INCOME,
-            $startOfMonth,
-            $startOfNextMonth,
+            $month,
         );
 
         $monthlyExpense = $this->transactionRepository->sumBySpaceAndTypeAndDateRange(
             $space,
             TransactionTypeEnum::EXPENSE,
-            $startOfMonth,
-            $startOfNextMonth,
+            $month,
         );
 
         $netFlow = bcsub($monthlyIncome, $monthlyExpense, 2);

@@ -18,6 +18,8 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
+use function Symfony\Component\Clock\now;
+
 abstract class AbstractAssetOperationFormType extends AbstractType
 {
     /** A buy debits the funding account while a sell credits it: only the wording differs. */
@@ -33,7 +35,7 @@ abstract class AbstractAssetOperationFormType extends AbstractType
             ->add('date', DateType::class, [
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
-                'data' => new \DateTimeImmutable(),
+                'data' => now('today'),
                 'constraints' => [new Assert\NotNull(message: 'La date est obligatoire.')],
             ])
             ->add('fxRate', NumberType::class, [

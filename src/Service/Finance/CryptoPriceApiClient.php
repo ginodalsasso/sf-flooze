@@ -11,6 +11,7 @@ use App\Enum\CurrencyEnum;
 use App\Service\Finance\Contract\CryptoPriceApiClientInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -35,6 +36,7 @@ final class CryptoPriceApiClient implements CryptoPriceApiClientInterface
         private readonly HttpClientInterface $cryptoPriceClient,
         private readonly CacheItemPoolInterface $cache,
         private readonly LoggerInterface $logger,
+        private readonly ClockInterface $clock,
         private readonly string $cryptoPriceApiKey,
     ) {}
 
@@ -46,10 +48,14 @@ final class CryptoPriceApiClient implements CryptoPriceApiClientInterface
             return null;
         }
 
+        $now = $this->clock->now();
+
         return new AssetPriceDto(
             $quote['price'],
-            (new \DateTimeImmutable())->setTimestamp($quote['at']),
-            time() - $quote['at'] <= self::QUOTE_TTL ? AssetPriceSourceEnum::MARKET : AssetPriceSourceEnum::CACHED,
+            $now->setTimestamp($quote['at']),
+            $now->getTimestamp() - $quote['at'] <= self::QUOTE_TTL
+                ? AssetPriceSourceEnum::MARKET
+                : AssetPriceSourceEnum::CACHED,
         );
     }
 
@@ -86,7 +92,8 @@ final class CryptoPriceApiClient implements CryptoPriceApiClientInterface
         $this->cache->save($gate->set(true)->expiresAfter($price === null ? self::FAILURE_TTL : self::QUOTE_TTL));
 
         if ($price !== null) {
-            $this->cache->save($quote->set(['price' => $price, 'at' => time()])->expiresAfter(null));
+            $at = $this->clock->now()->getTimestamp();
+            $this->cache->save($quote->set(['price' => $price, 'at' => $at])->expiresAfter(null));
         }
 
         return $quote->get();

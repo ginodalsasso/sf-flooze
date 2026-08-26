@@ -36,7 +36,7 @@
                 <div class="space-full-meta">
                     <span class="space-dot space-dot--{{ space.type.value }} space-dot--sm"></span>
                     {{ space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}
-                    &middot; créé le {{ space.createdAt|date('d/m/Y') }}
+                    &middot; créé le {{ space.createdAt|date_short }}
                 </div>
             </div>
             <div class="space-full-actions">

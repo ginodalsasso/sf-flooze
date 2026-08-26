@@ -10,7 +10,7 @@
 {% block content %}
 <twig:PageHeader
     title="Modifier la transaction"
-    subtitle="{{ transaction.description ?? transaction.date|date('d/m/Y') }}"
+    subtitle="{{ transaction.description ?? transaction.date|date_short }}"
 />
 
 <div class="page-content">

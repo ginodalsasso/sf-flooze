@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Finance;
 
 use App\Controller\ActiveSpaceControllerTrait;
+use App\Dto\DateRangeDto;
 use App\Dto\Finance\AssetEntryFilterDto;
 use App\Dto\Finance\AssetEntryInputDto;
 use App\Dto\Finance\AssetListItemDto;
@@ -74,8 +75,8 @@ class AssetController extends AbstractController
         // Only links feed this filter, so parsing the query string directly is enough here.
         $filter = new AssetEntryFilterDto();
         $filter->kind = AssetEntryKindEnum::tryFrom($request->query->getString('kind'));
-        $filter->dateFrom = $this->parseDate($request->query->getString('date_from'));
-        $filter->dateTo = $this->parseDate($request->query->getString('date_to'));
+        $filter->dateFrom = DateRangeDto::parseDay($request->query->getString('date_from'));
+        $filter->dateTo = DateRangeDto::parseDay($request->query->getString('date_to'));
 
         return $this->render('finance/asset/show.html.twig', [
             'asset'      => $asset,
@@ -84,12 +85,6 @@ class AssetController extends AbstractController
             'filter'     => $filter,
             'assetKinds' => AssetEntryKindEnum::cases(),
         ]);
-    }
-
-    /** Null on anything that is not a plain Y-m-d date, so a forged param cannot break the page. */
-    private function parseDate(string $value): ?\DateTimeImmutable
-    {
-        return \DateTimeImmutable::createFromFormat('!Y-m-d', $value) ?: null;
     }
 
     #[Route('/new', name: 'new')]

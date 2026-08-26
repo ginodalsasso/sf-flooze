@@ -7,6 +7,7 @@ namespace App\Service\Finance;
 use App\Enum\CurrencyEnum;
 use App\Service\Finance\Contract\ExchangeRateApiClientInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
@@ -26,57 +27,58 @@ final class ExchangeRateApiClient implements ExchangeRateApiClientInterface
 
     private const SCALE = 6;
 
+    private const API_DATE_FORMAT = 'Y-m-d';
+
     public function __construct(
         private readonly HttpClientInterface $exchangeRateClient,
         private readonly CacheInterface $cache,
         private readonly LoggerInterface $logger,
+        private readonly ClockInterface $clock,
     ) {}
 
     public function fetchRate(CurrencyEnum $from, CurrencyEnum $to, \DateTimeImmutable $date): ?string
     {
-        $day = $this->capToToday($date);
-        $key = sprintf('exchange_rate.%s.%s.%s', $from->value, $to->value, $day->format('Y-m-d'));
+        // Read once: two reads could straddle midnight and disagree on the cache key.
+        $today = $this->clock->now()->modify('midnight');
+        $day = $this->capToToday($date, $today);
+        $key = sprintf('exchange_rate.%s.%s.%s', $from->value, $to->value, $day->format(self::API_DATE_FORMAT));
 
-        return $this->cache->get($key, function (ItemInterface $item) use ($from, $to, $day): ?string {
+        return $this->cache->get($key, function (ItemInterface $item) use ($from, $to, $day, $today): ?string {
             $rate = $this->requestRate($from, $to, $day);
-            $item->expiresAfter($this->cacheDuration($rate, $day));
+            $item->expiresAfter($this->cacheDuration($rate, $day, $today));
 
             return $rate;
         });
     }
 
     /** Nothing is published ahead of time: a future-dated operation uses the latest known rate. */
-    private function capToToday(\DateTimeImmutable $date): \DateTimeImmutable
+    private function capToToday(\DateTimeImmutable $date, \DateTimeImmutable $today): \DateTimeImmutable
     {
-        $today = new \DateTimeImmutable('today');
-
         return $date > $today ? $today : $date;
     }
 
     /** A failure must not squat the key, and today's rate is still moving until it is published. */
-    private function cacheDuration(?string $rate, \DateTimeImmutable $day): int
+    private function cacheDuration(?string $rate, \DateTimeImmutable $day, \DateTimeImmutable $today): int
     {
         if ($rate === null) {
             return self::FAILURE_TTL;
         }
 
-        $isToday = $day == new \DateTimeImmutable('today');
-
-        return $isToday ? self::TODAY_RATE_TTL : self::PAST_RATE_TTL;
+        return $day == $today ? self::TODAY_RATE_TTL : self::PAST_RATE_TTL;
     }
 
     private function requestRate(CurrencyEnum $from, CurrencyEnum $to, \DateTimeImmutable $day): ?string
     {
         try {
             $response = $this->exchangeRateClient->request('GET', sprintf('rate/%s/%s', $from->value, $to->value), [
-                'query' => ['date' => $day->format('Y-m-d')],
+                'query' => ['date' => $day->format(self::API_DATE_FORMAT)],
             ]);
 
             $rate = $response->toArray()['rate'] ?? null;
         } catch (ExceptionInterface $exception) {
             $this->logger->warning('Exchange rate lookup failed for {pair} on {date}: {reason}', [
                 'pair' => $from->value . '/' . $to->value,
-                'date' => $day->format('Y-m-d'),
+                'date' => $day->format(self::API_DATE_FORMAT),
                 'reason' => $exception->getMessage(),
             ]);
 

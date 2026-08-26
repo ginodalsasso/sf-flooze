@@ -17,12 +17,6 @@
 {% set base = routeParams|merge(app.request.query.all) %}
 {% set currentFrom = app.request.query.get('date_from') %}
 {% set currentTo = app.request.query.get('date_to') %}
-{% set periods = [
-    {label: 'Ce mois',          from: 'first day of this month'|date('Y-m-d'), to: 'last day of this month'|date('Y-m-d')},
-    {label: 'Mois dernier',     from: 'first day of last month'|date('Y-m-d'), to: 'last day of last month'|date('Y-m-d')},
-    {label: 'Cette année',      from: 'now'|date('Y-01-01'),                   to: 'now'|date('Y-12-31')},
-    {label: '12 derniers mois', from: '-12 months'|date('Y-m-d'),              to: 'now'|date('Y-m-d')},
-] %}
 
 <div class="txn-filters__row">
     <div class="txn-segments">
@@ -42,7 +36,7 @@
 <div class="txn-filters__row">
     <span class="txn-filters__legend">Période</span>
     <div class="txn-chips">
-        {% for period in periods %}
+        {% for period in periods() %}
             {{ ui.link(
                 path(route, base|merge({date_from: period.from, date_to: period.to})),
                 period.label,

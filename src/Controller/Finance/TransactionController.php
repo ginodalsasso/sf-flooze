@@ -18,6 +18,7 @@ use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use App\Service\Finance\Contract\TransactionServiceInterface;
 use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,6 +34,7 @@ class TransactionController extends AbstractController
         private readonly TransactionRepositoryInterface $transactionRepository,
         private readonly AccountBalanceServiceInterface $accountBalanceService,
         private readonly SpaceResolverInterface $spaceResolver,
+        private readonly ClockInterface $clock,
     ) {}
 
     #[Route('', name: 'index')]
@@ -77,7 +79,7 @@ class TransactionController extends AbstractController
 
         $input = new TransactionInputDto();
         $input->space = $space;
-        $input->date = new \DateTimeImmutable();
+        $input->date = $this->clock->now()->modify('midnight');
 
         $formType = $mode === 'asset'
             ? AssetTransactionFormType::class

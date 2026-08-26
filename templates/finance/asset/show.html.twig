@@ -161,7 +161,7 @@
                     {% for entry in entries %}
                         <tr>
                             <td>
-                                <span class="txn-date">{{ entry.date|date('d/m/Y') }}</span>
+                                <span class="txn-date">{{ entry.date|date_short }}</span>
                             </td>
                             <td>
                                 <twig:Badge

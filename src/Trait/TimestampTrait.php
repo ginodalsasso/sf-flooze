@@ -6,6 +6,8 @@ namespace App\Trait;
 
 use Doctrine\ORM\Mapping as ORM;
 
+use function Symfony\Component\Clock\now;
+
 trait TimestampTrait
 {
     #[ORM\Column(type: 'datetime_immutable')]
@@ -27,7 +29,7 @@ trait TimestampTrait
     #[ORM\PrePersist]
     public function initTimestamps(): void
     {
-        $now = new \DateTimeImmutable();
+        $now = now();
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
@@ -35,6 +37,6 @@ trait TimestampTrait
     #[ORM\PreUpdate]
     public function touchUpdatedAt(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = now();
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository\Contract;
 
+use App\Dto\DateRangeDto;
 use App\Dto\Finance\TransactionFilterDto;
 use App\Dto\Finance\TransactionTotalsDto;
 use App\Entity\Account;
@@ -37,16 +38,14 @@ interface TransactionRepositoryInterface extends ObjectRepository
     public function sumBySpaceAndTypeAndDateRange(
         Space $space,
         TransactionTypeEnum $type,
-        \DateTimeImmutable $start,
-        \DateTimeImmutable $end,
+        DateRangeDto $range,
     ): string;
 
     /** Total amount for a transaction type on a given account within a date range. */
     public function sumByAccountAndTypeAndDateRange(
         Account $account,
         TransactionTypeEnum $type,
-        \DateTimeImmutable $start,
-        \DateTimeImmutable $end,
+        DateRangeDto $range,
     ): string;
 
     /**

@@ -24,6 +24,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
+use function Symfony\Component\Clock\now;
+
 /**
  * Form for creating a new Asset with its initial buy entry.
  * The quantity, avgPrice, date, fxRate and fees fields are not mapped to the
@@ -110,7 +112,7 @@ class AssetFormType extends AbstractType
                 'mapped' => false,
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
-                'data' => new \DateTimeImmutable(),
+                'data' => now('today'),
                 'constraints' => [new Assert\NotNull(message: 'La date est obligatoire.')],
             ])
             ->add('entryQuantity', NumberType::class, [

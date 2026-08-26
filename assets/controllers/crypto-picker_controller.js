@@ -162,9 +162,9 @@ export default class extends Controller {
     }
 
     /** The market price replaces the input: it is the one the server will record. */
-    showQuote({ unitPrice, currency, label, asOf }) {
+    showQuote({ unitPrice, currency, label, asOfLabel }) {
         this.quoteValueTarget.textContent = `${this.format(unitPrice)} ${currency}`;
-        this.quoteHintTarget.textContent = `${label} · relevé le ${this.formatDate(asOf)}. Ce cours s'appliquera à l'achat initial.`;
+        this.quoteHintTarget.textContent = `${label} · relevé le ${asOfLabel}. Ce cours s'appliquera à l'achat initial.`;
         this.quoteTarget.hidden = false;
 
         if (this.hasManualPriceTarget) this.manualPriceTarget.hidden = true;
@@ -201,9 +201,5 @@ export default class extends Controller {
             minimumFractionDigits: 2,
             maximumFractionDigits: 4,
         }).format(value);
-    }
-
-    formatDate(value) {
-        return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
     }
 }

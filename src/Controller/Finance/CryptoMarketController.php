@@ -6,6 +6,7 @@ namespace App\Controller\Finance;
 
 use App\Dto\Finance\CryptoCoinDto;
 use App\Enum\CurrencyEnum;
+use App\Service\Date\Contract\DateFormatterInterface;
 use App\Service\Finance\Contract\CryptoPriceApiClientInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,6 +32,7 @@ class CryptoMarketController extends AbstractController
 
     public function __construct(
         private readonly CryptoPriceApiClientInterface $cryptoPriceApiClient,
+        private readonly DateFormatterInterface $dateFormatter,
     ) {}
 
     #[Route('/search', name: 'search', methods: ['GET'])]
@@ -73,7 +75,8 @@ class CryptoMarketController extends AbstractController
             'currency'  => $currency->value,
             'source'    => $price->source->value,
             'label'     => $price->source->label(),
-            'asOf'      => $price->asOf->format(\DateTimeInterface::ATOM),
+            // Rendered server-side: the picker must read the date exactly like the rest of the UI.
+            'asOfLabel' => $this->dateFormatter->dateTime($price->asOf),
         ]]);
     }
 }

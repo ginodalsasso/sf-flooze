@@ -263,6 +263,26 @@ Une interface ne justifie pas une deuxième implémentation « pour l'exemple »
 
 ---
 
+## Dates
+
+Aucune date ne se calcule ni ne se formate à la main. Quatre points d'ancrage, jamais contournés.
+
+| Besoin | Point unique | Interdit |
+|---|---|---|
+| Fuseau | `app.timezone` (`config/services.yaml`), appliqué par `Kernel::boot()` et par Twig | `date_default_timezone_set()` ailleurs |
+| « Maintenant » | `ClockInterface` injectée ; `Symfony\Component\Clock\now()` là où l'injection est impossible | `new \DateTimeImmutable()`, `time()`, `date()` |
+| Période métier | `PeriodEnum::X->range($now)` → `DateRangeDto` | recalculer `first day of...` dans un service ou un template |
+| Format d'affichage | `DateFormatterInterface` (`short`/`long`/`dateTime`/`time`) | `->format('d/m/Y')`, `\|date('...')`, `Intl.DateTimeFormat` en JS |
+
+- **`new \DateTimeImmutable()` est un anti-pattern.** Un service, un controller ou un FormType injecte `ClockInterface`. Un trait ou un callback Doctrine — qui ne peut rien injecter — appelle `now()` : c'est la même horloge, donc un `MockClock` s'applique aussi.
+- **Un intervalle est semi-ouvert** : `DateRangeDto` porte `from` (inclus) et `toExclusive` (exclu), et les agrégats filtrent en `>= :start` / `< :end`. `toInclusive()` ne sert qu'à ce qu'un humain lit — URL, date picker. Un range voyage **entier** en paramètre, jamais découpé en deux dates.
+- **Twig ne formate pas de date** : `|date_short`, `|date_long`, `|date_time`, `|time_short`, et `periods()` pour les filtres rapides. Le filtre natif `|date` n'est pas utilisé — les formats sont dans `DateFormatter`, pas dans les templates.
+- **Le JS ne formate pas de date** : le serveur envoie la chaîne déjà rendue (cf. `asOfLabel` dans `CryptoMarketController`). Une date rendue côté serveur et la même date rendue par un contrôleur Stimulus ne peuvent pas diverger.
+- La locale d'affichage est `app.date_locale` (`fr_FR`), **volontairement distincte** de `kernel.default_locale` (`en`, messages du framework).
+- Le format d'un fournisseur externe reste une constante privée de son client (`ExchangeRateApiClient::API_DATE_FORMAT`) : c'est un détail d'intégration, pas un format applicatif. Ne pas le coupler à `DateRangeDto::INPUT_FORMAT`, qui est le format de la frontière HTTP.
+
+---
+
 ## Doctrine
 
 - Mapping via **attributes uniquement**.
@@ -295,6 +315,8 @@ Une interface ne justifie pas une deuxième implémentation « pour l'exemple »
 - Business logic en controller.
 - `new` au lieu d'injection.
 - `is_deleted` au lieu de `deleted_at`.
+- `new \DateTimeImmutable()` / `time()` au lieu de `ClockInterface` ou `now()`.
+- Format de date en dur dans un service, un template ou du JS (voir [Dates](#dates)).
 - SQL inline.
 - Array non typé en retour de service.
 - Service > 300 lignes sans découpage.

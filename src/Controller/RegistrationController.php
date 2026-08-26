@@ -11,6 +11,7 @@ use App\Service\Feature\Contract\FeatureFlagsInterface;
 use App\Service\Notification\Contract\EmailServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
@@ -20,6 +21,9 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class RegistrationController extends AbstractController
 {
+    /** How long a verification link stays valid, as a relative date modifier. */
+    private const VERIFICATION_TOKEN_TTL = '+24 hours';
+
     #[Route('/register', name: 'app_register')]
     public function register(
         Request $request,
@@ -28,6 +32,7 @@ class RegistrationController extends AbstractController
         EmailServiceInterface $emailService,
         RateLimiterFactoryInterface $registrationLimiter,
         FeatureFlagsInterface $features,
+        ClockInterface $clock,
     ): Response {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
@@ -56,7 +61,7 @@ class RegistrationController extends AbstractController
             } else {
                 $token = bin2hex(random_bytes(32));
                 $user->setVerificationToken($token);
-                $user->setVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
+                $user->setVerificationTokenExpiresAt($clock->now()->modify(self::VERIFICATION_TOKEN_TTL));
                 $user->setIsVerified(false);
             }
 
@@ -84,6 +89,7 @@ class RegistrationController extends AbstractController
         string $token,
         UserRepositoryInterface $userRepository,
         EntityManagerInterface $em,
+        ClockInterface $clock,
     ): Response {
         $user = $userRepository->find($id);
 
@@ -93,7 +99,7 @@ class RegistrationController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        if ($user->getVerificationTokenExpiresAt() < new \DateTimeImmutable()) {
+        if ($user->getVerificationTokenExpiresAt() < $clock->now()) {
             $em->remove($user);
             $em->flush();
 

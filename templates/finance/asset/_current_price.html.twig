@@ -8,12 +8,12 @@
         />
         <strong>{{ currentPrice.unitPrice|number_format(4, ',', ' ') }} {{ asset.currency.value }}</strong>
         {% if currentPrice.source.isLive() %}
-            — relevé à {{ currentPrice.asOf|date('H:i') }} et prérempli ci-dessous. Corrigez-le si le prix {{ priceLabel }} diffère.
+            — relevé à {{ currentPrice.asOf|time_short }} et prérempli ci-dessous. Corrigez-le si le prix {{ priceLabel }} diffère.
         {% elseif currentPrice.source.value == 'cached' %}
-            — relevé le {{ currentPrice.asOf|date('d/m/Y à H:i') }}. Le service de cotation est injoignable :
+            — relevé le {{ currentPrice.asOf|date_time }}. Le service de cotation est injoignable :
             saisissez vous-même le prix {{ priceLabel }}.
         {% else %}
-            — opération du {{ currentPrice.asOf|date('d/m/Y') }}. Le cours a pu évoluer depuis :
+            — opération du {{ currentPrice.asOf|date_short }}. Le cours a pu évoluer depuis :
             saisissez vous-même le prix {{ priceLabel }}.
         {% endif %}
     </p>

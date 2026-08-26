@@ -7,22 +7,24 @@ namespace App\Service\Finance;
 use App\Dto\Finance\AccountDetailDto;
 use App\Dto\Finance\TransactionFilterDto;
 use App\Entity\Account;
+use App\Enum\PeriodEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use App\Service\Finance\Contract\AccountBalanceServiceInterface;
 use App\Service\Finance\Contract\AccountDetailServiceInterface;
+use Symfony\Component\Clock\ClockInterface;
 
 final class AccountDetailService implements AccountDetailServiceInterface
 {
     public function __construct(
         private readonly TransactionRepositoryInterface $transactionRepository,
         private readonly AccountBalanceServiceInterface $accountBalanceService,
+        private readonly ClockInterface $clock,
     ) {}
 
     public function build(Account $account, TransactionFilterDto $filter): AccountDetailDto
     {
-        $startOfMonth = new \DateTimeImmutable('first day of this month midnight');
-        $startOfNextMonth = new \DateTimeImmutable('first day of next month midnight');
+        $month = PeriodEnum::THIS_MONTH->range($this->clock->now());
         $space = $account->getSpace();
 
         return new AccountDetailDto(
@@ -32,14 +34,12 @@ final class AccountDetailService implements AccountDetailServiceInterface
             monthlyIncome: $this->transactionRepository->sumByAccountAndTypeAndDateRange(
                 $account,
                 TransactionTypeEnum::INCOME,
-                $startOfMonth,
-                $startOfNextMonth,
+                $month,
             ),
             monthlyExpense: $this->transactionRepository->sumByAccountAndTypeAndDateRange(
                 $account,
                 TransactionTypeEnum::EXPENSE,
-                $startOfMonth,
-                $startOfNextMonth,
+                $month,
             ),
             balance: $this->accountBalanceService->getCurrentBalance($account),
             investedBalance: $this->accountBalanceService->getInvestedBalance($account),
