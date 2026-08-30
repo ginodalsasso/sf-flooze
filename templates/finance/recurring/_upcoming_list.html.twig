@@ -1,0 +1,18 @@
+{# Upcoming occurrences, read-only. Expects: upcomingOccurrences (DueOccurrenceDto[]). #}
+<ul class="recurring-upcoming">
+    {% for occurrence in upcomingOccurrences %}
+        {% set recurrence = occurrence.recurrence %}
+        <li class="recurring-upcoming__row">
+            <span class="recurring-upcoming__date">{{ occurrence.date|date_short }}</span>
+
+            <span class="recurring-upcoming__label">
+                {{ recurrence.label }}
+                <small>{{ recurrence.account.name }}</small>
+            </span>
+
+            <span class="recurring-upcoming__amount recurring-upcoming__amount--{{ recurrence.type.value }}">
+                {{ recurrence.amount|money(recurrence.account.currency) }}
+            </span>
+        </li>
+    {% endfor %}
+</ul>

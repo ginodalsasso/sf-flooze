@@ -3,6 +3,7 @@
 {% block stylesheets %}
     {{ parent() }}
     {% include 'finance/transaction/_styles.html.twig' %}
+    {% include 'finance/recurring/_styles.html.twig' %}
 {% endblock %}
 
 {% block title %}Transactions — Flooze{% endblock %}
@@ -17,6 +18,8 @@
 
 <div class="page-content">
     <twig:Flash />
+
+    {% include 'finance/recurring/_due_banner.html.twig' %}
 
     {% include 'finance/transaction/_filters.html.twig' with {route: 'app_transaction_index', routeParams: {}} %}
 

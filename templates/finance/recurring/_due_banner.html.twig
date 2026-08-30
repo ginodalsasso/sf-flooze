@@ -1,0 +1,55 @@
+{# Due occurrences awaiting a decision, one row per recurrence. Expects: dueOccurrences (DueOccurrenceDto[]). #}
+{% if dueOccurrences|length > 0 %}
+    {% set total = dueOccurrences|reduce((sum, occurrence) => sum + 1 + occurrence.backlog, 0) %}
+    <section class="recurring-due">
+        <header class="recurring-due__header">
+            <i data-lucide="calendar-clock"></i>
+            <span>{{ total }} échéance{{ total > 1 ? 's' : '' }} à confirmer</span>
+        </header>
+
+        <ul class="recurring-due__list">
+            {% for occurrence in dueOccurrences %}
+                {% set recurrence = occurrence.recurrence %}
+                <li class="recurring-due__row">
+                    <span class="recurring-due__date">{{ occurrence.date|date_short }}</span>
+
+                    <span class="recurring-due__label">
+                        {{ recurrence.label }}
+                        <small>{{ recurrence.account.name }}</small>
+                    </span>
+
+                    {% if occurrence.backlog > 0 %}
+                        <twig:Badge label="+{{ occurrence.backlog }} en retard" variant="alert" />
+                    {% endif %}
+
+                    <twig:Badge label="{{ recurrence.type.label }}" variant="{{ recurrence.type.badgeVariant }}" />
+
+                    <span class="recurring-due__amount">
+                        {{ recurrence.amount|money(recurrence.account.currency) }}
+                    </span>
+
+                    <div class="recurring-due__actions">
+                        <form method="post" action="{{ path('app_recurring_confirm', {id: recurrence.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('recurring_confirm_' ~ recurrence.id) }}">
+                            <input type="hidden" name="date" value="{{ occurrence.date|date('Y-m-d') }}">
+                            <twig:Button type="submit" icon="check" label="Confirmer" />
+                        </form>
+
+                        <form method="post" action="{{ path('app_recurring_skip', {id: recurrence.id}) }}"
+                              onsubmit="return confirm('Passer l\'échéance du {{ occurrence.date|date_short }} ?\n\nAucune transaction ne sera créée.')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('recurring_skip_' ~ recurrence.id) }}">
+                            <input type="hidden" name="date" value="{{ occurrence.date|date('Y-m-d') }}">
+                            <twig:Button type="submit" icon="skip-forward" label="Passer" variant="secondary" />
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if total > dueOccurrences|length %}
+            <footer class="recurring-due__footer">
+                Une échéance à la fois, de la plus ancienne à la plus récente : la suivante apparaît dès que celle-ci est traitée.
+            </footer>
+        {% endif %}
+    </section>
+{% endif %}

@@ -120,6 +120,7 @@ src/Entity/
 │
 ├── Account.php               # Finance: bank/cash/crypto/saving account
 ├── Transaction.php           # Finance: income/expense/transfer
+├── RecurringTransaction.php  # Finance: gabarit + règle de répétition (→ Transaction à la confirmation)
 ├── Category.php              # Finance: hierarchical, fiscal flags, applicable transaction types
 ├── Tag.php                   # Finance: free cross-cutting label on transactions (no fiscal meaning)
 ├── Asset.php                 # Finance: stocks, crypto, ETF (ticker, name, currency, type)
@@ -172,6 +173,13 @@ Account (1) ──── (N) Transaction [destination_account_id, nullable, for 
 Transaction (N) ──── (0..1) AssetEntry [asset_entry_id, SET NULL on hard delete]
 Asset (1) ──── (N) AssetEntry
 
+Space (1) ──── (N) RecurringTransaction
+Account (1) ──── (N) RecurringTransaction [account_id]
+Account (1) ──── (N) RecurringTransaction [destination_account_id, nullable, virements]
+Category (1) ──── (N) RecurringTransaction [category_id, nullable]
+RecurringTransaction (N) ──── (N) Tag [pivot recurring_transaction_tag, owning side RecurringTransaction]
+RecurringTransaction (1) ──── (N) Transaction [recurring_transaction_id, nullable, SET NULL]
+
 Property (1) ──── (N) Lease
 Property (1) ──── (N) Loan
 Lease (1) ──── (N) LeaseTenant
@@ -216,6 +224,8 @@ AI/
 └── AIMetricsService.php          # OCR confidence logging
 
 Finance/
+├── RecurringTransactionService.php  # CRUD des récurrences + échéances dues + matérialisation
+├── RecurrenceScheduleService.php    # Calcul pur des dates d'occurrence (aucune dépendance Doctrine)
 ├── TransactionService.php        # CRUD + guards (manual transactions)
 ├── CategoryService.php           # Hierarchy + flag management
 ├── AssetService.php              # Asset CRUD

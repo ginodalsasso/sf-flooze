@@ -25,6 +25,16 @@ type (income|expense|transfer), amount (decimal), date, description, metadata (J
 created_at, updated_at, deleted_at
 ```
 
+**RecurringTransaction**
+```
+id, space_id, account_id (FK), destination_account_id (FK nullable, transfers), category_id (FK nullable),
+type (income|expense|transfer), amount (decimal), label, frequency (weekly|monthly|quarterly|yearly),
+interval_count (smallint), start_date, end_date (nullable), next_occurrence_date, is_active (bool),
+created_at, updated_at, deleted_at
+```
+Gabarit + règle de répétition. Ne crée jamais de `Transaction` seule : les échéances dues sont calculées
+en lecture et matérialisées par confirmation explicite. Voir [CLAUDE.md](CLAUDE.md) → *Décisions clés*.
+
 **Category**
 ```
 id, space_id, parent_id (FK self-referential), name, is_deductible (bool),
@@ -50,6 +60,7 @@ type (stock|crypto|etf|bond), created_at, updated_at
 - Categorize transactions automatically via OCR receipt → Ollama category hint.
 - Identify deductible expenses (`is_deductible=true`) and declarable income (`is_declarable=true`).
 - Transfer between accounts (Transaction with `destination_account_id`).
+- Déclarer des flux récurrents (loyer, abonnement, salaire) via `RecurringTransaction` : l'app liste les échéances dues, l'utilisateur confirme ou passe. **Aucune génération automatique.**
 - Suivi du portefeuille (actions, crypto, ETF) via `Asset` — quantité et prix moyen d'acquisition. **Pas de tracking automatique de cours en MVP** (intégration future via API broker).
 
 ### Key Relationships
@@ -63,6 +74,11 @@ Category (1) → (N) Transaction
 Category (0..1) → (N) Category  [parent_id hierarchy]
 Transaction (N) → (N) Tag        [pivot transaction_tag]
 Transaction (1) → (0..1) Transaction  [destination for transfers]
+Space (1) → (N) RecurringTransaction
+Account (1) → (N) RecurringTransaction  [account_id, + destination_account_id nullable]
+Category (0..1) → (N) RecurringTransaction
+RecurringTransaction (N) → (N) Tag      [pivot recurring_transaction_tag]
+RecurringTransaction (1) → (N) Transaction  [recurring_transaction_id nullable, SET NULL]
 ```
 
 ### Workflows

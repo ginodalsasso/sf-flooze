@@ -1,0 +1,7 @@
+<form method="post" action="{{ path('app_recurring_toggle', {id: recurrence.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('recurring_toggle_' ~ recurrence.id) }}">
+    <twig:Button type="submit"
+                 icon="{{ recurrence.isActive ? 'pause' : 'play' }}"
+                 label="{{ recurrence.isActive ? 'Mettre en pause' : 'Reprendre' }}"
+                 variant="secondary" />
+</form>

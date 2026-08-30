@@ -87,6 +87,7 @@ php bin/console lint:twig templates/            # templates valides
 - **`Tag` ≠ `Category`** — la catégorie dit la *nature* du flux (une seule, hiérarchique, portée fiscale) ; le tag dit le *contexte* (0..N, plat, aucune portée fiscale, jamais lu par le module Tax). Filtre mono-tag écrit en `MEMBER OF`, jamais en `JOIN` — une jointure ManyToMany duplique les lignes et fausse les totaux.
 - **Les dates ont quatre points d'ancrage, jamais contournés** — fuseau (`app.timezone`), instant présent (`ClockInterface` / `now()`), période métier (`PeriodEnum` → `DateRangeDto`), affichage (`DateFormatterInterface`, exposé à Twig par `DateExtension` et au JS via une chaîne déjà rendue). `new \DateTimeImmutable()` et tout format en dur sont des anti-patterns. Détail : [`.claude/rules.md`](.claude/rules.md) → *Dates*.
 - **Virement = 1 `Transaction`, 2 comptes** (`account_id` + `destination_account_id`), pas de double-entry. Toute query filtrant par compte doit matcher **les deux jambes**.
+- **Une récurrence ne génère rien automatiquement** — `RecurringTransaction` est un gabarit + une règle de dates. Les échéances dues sont calculées à l'affichage et matérialisées par confirmation explicite, via `TransactionService::save()`. Aucune tâche planifiée, aucune écriture non confirmée dans le ledger.
 
 ---
 

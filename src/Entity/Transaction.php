@@ -40,6 +40,13 @@ class Transaction
     #[ORM\JoinColumn(name: 'asset_entry_id', nullable: true, onDelete: 'SET NULL')]
     private ?AssetEntry $assetEntry = null;
 
+    /** 
+     * A recurring transaction is a template for generating multiple transactions over time.
+     */
+    #[ORM\ManyToOne(targetEntity: RecurringTransaction::class)]
+    #[ORM\JoinColumn(name: 'recurring_transaction_id', nullable: true, onDelete: 'SET NULL')]
+    private ?RecurringTransaction $recurringTransaction = null;
+
     #[ORM\ManyToOne(targetEntity: Category::class)]
     #[ORM\JoinColumn(name: 'category_id', nullable: true)]
     private ?Category $category = null;
@@ -123,6 +130,23 @@ class Transaction
     public function isLinkedToAsset(): bool
     {
         return $this->assetEntry !== null;
+    }
+
+    public function getRecurringTransaction(): ?RecurringTransaction
+    {
+        return $this->recurringTransaction;
+    }
+
+    public function setRecurringTransaction(?RecurringTransaction $recurringTransaction): static
+    {
+        $this->recurringTransaction = $recurringTransaction;
+
+        return $this;
+    }
+
+    public function isRecurring(): bool
+    {
+        return $this->recurringTransaction !== null;
     }
 
     public function getCategory(): ?Category

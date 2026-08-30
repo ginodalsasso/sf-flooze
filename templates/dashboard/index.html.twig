@@ -3,6 +3,7 @@
 {% block stylesheets %}
     {{ parent() }}
     {% include 'dashboard/_styles.html.twig' %}
+    {% include 'finance/recurring/_styles.html.twig' %}
 {% endblock %}
 
 {% block title %}Tableau de bord — Flooze{% endblock %}
@@ -220,13 +221,26 @@
             <div class="panel-card">
                 <div class="panel-card-header">
                     <h3 class="section-title">Rappels à venir</h3>
-                    <a href="#" class="panel-card-action">Voir tout</a>
+                    <a href="{{ path('app_recurring_index') }}" class="panel-card-action">Voir tout</a>
                 </div>
-                <twig:EmptyState
-                    icon="bell"
-                    text="Aucun rappel"
-                    hint="Échéances, loyers et déclarations apparaîtront ici"
-                />
+                {% if dueCount > 0 %}
+                    <a class="recurring-alert" href="{{ path('app_recurring_index') }}">
+                        <i data-lucide="alert-triangle"></i>
+                        {{ dueCount }} échéance{{ dueCount > 1 ? 's' : '' }} en attente de confirmation
+                    </a>
+                {% endif %}
+
+                {% if upcomingOccurrences|length > 0 %}
+                    {% include 'finance/recurring/_upcoming_list.html.twig' %}
+                {% elseif dueCount == 0 %}
+                    <twig:EmptyState
+                        icon="bell"
+                        text="Aucun rappel"
+                        hint="Les échéances des 30 prochains jours apparaîtront ici"
+                        ctaLabel="Créer une récurrence"
+                        :ctaHref="path('app_recurring_new')"
+                    />
+                {% endif %}
             </div>
 
             {# Quick actions #}

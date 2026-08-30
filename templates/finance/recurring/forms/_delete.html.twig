@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_recurring_delete', {id: recurrence.id}) }}"
+      onsubmit="return confirm('Supprimer « {{ recurrence.label }} » ?\n\nLes transactions déjà créées à partir de cette récurrence sont conservées.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('recurring_delete_' ~ recurrence.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>

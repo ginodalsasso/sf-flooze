@@ -78,6 +78,10 @@
             <i data-lucide="arrow-left-right"></i>
             Transactions
         </a>
+        <a href="{{ path('app_recurring_index') }}" class="nav-item{{ _route starts with 'app_recurring_' ? ' is-active' : '' }}">
+            <i data-lucide="calendar-clock"></i>
+            Récurrences
+        </a>
         <a href="{{ path('app_category_index') }}" class="nav-item{{ _route starts with 'app_category_' ? ' is-active' : '' }}">
             <i data-lucide="tag"></i>
             Catégories

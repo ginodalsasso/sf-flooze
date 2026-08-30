@@ -6,8 +6,8 @@ namespace App\Dto\Finance;
 
 use App\Entity\Account;
 use App\Entity\Category;
+use App\Entity\RecurringTransaction;
 use App\Entity\Space;
-use App\Entity\Tag;
 use App\Entity\Transaction;
 use App\Enum\TransactionTypeEnum;
 
@@ -31,6 +31,7 @@ class TransactionInputDto
     public ?Category $category = null;
     public array $tags = [];
     public Space $space;
+    public ?RecurringTransaction $recurringTransaction = null;
 
     public static function fromTransaction(Transaction $transaction, Space $space): self
     {
@@ -46,6 +47,7 @@ class TransactionInputDto
         $dto->category = $transaction->getCategory();
         $dto->tags = $transaction->getTags()->toArray();
         $dto->space = $space;
+        $dto->recurringTransaction = $transaction->getRecurringTransaction();
 
         return $dto;
     }

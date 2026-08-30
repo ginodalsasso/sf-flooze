@@ -8,6 +8,7 @@ use App\Controller\ActiveSpaceControllerTrait;
 use App\Entity\User;
 use App\Enum\CurrencyEnum;
 use App\Service\Dashboard\Contract\DashboardServiceInterface;
+use App\Service\Finance\Contract\RecurringTransactionServiceInterface;
 use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -21,6 +22,7 @@ class HomeController extends AbstractController
     public function __construct(
         private readonly SpaceResolverInterface $spaceResolver,
         private readonly DashboardServiceInterface $dashboardService,
+        private readonly RecurringTransactionServiceInterface $recurringService,
     ) {}
 
     #[Route('/', name: 'app_home')]
@@ -38,6 +40,8 @@ class HomeController extends AbstractController
             'spaces' => $user->getSpaces()->toArray(),
             'active_space' => $activeSpace,
             'summary' => $this->dashboardService->summarize($activeSpace),
+            'upcomingOccurrences' => $this->recurringService->findUpcomingOccurrences($activeSpace),
+            'dueCount' => $this->recurringService->countDueOccurrences($activeSpace),
             'currencies' => CurrencyEnum::cases(),
             'baseCurrency' => $activeSpace->getCurrency(),
             'quoteCurrency' => $this->quoteCurrency($activeSpace->getCurrency()),

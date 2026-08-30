@@ -75,6 +75,7 @@ final class TransactionService implements TransactionServiceInterface
             ->setDate($input->date)
             ->setDescription($input->description)
             ->setCategory($input->category)
+            ->setRecurringTransaction($input->recurringTransaction)
             ->replaceTags($input->tags);
     }
 

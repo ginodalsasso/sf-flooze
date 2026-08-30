@@ -1,0 +1,184 @@
+<style>
+.recurring-due {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.recurring-due__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--fg-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.recurring-due__header i { width: 15px; height: 15px; color: var(--sage-400); flex-shrink: 0; }
+
+.recurring-due__list { list-style: none; margin: 0; padding: 0; }
+
+.recurring-due__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.recurring-due__row:first-child { border-top: none; }
+
+.recurring-due__date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.recurring-due__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--fg-1);
+}
+.recurring-due__label small { font-size: 12px; color: var(--fg-3); }
+
+.recurring-due__amount {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--fg-1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.recurring-due__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.recurring-due__actions form { margin: 0; }
+
+.recurring-due__footer {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--fg-3);
+  border-top: 1px solid var(--border);
+}
+
+.recurring-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recurring-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+}
+.recurring-row.is-paused { opacity: 0.6; }
+
+.recurring-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.recurring-row__label { font-size: 14px; color: var(--fg-1); }
+.recurring-row__meta { font-size: 12px; color: var(--fg-3); }
+
+.recurring-row__frequency {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: var(--fg-2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.recurring-row__frequency small { font-size: 11px; color: var(--fg-3); }
+
+.recurring-row__next {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.recurring-row__amount {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--fg-1);
+}
+.recurring-row__amount--income { color: var(--color-positive); }
+.recurring-row__amount--expense { color: var(--color-negative); }
+
+.recurring-row__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.recurring-row__actions form { margin: 0; }
+.recurring-upcoming { list-style: none; margin: 0; padding: 0; }
+
+.recurring-upcoming__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.recurring-upcoming__row:first-child { border-top: none; }
+
+.recurring-upcoming__date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.recurring-upcoming__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--fg-1);
+}
+.recurring-upcoming__label small { font-size: 11px; color: var(--fg-3); }
+
+.recurring-upcoming__amount {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--fg-1);
+}
+.recurring-upcoming__amount--income { color: var(--color-positive); }
+.recurring-upcoming__amount--expense { color: var(--color-negative); }
+.recurring-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(194, 184, 154, .12);
+  border: 1px solid var(--color-alert);
+  font-size: 12px;
+  color: var(--color-alert);
+  text-decoration: none;
+}
+.recurring-alert:hover { background: rgba(194, 184, 154, .2); }
+.recurring-alert i { width: 14px; height: 14px; flex-shrink: 0; }
+</style>

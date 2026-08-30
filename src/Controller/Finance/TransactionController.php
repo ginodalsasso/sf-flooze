@@ -15,6 +15,7 @@ use App\Form\Finance\ClassicTransactionFormType;
 use App\Form\Finance\TransactionFilterFormType;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use App\Service\Finance\Contract\AccountBalanceServiceInterface;
+use App\Service\Finance\Contract\RecurringTransactionServiceInterface;
 use App\Service\Finance\Contract\TransactionServiceInterface;
 use App\Service\Space\Contract\SpaceResolverInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,6 +34,7 @@ class TransactionController extends AbstractController
         private readonly TransactionServiceInterface $transactionService,
         private readonly TransactionRepositoryInterface $transactionRepository,
         private readonly AccountBalanceServiceInterface $accountBalanceService,
+        private readonly RecurringTransactionServiceInterface $recurringService,
         private readonly SpaceResolverInterface $spaceResolver,
         private readonly ClockInterface $clock,
     ) {}
@@ -59,6 +61,7 @@ class TransactionController extends AbstractController
             'filterForm'       => $filterForm,
             'filter'           => $filter,
             'transactionTypes' => TransactionTypeEnum::cases(),
+            'dueOccurrences'   => $this->recurringService->findDueOccurrences($space),
             'space'            => $space,
         ]);
     }

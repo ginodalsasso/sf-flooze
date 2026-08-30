@@ -1,0 +1,76 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'finance/recurring/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Récurrences — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Récurrences"
+    subtitle="Les flux qui reviennent. Rien n'est enregistré tant que tu n'as pas confirmé l'échéance"
+    ctaLabel="Nouvelle récurrence"
+    ctaHref="{{ path('app_recurring_new') }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% include 'finance/recurring/_due_banner.html.twig' %}
+
+    {% if recurrences|length > 0 %}
+        <div class="recurring-list">
+            {% for recurrence in recurrences %}
+                <div class="recurring-row{{ recurrence.isActive ? '' : ' is-paused' }}">
+                    <div class="recurring-row__main">
+                        <span class="recurring-row__label">{{ recurrence.label }}</span>
+                        <span class="recurring-row__meta">
+                            {{ recurrence.account.name }}
+                            {% if recurrence.destinationAccount %}
+                                → {{ recurrence.destinationAccount.name }}
+                            {% endif %}
+                            {% if recurrence.category %} · {{ recurrence.category.name }}{% endif %}
+                        </span>
+                    </div>
+
+                    <span class="recurring-row__frequency">
+                        {{ recurrence.frequency.label }}
+                        {% if recurrence.intervalCount > 1 %}
+                            <small>tous les {{ recurrence.intervalCount }}</small>
+                        {% endif %}
+                    </span>
+
+                    <span class="recurring-row__next">
+                        {% if recurrence.isActive %}
+                            Prochaine : {{ recurrence.nextOccurrenceDate|date_short }}
+                        {% else %}
+                            <twig:Badge label="En pause" variant="inactive" />
+                        {% endif %}
+                    </span>
+
+                    <span class="recurring-row__amount recurring-row__amount--{{ recurrence.type.value }}">
+                        {{ recurrence.amount|money(recurrence.account.currency) }}
+                    </span>
+
+                    <div class="recurring-row__actions">
+                        {% include 'finance/recurring/forms/_toggle.html.twig' with {recurrence: recurrence} %}
+                        <twig:Button as="a" href="{{ path('app_recurring_edit', {id: recurrence.id}) }}"
+                                     icon="pencil" label="Modifier" variant="secondary" />
+                        {% include 'finance/recurring/forms/_delete.html.twig' with {recurrence: recurrence} %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="calendar-clock"
+            text="Aucune récurrence"
+            hint="Déclare un loyer, un abonnement ou un salaire : l'app te proposera chaque échéance, tu confirmes d'un clic."
+            ctaLabel="Créer une récurrence"
+            ctaHref="{{ path('app_recurring_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}
