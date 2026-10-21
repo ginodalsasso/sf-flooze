@@ -1,0 +1,6 @@
+{% block content %}
+    <form method="post" action="{{ path('app_space_restore', {'id': space.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('space_restore_' ~ space.id) }}">
+        <twig:Button type="submit" icon="rotate-ccw" label="Restaurer" variant="secondary" />
+    </form>
+{% endblock %}

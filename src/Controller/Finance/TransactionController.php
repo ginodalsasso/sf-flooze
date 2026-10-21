@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Finance;
 
 use App\Controller\ActiveSpaceControllerTrait;
+use App\Controller\SafeRedirectTrait;
 use App\Dto\Finance\TransactionFilterDto;
 use App\Dto\Finance\TransactionInputDto;
 use App\Entity\Account;
@@ -29,6 +30,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class TransactionController extends AbstractController
 {
     use ActiveSpaceControllerTrait;
+    use SafeRedirectTrait;
 
     public function __construct(
         private readonly TransactionServiceInterface $transactionService,
@@ -141,7 +143,7 @@ class TransactionController extends AbstractController
                 $this->addFlash('success', 'Transaction mise à jour.');
                 $redirectTo = $request->query->get('redirect_to');
 
-                return $this->safeRedirect($redirectTo, 'app_transaction_index');
+                return $this->safeRedirect($request, $redirectTo, 'app_transaction_index');
             } catch (\InvalidArgumentException $e) {
                 $this->addFlash('error', $e->getMessage());
             }
@@ -182,7 +184,7 @@ class TransactionController extends AbstractController
         $this->transactionService->delete($transaction);
         $this->addFlash('success', 'Transaction supprimée.');
 
-        return $this->safeRedirect($request->request->get('redirect_to'), 'app_transaction_index');
+        return $this->safeRedirect($request, $request->request->get('redirect_to'), 'app_transaction_index');
     }
 
     private function resolveFormType(Account $account): string
@@ -190,15 +192,5 @@ class TransactionController extends AbstractController
         return $this->accountBalanceService->isAssetHoldingAccount($account)
             ? AssetTransactionFormType::class
             : ClassicTransactionFormType::class;
-    }
-
-    /** Redirect to $path if it is an internal path (starts with /), otherwise fall back to a named route. */
-    private function safeRedirect(?string $path, string $fallbackRoute): \Symfony\Component\HttpFoundation\Response
-    {
-        if ($path !== null && str_starts_with($path, '/')) {
-            return $this->redirect($path);
-        }
-
-        return $this->redirectToRoute($fallbackRoute);
     }
 }

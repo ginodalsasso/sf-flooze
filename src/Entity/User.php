@@ -199,6 +199,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->spaces;
     }
 
+    /**
+     * Archived spaces stay in the collection until they are purged: everything that offers
+     * a space to work in (switcher, resolver) reads this, never getSpaces().
+     *
+     * @return Collection<int, Space>
+     */
+    public function getActiveSpaces(): Collection
+    {
+        return $this->spaces->filter(fn(Space $space) => !$space->isDeleted());
+    }
+
     public function addSpace(Space $space): static
     {
         if (!$this->spaces->contains($space)) {

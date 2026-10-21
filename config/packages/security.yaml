@@ -28,6 +28,9 @@ security:
                 secure: auto
                 httponly: true
                 samesite: strict
+                # Ties the cookie signature to the password hash: changing the password
+                # invalidates every remember-me cookie already issued.
+                signature_properties: [password]
             login_throttling:
                 max_attempts: 5
                 interval: '15 minutes'

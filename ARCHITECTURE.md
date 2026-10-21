@@ -476,6 +476,22 @@ Conséquence : ne jamais réintroduire de colonne `balance` ni de méthode qui i
 
 Le prix de l'**achat initial** d'une crypto n'est pas saisi : `AssetFormType` l'écrase en `PRE_SUBMIT` avec le cours du marché, donc avant validation et quoi que poste le navigateur. Le champ affiché n'est qu'un rendu — c'est bien le serveur qui impose la valeur. Exception unique : sans aucun cours connu (hors ligne, jamais relevé), la saisie manuelle reprend la main, sinon aucune crypto ne pourrait plus être enregistrée.
 
+
+### 12. Suppression d'un espace — archivage à fenêtre
+
+Un `Space` est la racine de tout le ledger d'un tenant, et **aucune FK `space_id` ne porte de `ON DELETE`** : un `DELETE` physique se heurte au `RESTRICT` de MySQL dès que l'espace contient une ligne. La suppression est donc un **archivage** — `SpaceService::archive()` pose `deleted_at`, rien d'autre ne bouge.
+
+L'espace reste **restaurable 30 jours** (`SpaceService::RESTORE_WINDOW`). La date limite se calcule à la lecture depuis `deleted_at`, sans tâche planifiée : même modèle que les échéances de `RecurringTransaction`.
+
+Deux règles qui tiennent l'archivage :
+
+- **Tout ce qui propose un espace de travail lit `User::getActiveSpaces()`**, jamais `getSpaces()` — switcher, dashboard, `SpaceResolver`, comptage perso/pro à la création. Un espace archivé ne doit jamais redevenir sélectionnable par inadvertance.
+- **`RESTORE` est le seul attribut du `SpaceScopeVoter` qui s'applique à un espace archivé.** `VIEW` et `EDIT` le refusent, sinon un id en URL suffirait à travailler dans un espace archivé.
+
+La restauration est refusée quand un espace **actif du même type** a été créé entre-temps : l'utilisateur se retrouverait avec deux espaces perso. Le slot se libère à l'archivage, donc il peut être repris.
+
+**Pas de purge physique.** Passé la fenêtre, l'espace cesse d'être restaurable depuis l'UI mais ses données restent en base — un effacement réel devrait supprimer 7 tables dans l'ordre des FK (dont `category`, auto-référencée). À écrire le jour où le RGPD ou le volume l'exige.
+
 ---
 
 ## Template Structure
@@ -518,11 +534,11 @@ templates/
 | Table | Champs spécifiques | Soft |
 |---|---|:-:|
 | `user` | email, password, roles (JSON) — pas de `space_id` | — |
-| `space` | user_id, name, type, currency (devise de référence) — pas de `space_id` (racine) | — |
+| `space` | user_id, name, type, currency (devise de référence) — pas de `space_id` (racine) | ✓ |
 | `account` | name, type, opening_balance, currency | ✓ |
 | `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, fx_rate, destination_amount (nullable), date, description, metadata (JSON) | ✓ |
 | `category` | parent_id (nullable), name, is_deductible, is_declarable | — |
-| `tag` | name (unique par space) | ✓ |
+| `tag` | name (unique par space) | — |
 | `transaction_tag` | transaction_id, tag_id (pivot, ON DELETE CASCADE) | — |
 | `asset` | ticker, name, currency, type | — |
 | `asset_entry` | asset_id, account_id (nullable), funding_account_id (nullable), date, kind (buy\|sell\|dividend), quantity, unit_price, fx_rate, fees, note | ✓ |
@@ -548,7 +564,7 @@ templates/
 ### Notes
  
 - `user` et `space` n'ont pas de `space_id` — `user` est l'entité racine, `space` appartient à un `user` directement.
-- `category`, `tenant`, `client`, `tax_year`, `tax_item`, `document`, `reminder` n'ont pas de `deleted_at` car leur cycle de vie est court ou ils sont conservés pour audit.
+- `category`, `tag`, `asset`, `tenant`, `client`, `tax_year`, `tax_item`, `document`, `reminder` n'ont pas de `deleted_at` car leur cycle de vie est court ou ils sont conservés pour audit.
 - Les pivots (`lease_tenant`, `document_link`, `reminder_link`) ont `space_id` **par défense en profondeur** — cela évite des bugs de jointure cross-space où un user pourrait accidentellement lier deux entités d'espaces différents.
 
 ### All Tables Have

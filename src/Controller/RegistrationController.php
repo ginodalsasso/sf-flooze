@@ -87,10 +87,18 @@ class RegistrationController extends AbstractController
     public function verifyEmail(
         int $id,
         string $token,
+        Request $request,
         UserRepositoryInterface $userRepository,
         EntityManagerInterface $em,
+        EmailServiceInterface $emailService,
+        RateLimiterFactoryInterface $verifyEmailLimiter,
         ClockInterface $clock,
     ): Response {
+        $limiter = $verifyEmailLimiter->create($request->getClientIp());
+        if (false === $limiter->consume(1)->isAccepted()) {
+            throw new TooManyRequestsHttpException();
+        }
+
         $user = $userRepository->find($id);
 
         if (!$user || !$user->getVerificationToken() || !hash_equals($user->getVerificationToken(), $token)) {
@@ -100,12 +108,17 @@ class RegistrationController extends AbstractController
         }
 
         if ($user->getVerificationTokenExpiresAt() < $clock->now()) {
-            $em->remove($user);
+            // Never delete the account here: ids are sequential, so deletion would be reachable
+            // by anyone guessing one. Issue a fresh link to the holder of the expired token instead.
+            $user->setVerificationToken(bin2hex(random_bytes(32)));
+            $user->setVerificationTokenExpiresAt($clock->now()->modify(self::VERIFICATION_TOKEN_TTL));
             $em->flush();
 
-            $this->addFlash('error', 'Verification link has expired. Please register again.');
+            $emailService->sendVerificationEmail($user);
 
-            return $this->redirectToRoute('app_register');
+            $this->addFlash('info', 'This link has expired. A new verification email has been sent.');
+
+            return $this->redirectToRoute('app_login');
         }
 
         if ($user->isVerified()) {

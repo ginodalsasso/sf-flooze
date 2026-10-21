@@ -60,5 +60,47 @@
     </div>
     {% endif %}
 
+    {% if archived|length > 0 %}
+    <section class="spaces-archived">
+        <h2 class="spaces-archived-title">Espaces archivés</h2>
+        <p class="spaces-archived-hint">
+            Leurs données sont conservées. Un espace se restaure jusqu'à la date indiquée.
+        </p>
+
+        <div class="spaces-list-full">
+            {% for item in archived %}
+            <div class="space-full-card space-full-card--archived">
+                <twig:SpaceTypeIcon type="{{ item.space.type.value }}" size="lg" />
+                <div class="space-full-body">
+                    <div class="space-full-name">
+                        {{ item.space.name }}
+                        <twig:Badge label="Archivé" variant="inactive" />
+                    </div>
+                    <div class="space-full-meta">
+                        <span class="space-dot space-dot--{{ item.space.type.value }} space-dot--sm"></span>
+                        {{ item.space.type.value == 'professional' ? 'Professionnel' : 'Personnel' }}
+                        &middot;
+                        {% if item.isRestorable %}
+                            restaurable jusqu'au {{ item.restorableUntil|date_short }}
+                        {% else %}
+                            fenêtre de récupération close le {{ item.restorableUntil|date_short }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="space-full-actions">
+                    {% if item.isRestorable and not item.isTypeTaken %}
+                        {% include 'space/forms/_restore.html.twig' with {space: item.space} %}
+                    {% elseif item.isRestorable %}
+                        <span class="space-full-note">
+                            Un espace {{ item.space.type.value == 'professional' ? 'professionnel' : 'personnel' }} actif occupe déjà ce type
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
 </div>
 {% endblock %}

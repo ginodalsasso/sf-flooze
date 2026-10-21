@@ -37,6 +37,12 @@ framework:
         registration:
             policy: 'compound'
             limiters: [two_per_minute, five_per_hour]
+        # /verify-email/{id}/{token} is public and its id is sequential: without a
+        # limit the token is brute-forceable.
+        verify_email:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '15 minutes'
 
     #esi: true
     #fragments: true
@@ -49,6 +55,8 @@ when@desktop:
             # legitimate user (e.g. a form error followed by a resubmit).
             # Standard practice for local desktop apps: disable it.
             registration:
+                policy: 'no_limit'
+            verify_email:
                 policy: 'no_limit'
 
 when@test:

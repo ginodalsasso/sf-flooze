@@ -2,9 +2,9 @@
     <form
         method="post"
         action="{{ path('app_space_delete', {'id': space.id}) }}"
-        onsubmit="return confirm('Supprimer l\'espace « {{ space.name }} » ?\n\nToutes les données associées seront définitivement supprimées.')"
+        onsubmit="return confirm('Archiver l\'espace « {{ space.name|e('js') }} » ?\n\nIl disparaîtra de l\'application, mais ses données sont conservées et restaurables depuis cette page pendant la période de récupération.')"
     >
         <input type="hidden" name="_token" value="{{ csrf_token('space_delete_' ~ space.id) }}">
-        <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+        <twig:Button type="submit" icon="archive" label="Archiver" variant="danger" />
     </form>
 {% endblock %}

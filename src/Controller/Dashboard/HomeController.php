@@ -37,7 +37,7 @@ class HomeController extends AbstractController
         $user = $this->getUser();
 
         return $this->render('dashboard/index.html.twig', [
-            'spaces' => $user->getSpaces()->toArray(),
+            'spaces' => $user->getActiveSpaces()->toArray(),
             'active_space' => $activeSpace,
             'summary' => $this->dashboardService->summarize($activeSpace),
             'upcomingOccurrences' => $this->recurringService->findUpcomingOccurrences($activeSpace),

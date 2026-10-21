@@ -184,9 +184,9 @@
                     <h3 class="section-title">Mes espaces</h3>
                     <a href="{{ path('app_space_index') }}" class="panel-card-action">Gérer</a>
                 </div>
-                {% if app.user.spaces|length > 0 %}
+                {% if spaces|length > 0 %}
                 <ul class="space-list">
-                    {% for space in app.user.spaces %}
+                    {% for space in spaces %}
                     <li class="space-list-item{{ active_space and space.id == active_space.id ? ' space-list-item--active' : '' }}">
                         <span class="space-dot space-dot--{{ space.type.value }}"></span>
                         <div class="space-list-info">

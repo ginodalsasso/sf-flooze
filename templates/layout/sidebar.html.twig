@@ -1,10 +1,10 @@
 {% set _sid = app.session.get('flooze_active_space_id') %}
 {% set _active_space = null %}
-{% for _s in app.user.spaces %}
+{% for _s in app.user.activeSpaces %}
     {% if _s.id == _sid %}{% set _active_space = _s %}{% endif %}
 {% endfor %}
-{% if _active_space is null and app.user.spaces|length > 0 %}
-    {% set _active_space = app.user.spaces.first() %}
+{% if _active_space is null and app.user.activeSpaces|length > 0 %}
+    {% set _active_space = app.user.activeSpaces.first() %}
 {% endif %}
 
 {% set _route = app.request.attributes.get('_route') %}
@@ -18,7 +18,7 @@
             <span class="sidebar-logo-name">Flooze</span>
         </div>
 
-        {% if app.user.spaces|length > 0 %}
+        {% if app.user.activeSpaces|length > 0 %}
         <details class="space-switcher">
             <summary class="space-switcher-btn">
                 <span class="space-dot space-dot--{{ _active_space ? _active_space.type.value : 'personal' }}"></span>
@@ -27,7 +27,7 @@
                 <i data-lucide="chevrons-up-down" class="space-switcher-chevron"></i>
             </summary>
             <div class="space-switcher-dropdown">
-                {% for space in app.user.spaces %}
+                {% for space in app.user.activeSpaces %}
                 <form method="post" action="{{ path('app_space_switch', {id: space.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('space_switch') }}">
                     <button type="submit" class="space-option{{ _active_space and space.id == _active_space.id ? ' space-option--active' : '' }}">
@@ -43,7 +43,7 @@
                 </form>
                 {% endfor %}
                 <div class="space-switcher-divider"></div>
-                {% if app.user.spaces|length < 2 %}
+                {% if app.user.activeSpaces|length < 2 %}
                 <a href="{{ path('app_space_new') }}" class="space-option space-option--action">
                     <i data-lucide="plus" class="space-action-icon"></i>
                     <span class="space-action-label">Créer un espace</span>
