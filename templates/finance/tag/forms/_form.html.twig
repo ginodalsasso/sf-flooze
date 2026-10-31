@@ -7,7 +7,7 @@
 
     <div class="form-actions">
         {% if inline|default(false) %}
-            <twig:Button type="button" label="Annuler" variant="secondary" attr="{{ {'data-action': 'inline-create#close'} }}" />
+            <twig:Button type="button" label="Annuler" variant="secondary" data-action="inline-create#close" />
         {% else %}
             <twig:Button as="a" href="{{ path('app_tag_index') }}" label="Annuler" variant="secondary" />
         {% endif %}

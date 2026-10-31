@@ -75,9 +75,12 @@ class TagController extends AbstractController
         }
 
         $target = (string) $request->query->get('target', '');
+        $formName = 'inline_tag_' . ($target !== '' ? preg_replace('/[^A-Za-z0-9_]/', '_', $target) : 'default');
 
         $tag = (new Tag())->setSpace($space);
-        $form = $this->createForm(TagFormType::class, $tag);
+        $form = $this->container->get('form.factory')->createNamed($formName, TagFormType::class, $tag, [
+            'action' => $this->generateUrl('app_tag_new_inline', ['target' => $target]),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

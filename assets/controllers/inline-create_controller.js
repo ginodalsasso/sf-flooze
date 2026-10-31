@@ -22,7 +22,13 @@ export default class extends Controller {
     }
 
     submitEnd(event) {
-        if (!this.frameTarget.contains(event.target)) return;
-        if (event.detail.success) this.dialogTarget.close();
+        // closest(), not contains(): a stacked dialog's own frame is nested inside ours,
+        // so contains() would also match its submissions and close the wrong dialog.
+        if (event.target.closest('turbo-frame') !== this.frameTarget) return;
+        if (!event.detail.success) return;
+
+        this.dialogTarget.close();
+        this.frameTarget.removeAttribute('src');
+        this.frameTarget.replaceChildren();
     }
 }

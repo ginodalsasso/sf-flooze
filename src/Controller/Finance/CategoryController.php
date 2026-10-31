@@ -72,9 +72,13 @@ class CategoryController extends AbstractController
         }
 
         $target = (string) $request->query->get('target', '');
+        $formName = 'inline_category_' . ($target !== '' ? preg_replace('/[^A-Za-z0-9_]/', '_', $target) : 'default');
 
         $category = new Category();
-        $form = $this->createForm(CategoryFormType::class, $category, ['space' => $space]);
+        $form = $this->container->get('form.factory')->createNamed($formName, CategoryFormType::class, $category, [
+            'space' => $space,
+            'action' => $this->generateUrl('app_category_new_inline', ['target' => $target]),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
