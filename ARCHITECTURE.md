@@ -121,17 +121,17 @@ src/Entity/
 ├── Account.php               # Finance: bank/cash/crypto/saving account
 ├── Transaction.php           # Finance: income/expense/transfer
 ├── RecurringTransaction.php  # Finance: gabarit + règle de répétition (→ Transaction à la confirmation)
-├── Category.php              # Finance: hierarchical, fiscal flags, applicable transaction types
+├── Category.php              # Finance: hierarchical, fiscal bucket + role, applicable transaction types
 ├── Tag.php                   # Finance: free cross-cutting label on transactions (no fiscal meaning)
 ├── Asset.php                 # Finance: stocks, crypto, ETF (ticker, name, currency, type)
 ├── AssetEntry.php            # Finance: ledger row for a buy/sell/dividend operation
 │
 ├── Property.php              # Real estate: residential/rental/secondary
 ├── Tenant.php                # Real estate: tenant with income verification
-├── Lease.php                 # Real estate: rental contract
-├── LeaseTenant.php           # Real estate: junction (multi-tenant per lease)
+├── Lease.php                 # Real estate: rental contract (pivot lease_tenant, no entity)
 ├── RentPayment.php           # Real estate: monthly rent (→ Transaction)
-├── Loan.php                  # Real estate: mortgage with amortization
+├── Loan.php                  # Real estate: loan file (bank, property, release date)
+├── LoanLine.php              # Real estate: one line of a loan (capital, rate, insurance, duration, optional negotiated instalment)
 ├── LoanPayment.php           # Real estate: monthly payment (capital+interest)
 │
 ├── Client.php                # Invoicing: client with SIRET, email, address
@@ -182,9 +182,9 @@ RecurringTransaction (1) ──── (N) Transaction [recurring_transaction_id,
 
 Property (1) ──── (N) Lease
 Property (1) ──── (N) Loan
-Lease (1) ──── (N) LeaseTenant
+Loan (1) ──── (N) LoanLine [cascade persist, orphanRemoval, ON DELETE CASCADE]
+Lease (N) ──── (N) Tenant [pivot lease_tenant, owning side Lease]
 Lease (1) ──── (N) RentPayment
-Tenant (1) ──── (N) LeaseTenant
 Loan (1) ──── (N) LoanPayment
 RentPayment (1) ──── (1) Transaction [linked income]
 LoanPayment (1) ──── (1) Transaction [linked expense]
@@ -240,15 +240,20 @@ Finance/
 └── AccountDetailService.php      # Per-account detail DTO (monthly stats)
 
 RealEstate/
-├── PropertyService.php
-├── LeaseService.php              # Auto-generate rent payments
-└── LoanService.php               # Amortization calculations
+├── PropertyService.php           # Property CRUD + soft-delete (blocked while a lease runs)
+├── TenantService.php             # Tenant CRUD (blocked while bound to a lease)
+├── LeaseService.php              # Lease CRUD, activity toggle, rent due dates
+├── LeaseTermService.php          # Terme en cours, reconductions tacites incluses (calculé)
+├── LoanService.php               # Loan file CRUD
+├── LoanLineService.php           # Lignes de prêt + garde-fous sur les termes
+└── LoanAmortizationService.php   # Échéancier + totaux par année (calculé, jamais stocké)
 
 Invoicing/
 ├── QuoteService.php              # Quote → Invoice conversion
 └── InvoiceService.php            # Numbering (FAC-YYYY-NNN), payment tracking
 
 Tax/
+├── TaxSummaryService.php         # Vue declaration d'une annee, calculee depuis le registre
 ├── TaxItemService.php            # CRUD + linking
 └── TaxYearService.php            # Aggregate, calculate, export
 
@@ -260,6 +265,10 @@ PDF/
 
 Document/
 └── DocumentService.php           # S3 upload, polymorphic links, dedup (file_hash)
+
+Date/
+├── DateFormatter.php             # Seul formateur d'affichage (short/long/dateTime/time)
+└── DateShifter.php               # Pas mensuel ou annuel, jour borné au mois cible
 
 Notification/
 └── ReminderService.php           # Email notifications, deadline tracking
@@ -296,7 +305,8 @@ RealEstate/
 ├── PropertyController.php        # /properties
 ├── LeaseController.php           # /leases
 ├── TenantController.php          # /tenants
-└── LoanController.php            # /loans (+ amortization PDF)
+├── LoanController.php            # /real-estate/loans (dossier + échéancier)
+└── LoanLineController.php        # Lignes d'un dossier (ajout, édition, suppression)
 
 Invoicing/
 ├── ClientController.php          # /clients
@@ -304,6 +314,7 @@ Invoicing/
 └── InvoiceController.php         # /invoices (+ PDF, payment tracking)
 
 Tax/
+├── DeclarationController.php     # /tax/declaration (vue annuelle, lecture seule)
 ├── TaxYearController.php         # /tax/years
 ├── TaxItemController.php         # /tax/items
 └── TaxExportController.php       # /tax/export (2042 PDF)
@@ -537,7 +548,7 @@ templates/
 | `space` | user_id, name, type, currency (devise de référence) — pas de `space_id` (racine) | ✓ |
 | `account` | name, type, opening_balance, currency | ✓ |
 | `transaction` | account_id, destination_account_id (nullable), category_id, type, amount, fx_rate, destination_amount (nullable), date, description, metadata (JSON) | ✓ |
-| `category` | parent_id (nullable), name, is_deductible, is_declarable | — |
+| `category` | parent_id (nullable), name, fiscal_bucket (nullable enum), fiscal_role (nullable enum), applicable_types (JSON) | — |
 | `tag` | name (unique par space) | — |
 | `transaction_tag` | transaction_id, tag_id (pivot, ON DELETE CASCADE) | — |
 | `asset` | ticker, name, currency, type | — |
@@ -545,9 +556,10 @@ templates/
 | `property` | name, address, type, purchase_price, purchase_date | ✓ |
 | `tenant` | first_name, last_name, email, phone, monthly_income, guarantor_name, guarantor_income | — |
 | `lease` | property_id, rent, charges, type, security_deposit, start_date, end_date, is_active | ✓ |
-| `lease_tenant` | lease_id, tenant_id (pivot) | — |
+| `lease_tenant` | lease_id, tenant_id (pivot, ON DELETE CASCADE) | — |
 | `rent_payment` | lease_id, transaction_id (nullable), amount, due_date, paid_date, status | — |
-| `loan` | property_id, bank_name, amount, rate, insurance_rate, start_date, duration_months | — |
+| `loan` | property_id, bank_name, start_date | — |
+| `loan_line` | loan_id (ON DELETE CASCADE), label, amount, rate (6,4 = %), insurance_rate (6,4 = %), duration_months | — |
 | `loan_payment` | loan_id, transaction_id (nullable), month_number, due_date, capital_part, interest_part, insurance_part, remaining_capital, paid_date | — |
 | `client` | name, siret, vat_number, email, phone, address, city, postal_code, country | — |
 | `quote` | client_id, number, status, valid_until, note | ✓ |
@@ -565,7 +577,7 @@ templates/
  
 - `user` et `space` n'ont pas de `space_id` — `user` est l'entité racine, `space` appartient à un `user` directement.
 - `category`, `tag`, `asset`, `tenant`, `client`, `tax_year`, `tax_item`, `document`, `reminder` n'ont pas de `deleted_at` car leur cycle de vie est court ou ils sont conservés pour audit.
-- Les pivots (`lease_tenant`, `document_link`, `reminder_link`) ont `space_id` **par défense en profondeur** — cela évite des bugs de jointure cross-space où un user pourrait accidentellement lier deux entités d'espaces différents.
+- Les pivots **entités** (`document_link`, `reminder_link`) ont `space_id` **par défense en profondeur** — cela évite des bugs de jointure cross-space où un user pourrait accidentellement lier deux entités d'espaces différents. Les pivots **purs** (`transaction_tag`, `recurring_transaction_tag`, `lease_tenant`) sont de simples `JoinTable` Doctrine sans colonne propre : le scope `space` est garanti par le `query_builder` du formulaire **et** revalidé en service avant persist.
 
 ### All Tables Have
 

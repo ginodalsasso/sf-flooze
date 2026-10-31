@@ -4,7 +4,8 @@ Specifications for all 6 functional modules.
 
 See also: [ARCHITECTURE.md](ARCHITECTURE.md) · [CLAUDE.md](CLAUDE.md)
 
-> Toutes les entités, **y compris les pivots et tables polymorphiques**, ont un `space_id` (FK → space) pour la défense en profondeur multi-tenant. Cela évite les bugs de jointure cross-space.
+> Toutes les entités, **y compris les pivots-entités et les tables polymorphiques**, ont un `space_id` (FK → space) pour la défense en profondeur multi-tenant. Cela évite les bugs de jointure cross-space.
+> Exception : les pivots **purs** (`transaction_tag`, `recurring_transaction_tag`, `lease_tenant`) sont de simples `JoinTable` Doctrine, sans colonne propre — leur scope `space` est assuré par le `query_builder` du formulaire et revalidé en service avant persist.
 
 ---
 
@@ -14,9 +15,10 @@ See also: [ARCHITECTURE.md](ARCHITECTURE.md) · [CLAUDE.md](CLAUDE.md)
 
 **Account**
 ```
-id, space_id, name, type (bank|cash|crypto|saving), balance (decimal), currency (EUR),
+id, space_id, name, type (bank|cash|crypto|saving), opening_balance (decimal), currency,
 created_at, updated_at, deleted_at
 ```
+Pas de colonne `balance` : le solde courant se calcule (`opening_balance` + Σ des transactions actives), il ne se stocke jamais. Voir [ARCHITECTURE.md](ARCHITECTURE.md) → *Solde d'un compte — calculé, jamais stocké*.
 
 **Transaction**
 ```
@@ -37,9 +39,17 @@ en lecture et matérialisées par confirmation explicite. Voir [CLAUDE.md](CLAUD
 
 **Category**
 ```
-id, space_id, parent_id (FK self-referential), name, is_deductible (bool),
-is_declarable (bool), created_at, updated_at
+id, space_id, parent_id (FK self-referential), name, applicable_types (JSON),
+fiscal_bucket (enum nullable), fiscal_role (enum nullable), created_at, updated_at
 ```
+La **portée fiscale** a deux faces, posées ensemble ou pas du tout :
+`fiscal_bucket` = la catégorie de revenus de rattachement (`revenus_fonciers`, `bic_lmnp`,
+`bnc`, `traitements_salaires`, `rcm`), `fiscal_role` = `revenu` ou `charge`.
+
+C'est ce qui permet le cloisonnement : des travaux rattachés aux revenus fonciers en charge
+s'imputent sur les loyers, et sur rien d'autre. Les deux anciens booléens
+`is_declarable` / `is_deductible` disaient *si*, jamais *de quoi*. Un rôle sans bucket (ou
+l'inverse) n'est compté nulle part et l'UI le signale.
 
 **Tag**
 ```
@@ -50,18 +60,18 @@ Voir [ARCHITECTURE.md](ARCHITECTURE.md) → *Tag ≠ Category*.
 
 **Asset**
 ```
-id, space_id, ticker, name, quantity (decimal), avg_price (decimal), currency,
-type (stock|crypto|etf|bond), created_at, updated_at
+id, space_id, ticker, name, currency, type (stock|crypto|etf|bond), created_at, updated_at
 ```
+Ni quantité ni prix moyen sur l'entité : ils se dérivent du registre `AssetEntry` (achats/ventes/dividendes) via `AssetMetricsService`, même principe que le solde d'un compte — rien n'est stocké tant que ça peut se calculer depuis le ledger.
 
 ### Use Cases
 
 - Track all financial movements (income, expense, transfer) across accounts.
 - Categorize transactions automatically via OCR receipt → Ollama category hint.
-- Identify deductible expenses (`is_deductible=true`) and declarable income (`is_declarable=true`).
+- Rattacher une catégorie à une catégorie de revenus (`fiscal_bucket`) et lui donner un sens (`fiscal_role`) — c'est ce que le module Tax lit.
 - Transfer between accounts (Transaction with `destination_account_id`).
 - Déclarer des flux récurrents (loyer, abonnement, salaire) via `RecurringTransaction` : l'app liste les échéances dues, l'utilisateur confirme ou passe. **Aucune génération automatique.**
-- Suivi du portefeuille (actions, crypto, ETF) via `Asset` — quantité et prix moyen d'acquisition. **Pas de tracking automatique de cours en MVP** (intégration future via API broker).
+- Suivi du portefeuille (actions, crypto, ETF) via `Asset` + le registre `AssetEntry` — quantité et prix moyen dérivés, jamais stockés. Cours crypto suivi en direct via `CryptoPriceApiClient` (CoinGecko) ; les autres types retombent sur le prix de la dernière opération enregistrée. Voir [ARCHITECTURE.md](ARCHITECTURE.md) → *Cours des actifs — jamais bloquants, toujours datés*.
 
 ### Key Relationships
 
@@ -134,11 +144,18 @@ guarantor_name, guarantor_income, created_at, updated_at
 id, space_id, property_id (FK), rent (decimal), charges (decimal), type (meuble|nu|colocation),
 security_deposit (decimal), start_date, end_date, is_active, created_at, updated_at, deleted_at
 ```
+`end_date` est le **terme signé**, jamais réécrit. Le terme réellement en cours se calcule en lecture
+via `LeaseTermService::currentTerm()` → `LeaseTermDto` : passé le terme signé, le bail est reconduit
+tacitement par tranches d'un an tant que `is_active` est vrai. Aucune écriture, aucune tâche planifiée —
+ne rien faire est précisément ce qui reconduit un bail. Clôturer le bail (`is_active = false`) est le
+seul moyen d'arrêter la reconduction ; le terme affiché redevient alors le terme signé.
 
-**LeaseTenant** (junction)
+**lease_tenant** (pivot pur, pas d'entité)
 ```
-id, space_id, lease_id (FK), tenant_id (FK), created_at
+lease_id (FK, ON DELETE CASCADE), tenant_id (FK, ON DELETE CASCADE)
 ```
+`ManyToMany` porté par `Lease.tenants`. Une colocation lie plusieurs locataires au même loyer.
+Tout comptage de baux par locataire s'écrit en `MEMBER OF` — une jointure ManyToMany duplique les lignes.
 
 **RentPayment**
 ```
@@ -146,25 +163,54 @@ id, space_id, lease_id (FK), transaction_id (FK nullable), amount, due_date, pai
 status (pending|paid|late), created_at
 ```
 
-**Loan**
+**Loan** — le *dossier* de prêt
 ```
-id, space_id, property_id (FK), bank_name, amount (decimal), rate (decimal),
-insurance_rate (decimal), start_date, duration_months, created_at
+id, space_id, property_id (FK), bank_name, start_date, created_at
 ```
+Ni capital, ni taux, ni durée : ils appartiennent aux **lignes**. Un dossier réunissant un prêt
+principal, un PTZ et un prêt employeur n'a pas de taux unique — un seul taux sur le dossier ne
+pourrait être qu'une approximation. Pas de soft delete (ERD).
 
-**LoanPayment**
+**LoanLine** — une ligne du dossier
+```
+id, space_id, loan_id (FK, ON DELETE CASCADE), label, amount (decimal),
+rate (decimal 6,4 = pourcentage), insurance_rate (decimal 6,4 = pourcentage),
+duration_months, negotiated_monthly_payment (decimal, nullable), created_at
+```
+Chaque ligne s'amortit sur ses propres termes. `LoanAmortizationService` produit un échéancier par
+ligne, puis les **additionne mois par mois** pour l'échéancier du dossier — celui que le compte voit
+réellement. Tout est calculé en lecture, rien n'est stocké.
+
+Conséquence importante : si les lignes n'ont pas la même durée, **la mensualité du dossier n'est pas
+constante** — elle chute à chaque ligne qui s'achève. L'UI l'annonce explicitement.
+
+**Lissage négocié** — `negotiated_monthly_payment` (capital + intérêts, hors assurance) remplace
+l'annuité calculée quand la banque a lissé cette ligne avec les autres lignes du dossier : une mensualité
+réelle ne correspond alors plus à `capital/taux/durée` pris isolément. Les intérêts restent dérivés du
+capital restant dû au taux de la ligne ; seule la mensualité elle-même devient une donnée fixe plutôt que
+calculée. `duration_months` devient une borne maximale : une mensualité négociée plus élevée que
+l'annuité éteint la ligne avant son terme, ce que la logique d'arrondi existante gère déjà sans
+changement. L'assurance continue de se calculer comme pour toute ligne (`insurance_rate` × capital de la
+ligne) — ce champ ne couvre que la part capital + intérêts.
+
+**LoanPayment** — *pas encore implémenté*
 ```
 id, space_id, loan_id (FK), transaction_id (FK nullable), month_number, due_date,
 capital_part (decimal), interest_part (decimal), insurance_part (decimal),
 remaining_capital (decimal), paid_date, created_at
 ```
+Une ligne naît à la **confirmation d'une mensualité payée**, pas à la génération de l'échéancier —
+même règle que `RentPayment`. Les quatre parts y sont **figées** au moment du paiement : les intérêts
+déduits d'une année fiscale ne doivent pas bouger si le taux du prêt est corrigé plus tard
+(même principe que `transaction.fx_rate`).
 
 ### Use Cases
 
 - Track all rental properties (primary, investment, secondary).
-- Manage multiple tenants per property via Lease + LeaseTenant.
-- Auto-generate monthly RentPayment records (console command).
-- Link rent payments to Transaction (income) for unified finance view.
+- Manage multiple tenants per property via Lease + pivot `lease_tenant`.
+- Reconduction tacite : un bail laissé en place au-delà de son terme signé court un an de plus, autant de fois que nécessaire. Terme calculé, jamais stocké.
+- Calculer les échéances de loyer dues depuis le bail, et les matérialiser par confirmation explicite. **Aucune génération automatique, aucune tâche planifiée.**
+- Link rent payments to Transaction (income) for unified finance view — à l'encaissement seulement.
 - Calculate loan amortization (capital/interest/insurance breakdown per month).
 - Identify tax-deductible expenses : interest payments, insurance, property charges.
 - Generate LMNP/micro-BIC annual summary for tax declaration.
@@ -175,7 +221,8 @@ remaining_capital (decimal), paid_date, created_at
 Space (1) → (N) Property
 Property (1) → (N) Lease
 Property (1) → (N) Loan
-Lease (1) → (N) LeaseTenant ← (N) Tenant  [many-to-many junction]
+Loan (1) → (N) LoanLine  [cascade persist, orphanRemoval]
+Lease (N) → (N) Tenant  [pivot lease_tenant, owning side Lease]
 Lease (1) → (N) RentPayment
 Loan (1) → (N) LoanPayment
 RentPayment (0..1) → (1) Transaction  [auto-created income]
@@ -184,35 +231,63 @@ LoanPayment (0..1) → (1) Transaction  [auto-created expense]
 
 ### Workflows
 
-**Workflow: Monthly Rent Generation**
+**Workflow: Rent Due Dates → Payment**
 ```
-Cron: php bin/console app:generate-rent-payments --month=2025-01
+Lease (actif) → échéances mensuelles calculées EN LECTURE de start_date à end_date
     ↓
-GenerateRentPaymentsCommand → finds all active Leases
+L'écran liste les échéances dues : « Loyer de novembre — 850 € — dû depuis le 01/11 »
     ↓
-For each Lease: create RentPayment(amount=rent+charges, due_date=1st of month)
+Aucune ligne rent_payment n'existe tant que l'utilisateur n'a rien décidé (état `pending` calculé)
     ↓
-LinkedTransactionListener.postPersist(RentPayment)
+Décision « encaissé »                        Décision « impayé »
+    ↓                                            ↓
+RentPayment(status=paid, paid_date)          RentPayment(status=late)
+    + Transaction(type=income, compte         sans Transaction
+      choisi à la confirmation)
     ↓
-Auto-create Transaction(type=income, account=owner's account, amount=rent)
-    ↓
-RentPayment.status = 'pending' until confirmed paid
+Les lignes rent_payment persistées SONT le curseur :
+échéance avec ligne = traitée, échéance sans ligne = due.
 ```
 
-**Workflow: Loan Amortization**
+> **Pas de commande `app:generate-rent-payments`, pas de `postPersist` sur `RentPayment`.**
+> Un cron qui écrirait la `Transaction` le 1er du mois rendrait le solde faux pendant tout le délai
+> de paiement, et faux en permanence sur un impayé — or `account.opening_balance + Σ transactions`
+> est la seule source de vérité du module Finance. Voir [CLAUDE.md](CLAUDE.md) → *Décisions clés*.
+
+**Workflow: Loan Amortization** — *implémenté (lecture seule)*
 ```
-LoanService.generateAmortizationTable(Loan $loan): array
+LoanAmortizationService::schedule(Loan) → LoanScheduleDto { combined, lines[], borrowedCapital }
     ↓
-For each month 1..duration_months:
-    interest = remaining_capital × (rate / 12)
-    capital = monthly_payment - interest - insurance
-    remaining -= capital
-    → LoanPayment(capital_part, interest_part, insurance_part, remaining_capital)
+POUR CHAQUE LIGNE, sur ses propres termes :
+annuité = C × i × (1+i)^n / ((1+i)^n − 1)       i = taux annuel de la ligne / 100 / 12
+          C / n  si i = 0                       (prêt à taux zéro)
+assurance = capital de la ligne × taux assurance / 100 / 12   → prime constante
     ↓
-PDF export via LoanAmortizationPdfGenerator (table: month, capital, interest, insurance, remaining)
+Pour chaque mois 1..duration_months :
+    intérêts = arrondi(capital restant × i)
+    capital  = annuité − intérêts
+    échéance = date de départ + N mois, jour borné au mois cible (DateShifter)
+    → AmortizationRowDto (calculé, rien de persisté)
     ↓
-Tax note: interest_part + insurance_part are deductible (rental income)
+La DERNIÈRE échéance absorbe le résidu d'arrondi : le capital restant finit exactement à 0,00,
+jamais à ±0,01. C'est la mensualité finale qui varie de quelques centimes, pas le solde.
+    ↓
+PUIS FUSION DES LIGNES, mois par mois → échéancier combiné
+    Une ligne terminée ne contribue plus aux mois suivants : la mensualité du dossier baisse.
+    ↓
+Regroupement par année civile → AmortizationYearDto, pour le combiné et pour chaque ligne
+    → intérêts + assurance de l'année = la part déductible des revenus fonciers (régime réel)
 ```
+
+> **Aucune `Transaction` n'est créée par l'échéancier.** Il décrit ce qui est dû, pas ce qui est payé.
+> Les mensualités réellement réglées entreront dans le registre via `LoanPayment` (à implémenter),
+> et seule la part intérêts + assurance sera déductible — jamais le capital remboursé.
+>
+> Hypothèses du calcul, à vérifier contre l'offre de prêt : **taux fixe**, mensualité constante,
+> première échéance un mois après le déblocage, et **assurance sur le capital emprunté** (prime
+> constante). Certains contrats l'assoient sur le capital restant dû : la prime décroît alors.
+>
+> Export PDF via `LoanAmortizationPdfGenerator` : à faire (dompdf pas encore installé).
 
 ---
 
@@ -314,6 +389,28 @@ public function generateNumber(Space $space, int $year): string {
 ---
 
 ## Module 4: Tax
+
+> **Déjà en place : la page Déclaration** (`/tax/declaration`, `TaxSummaryService`) — vue annuelle
+> **calculée et en lecture seule**, construite sur `Transaction` × `Category.fiscal_bucket` /
+> `fiscal_role`. Elle ne persiste rien : ni `TaxYear`, ni `TaxItem`, qui restent à implémenter
+> pour la revue cochable et l'export 2042.
+>
+> **Une assiette par catégorie de revenus, jamais de solde global.** `TaxSummaryDto` n'expose
+> volontairement aucun « résultat imposable » unique : la loi cloisonne, et soustraire des
+> charges d'une catégorie aux revenus d'une autre n'a aucun sens. Pour chaque catégorie, deux
+> assiettes sont affichées côte à côte :
+> - **au réel** : revenus − charges de cette catégorie ;
+> - **au micro** : revenus − abattement forfaitaire, **charges ignorées** (l'abattement les remplace).
+>
+> Le plus avantageux est signalé. Les taux sont dans `FiscalBucketEnum` et nulle part ailleurs ;
+> les **plafonds d'éligibilité ne sont pas vérifiés** et l'UI le dit.
+>
+> Règles de correction structurantes :
+> - **Les virements sont exclus** — déplacer de l'argent entre ses propres comptes n'est ni un revenu ni une charge ; les compter gonflerait la déclaration des deux côtés.
+> - **Chaque total vient d'un `GROUP BY`**, et les lignes affichées sont additionnées telles quelles : ce qui est à l'écran fait toujours la somme affichée à côté.
+> - **Les mouvements hors périmètre sont affichés**, pas masqués (sans catégorie, ou rattachement incomplet). Sur une déclaration, le chiffre dangereux est celui qui manque.
+> - **Une catégorie à charges seules apparaît quand même** — un déficit est un résultat réel ; le masquer ferait perdre une déduction. Son imputation suit ses propres règles, que Flooze ne calcule pas.
+> - **Les charges d'emprunt sont hors assiettes** — calculées depuis l'échéancier (`LoanChargeService`, côté RealEstate), affichées dans leur propre tableau avec l'avertissement de double comptage. Le domaine Tax ne lit que le registre : la composition des deux se fait dans le controller, pas dans `TaxSummaryService` (cf. [`rules.md`](.claude/rules.md) → un service par domaine).
 
 ### Entities
 
