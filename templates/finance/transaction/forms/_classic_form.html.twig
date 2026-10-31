@@ -21,8 +21,8 @@
     </div>
 
     <div class="form-section txn-form-grid">
-        <twig:Form:Field field="{{ form.category }}" label="Catégorie" />
-        <twig:Form:Field field="{{ form.tags }}" label="Tags"
+        <twig:Form:Field field="{{ form.category }}" label="Catégorie" createRoute="app_category_new_inline" />
+        <twig:Form:Field field="{{ form.tags }}" label="Tags" createRoute="app_tag_new_inline"
                          hint="Projet ou événement — Ctrl/⌘ pour en choisir plusieurs" />
     </div>
 

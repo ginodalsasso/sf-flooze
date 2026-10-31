@@ -18,8 +18,8 @@
     </div>
 
     <div class="form-section">
-        <twig:Form:Field field="{{ form.category }}" label="Catégorie" />
-        <twig:Form:Field field="{{ form.tags }}" label="Tags" />
+        <twig:Form:Field field="{{ form.category }}" label="Catégorie" createRoute="app_category_new_inline" />
+        <twig:Form:Field field="{{ form.tags }}" label="Tags" createRoute="app_tag_new_inline" />
     </div>
 
     <div class="form-actions">
