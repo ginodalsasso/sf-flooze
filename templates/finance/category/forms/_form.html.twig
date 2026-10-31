@@ -6,7 +6,7 @@
 
     <div class="form-section">
         <twig:Form:Field field="{{ form.parent }}" label="Catégorie parente"
-                         hint="Laisse vide pour une catégorie racine" />
+                         hint="Laisse vide pour une catégorie racine" createRoute="app_category_new_inline" />
     </div>
 
     <div class="form-section">
@@ -29,7 +29,11 @@
     </div>
 
     <div class="form-actions">
-        <twig:Button as="a" href="{{ path('app_category_index') }}" label="Annuler" variant="secondary" />
+        {% if inline|default(false) %}
+            <twig:Button type="button" label="Annuler" variant="secondary" attr="{{ {'data-action': 'inline-create#close'} }}" />
+        {% else %}
+            <twig:Button as="a" href="{{ path('app_category_index') }}" label="Annuler" variant="secondary" />
+        {% endif %}
         <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
     </div>
 

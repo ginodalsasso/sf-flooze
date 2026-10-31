@@ -63,6 +63,36 @@ class CategoryController extends AbstractController
         return $this->render('finance/category/new.html.twig', ['form' => $form]);
     }
 
+    #[Route('/new/inline', name: 'new_inline')]
+    public function newInline(Request $request): Response
+    {
+        $space = $this->resolveActiveSpace('EDIT');
+        if ($space instanceof RedirectResponse) {
+            return $space;
+        }
+
+        $target = (string) $request->query->get('target', '');
+
+        $category = new Category();
+        $form = $this->createForm(CategoryFormType::class, $category, ['space' => $space]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $category->setSpace($space);
+            $this->categoryService->save($category);
+
+            return $this->render('finance/category/_inline_new_stream.html.twig', [
+                'category' => $category,
+                'target' => $target,
+            ], new Response(null, 200, ['Content-Type' => 'text/vnd.turbo-stream.html']));
+        }
+
+        return $this->render('finance/category/_inline_new.html.twig', [
+            'form' => $form,
+            'target' => $target,
+        ]);
+    }
+
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'])]
     public function edit(Request $request, Category $category): Response
     {
