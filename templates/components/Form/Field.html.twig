@@ -1,9 +1,20 @@
-{# Symfony form field: label + widget + errors + optional hint. field = FormView object. #}
-{% props field, label, hint = null, attr = {} %}
+{# Symfony form field: label + widget + errors + optional hint. field = FormView object.
+   createRoute: route name for inline Category/Tag creation (adds a "+ Créer" trigger + lazy turbo-frame dialog). #}
+{% props field, label, hint = null, attr = {}, createRoute = null %}
 
 {% set groupClass = 'form-group' ~ (field.vars.disabled ? ' form-group--disabled' : '') %}
-<div {{ attributes.defaults({class: groupClass}) }}>
-    <label for="{{ field.vars.id }}" class="form-label-app">{{ label }}</label>
+<div {{ attributes.defaults({class: groupClass}) }}
+     {% if createRoute %}data-controller="inline-create" data-inline-create-create-path-value="{{ path(createRoute, {target: field.vars.id}) }}"{% endif %}>
+    {% if createRoute %}
+        <div class="form-label-row">
+            <label for="{{ field.vars.id }}" class="form-label-app">{{ label }}</label>
+            <button type="button" class="inline-create-trigger" data-action="inline-create#open">
+                <i data-lucide="plus" aria-hidden="true"></i> Créer
+            </button>
+        </div>
+    {% else %}
+        <label for="{{ field.vars.id }}" class="form-label-app">{{ label }}</label>
+    {% endif %}
     {{ form_widget(field, {attr: attr}) }}
     {% for error in field.vars.errors %}
         <span class="form-error">{{ error.message }}</span>
@@ -11,5 +22,11 @@
     {% set displayHint = hint ?? field.vars.help ?? null %}
     {% if displayHint %}
         <span class="form-hint">{{ displayHint }}</span>
+    {% endif %}
+    {% if createRoute %}
+        <dialog class="inline-create-dialog" data-inline-create-target="dialog"
+                data-action="turbo:submit-end@window->inline-create#submitEnd">
+            <turbo-frame id="inline-create-{{ field.vars.id }}" data-inline-create-target="frame"></turbo-frame>
+        </dialog>
     {% endif %}
 </div>
