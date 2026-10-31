@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_tenant_delete', {id: tenant.id}) }}"
+      onsubmit="return confirm('Supprimer le locataire « {{ tenant.fullName }} » ?\n\nCette action est irréversible.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('tenant_delete_' ~ tenant.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>

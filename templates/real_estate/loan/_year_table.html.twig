@@ -1,0 +1,44 @@
+{# Yearly recap of a schedule. years = AmortizationYearDto[]. schedule = AmortizationScheduleDto (footer). #}
+{# currency = CurrencyEnum. currentYear = int, highlighted. capital = capital borrowed, for the footer. #}
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Année</th>
+                <th>Éch.</th>
+                <th>Capital</th>
+                <th>Intérêts</th>
+                <th>Assurance</th>
+                <th>Déductible</th>
+                <th>Total payé</th>
+                <th>Reste dû</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for year in years %}
+                <tr class="{{ year.year == currentYear ? 'is-current' : '' }}">
+                    <td>{{ year.year }}</td>
+                    <td class="data-num data-num--muted">{{ year.instalmentCount }}</td>
+                    <td class="data-num data-num--muted">{{ year.capitalPart|money(currency) }}</td>
+                    <td class="data-num">{{ year.interestPart|money(currency) }}</td>
+                    <td class="data-num">{{ year.insurancePart|money(currency) }}</td>
+                    <td class="data-num data-num--deductible">{{ year.deductiblePart()|money(currency) }}</td>
+                    <td class="data-num">{{ year.totalPayment|money(currency) }}</td>
+                    <td class="data-num data-num--muted">{{ year.remainingCapital|money(currency) }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>Total</td>
+                <td>{{ schedule.rows|length }}</td>
+                <td>{{ capital|money(currency) }}</td>
+                <td>{{ schedule.totalInterest|money(currency) }}</td>
+                <td>{{ schedule.totalInsurance|money(currency) }}</td>
+                <td>{{ schedule.totalCost()|money(currency) }}</td>
+                <td>{{ schedule.totalPaid|money(currency) }}</td>
+                <td>{{ '0.00'|money(currency) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

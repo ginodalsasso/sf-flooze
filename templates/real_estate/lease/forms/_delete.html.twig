@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_lease_delete', {id: lease.id}) }}"
+      onsubmit="return confirm('Supprimer le bail sur « {{ lease.property.name }} » ?\n\nCette action est irréversible.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('lease_delete_' ~ lease.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>

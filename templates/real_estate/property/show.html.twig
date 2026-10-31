@@ -1,0 +1,87 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'real_estate/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}{{ property.name }} — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader title="{{ property.name }}" subtitle="{{ property.address }}" />
+
+<div class="page-content">
+    <twig:Flash />
+
+    <div class="re-show-summary">
+        <div class="re-show-meta">
+            <div class="re-card-icon">
+                <i data-lucide="{{ property.type.icon() }}"></i>
+            </div>
+            <div>
+                <twig:Badge label="{{ property.type.label() }}" variant="{{ property.type.badgeVariant() }}" />
+                <p class="re-card-sub">Acquis le {{ property.purchaseDate|date_short }}</p>
+            </div>
+        </div>
+
+        <div>
+            <p class="re-card-amount">{{ property.purchasePrice|money(property.space.currency) }}</p>
+            <p class="re-card-sub">Prix d'achat</p>
+        </div>
+
+        <div class="re-show-actions">
+            <twig:Button
+                as="a"
+                href="{{ path('app_property_edit', {id: property.id}) }}"
+                icon="pencil"
+                label="Modifier"
+                variant="secondary"
+            />
+            {% include 'real_estate/property/forms/_delete.html.twig' with {property: property} %}
+        </div>
+    </div>
+
+    <div class="re-stack">
+    <div>
+    <h2 class="re-section-title">Baux</h2>
+
+    {% if leases|length > 0 %}
+        <div class="re-grid">
+            {% for lease in leases %}
+                {% include 'real_estate/lease/_card.html.twig' with {lease: lease, with_property: false} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="file-signature"
+            text="Aucun bail sur ce bien"
+            hint="Crée un bail pour suivre le loyer et ses échéances."
+            ctaLabel="Créer un bail"
+            ctaHref="{{ path('app_lease_new') }}"
+        />
+    {% endif %}
+
+    </div>
+
+    <div>
+    <h2 class="re-section-title">Emprunts</h2>
+
+    {% if loans|length > 0 %}
+        <div class="re-grid">
+            {% for loan in loans %}
+                {% include 'real_estate/loan/_card.html.twig' with {loan: loan, with_property: false} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="banknote"
+            text="Aucun emprunt sur ce bien"
+            hint="Saisis ton crédit pour obtenir son échéancier et les intérêts déductibles de chaque année."
+            ctaLabel="Créer un emprunt"
+            ctaHref="{{ path('app_loan_new') }}"
+        />
+    {% endif %}
+    </div>
+    </div>
+</div>
+{% endblock %}

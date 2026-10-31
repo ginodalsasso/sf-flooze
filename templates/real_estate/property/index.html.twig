@@ -1,0 +1,76 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'real_estate/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Mes biens — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Mes biens"
+    subtitle="Résidences et investissements locatifs de cet espace"
+    ctaLabel="Nouveau bien"
+    ctaHref="{{ path('app_property_new') }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% if properties|length > 0 %}
+        <div class="re-grid">
+            {% for property in properties %}
+                <div class="re-card">
+                    <div class="re-card-header">
+                        <div class="re-card-icon">
+                            <i data-lucide="{{ property.type.icon() }}"></i>
+                        </div>
+                        <twig:Badge
+                            label="{{ property.type.label() }}"
+                            variant="{{ property.type.badgeVariant() }}"
+                        />
+                    </div>
+
+                    <div>
+                        <a class="re-card-link" href="{{ path('app_property_show', {id: property.id}) }}">
+                            <p class="re-card-name">{{ property.name }}</p>
+                        </a>
+                        <p class="re-card-sub">{{ property.address }}</p>
+                    </div>
+
+                    <div class="re-facts">
+                        <div class="re-fact">
+                            <span class="re-fact-label">Prix d'achat</span>
+                            <span class="re-fact-value re-fact-value--mono">{{ property.purchasePrice|money(property.space.currency) }}</span>
+                        </div>
+                        <div class="re-fact">
+                            <span class="re-fact-label">Acquis le</span>
+                            <span class="re-fact-value">{{ property.purchaseDate|date_short }}</span>
+                        </div>
+                    </div>
+
+                    <div class="re-card-footer">
+                        <twig:Button
+                            as="a"
+                            href="{{ path('app_property_edit', {id: property.id}) }}"
+                            icon="pencil"
+                            label="Modifier"
+                            variant="secondary"
+                        />
+                        {% include 'real_estate/property/forms/_delete.html.twig' with {property: property} %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="building-2"
+            text="Aucun bien"
+            hint="Ajoute ton appartement ou ta maison pour suivre ses baux et son emprunt."
+            ctaLabel="Créer un bien"
+            ctaHref="{{ path('app_property_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

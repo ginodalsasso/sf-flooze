@@ -1,0 +1,10 @@
+{# Caveat or warning panel. variant: info|warn. icon: Lucide name. title: heading. Body in the block content. #}
+{% props title, icon = 'info', variant = 'info' %}
+
+<div {{ attributes.defaults({class: 'notice notice--' ~ variant}) }}>
+    <h2 class="notice-title">
+        <i data-lucide="{{ icon }}"></i>
+        {{ title }}
+    </h2>
+    {% block content %}{% endblock %}
+</div>

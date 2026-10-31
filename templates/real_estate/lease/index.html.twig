@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'real_estate/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Mes baux — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Mes baux"
+    subtitle="Contrats de location en cours et clôturés"
+    ctaLabel="{{ hasProperties ? 'Nouveau bail' : null }}"
+    ctaHref="{{ hasProperties ? path('app_lease_new') : null }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% if not hasProperties %}
+        <twig:EmptyState
+            icon="building-2"
+            text="Aucun bien à louer"
+            hint="Un bail se rattache à un bien : crée d'abord le bien."
+            ctaLabel="Créer un bien"
+            ctaHref="{{ path('app_property_new') }}"
+        />
+    {% elseif leases|length > 0 %}
+        <div class="re-grid">
+            {% for lease in leases %}
+                {% include 'real_estate/lease/_card.html.twig' with {lease: lease} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="file-signature"
+            text="Aucun bail"
+            hint="Crée un bail pour suivre le loyer, les charges et le dépôt de garantie."
+            ctaLabel="Créer un bail"
+            ctaHref="{{ path('app_lease_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

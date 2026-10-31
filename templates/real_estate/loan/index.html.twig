@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'real_estate/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Mes emprunts — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Mes emprunts"
+    subtitle="Crédits immobiliers et leur échéancier"
+    ctaLabel="{{ hasProperties ? 'Nouvel emprunt' : null }}"
+    ctaHref="{{ hasProperties ? path('app_loan_new') : null }}"
+/>
+
+<div class="page-content">
+    <twig:Flash />
+
+    {% if not hasProperties %}
+        <twig:EmptyState
+            icon="building-2"
+            text="Aucun bien à financer"
+            hint="Un emprunt se rattache à un bien : crée d'abord le bien."
+            ctaLabel="Créer un bien"
+            ctaHref="{{ path('app_property_new') }}"
+        />
+    {% elseif loans|length > 0 %}
+        <div class="re-grid">
+            {% for loan in loans %}
+                {% include 'real_estate/loan/_card.html.twig' with {loan: loan} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <twig:EmptyState
+            icon="banknote"
+            text="Aucun emprunt"
+            hint="Saisis ton crédit pour obtenir son échéancier et les intérêts déductibles de chaque année."
+            ctaLabel="Créer un emprunt"
+            ctaHref="{{ path('app_loan_new') }}"
+        />
+    {% endif %}
+</div>
+{% endblock %}

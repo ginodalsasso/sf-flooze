@@ -1,0 +1,7 @@
+<form method="post" action="{{ path('app_loan_line_delete', {id: line.id}) }}"
+      onsubmit="return confirm('Supprimer la ligne « {{ line.label }} » ?\n\nL\'échéancier sera recalculé sans elle.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('loan_line_delete_' ~ line.id) }}">
+    <button type="submit" class="re-row-action re-row-action--danger" title="Supprimer">
+        <i data-lucide="trash-2"></i>
+    </button>
+</form>

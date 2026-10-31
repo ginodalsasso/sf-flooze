@@ -1,0 +1,22 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.label }}" label="Libellé de la ligne" />
+    </div>
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.amount }}" label="Capital de la ligne" />
+        <twig:Form:Field field="{{ form.durationMonths }}" label="Durée (mois)" />
+    </div>
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.rate }}" label="Taux nominal annuel (%)" />
+        <twig:Form:Field field="{{ form.insuranceRate }}" label="Taux d'assurance annuel (%)" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ cancel_href }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

@@ -1,0 +1,9 @@
+<form method="post" action="{{ path('app_lease_toggle', {id: lease.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('lease_toggle_' ~ lease.id) }}">
+    <twig:Button
+        type="submit"
+        icon="{{ lease.isActive ? 'square-x' : 'rotate-ccw' }}"
+        label="{{ lease.isActive ? 'Clôturer' : 'Réactiver' }}"
+        variant="ghost"
+    />
+</form>

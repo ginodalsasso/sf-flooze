@@ -1,0 +1,276 @@
+<style>
+/* Shared by the property, lease and tenant screens. */
+.re-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.re-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.re-card:hover {
+  border-color: var(--fg-3);
+  box-shadow: var(--shadow-card), 0 0 0 3px rgba(200,213,194,.08);
+}
+
+.re-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.re-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.re-card-icon i { width: 16px; height: 16px; color: var(--fg-2); }
+
+.re-card-link { text-decoration: none; color: inherit; }
+
+.re-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+}
+
+.re-card-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-1);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.re-card-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+  margin-top: 2px;
+}
+
+.re-card-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--fg-1);
+  letter-spacing: -0.02em;
+}
+
+.re-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.re-card-footer form { margin: 0; }
+
+/* ── Key/value lines inside a card ──────────────────────── */
+.re-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.re-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+}
+
+.re-fact-label { color: var(--fg-3); }
+.re-fact-value { color: var(--fg-2); font-weight: 500; }
+.re-fact-value--mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── Forms ──────────────────────────────────────────────── */
+.re-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Property detail ────────────────────────────────────── */
+.re-show-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 28px;
+}
+
+.re-show-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.re-show-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.re-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-2);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* -- Loan: key figures ---------------------------------- */
+.re-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
+}
+
+.re-figure {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.re-figure--highlight {
+  border-color: #A89AC2;
+  background: rgba(168,154,194,0.12);
+}
+
+.re-figure-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  color: var(--fg-3);
+}
+
+.re-figure-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg-1);
+  letter-spacing: -0.02em;
+}
+
+.re-figure--highlight .re-figure-value { color: #A89AC2; }
+
+.re-figure-note {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--fg-3);
+  line-height: 1.5;
+}
+
+/* -- Loan: collapsible full schedule -------------------- */
+.re-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 4px 0;
+}
+
+.re-details > summary::-webkit-details-marker { display: none; }
+.re-details > summary:hover { color: var(--fg-1); }
+
+.re-details-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--fg-3);
+  transition: transform .15s;
+}
+
+.re-details[open] .re-details-chevron { transform: rotate(90deg); }
+
+.re-details-body { padding-top: 12px; }
+
+.re-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* -- Inline row actions (loan lines table) -------------- */
+.re-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.re-row-actions form { margin: 0; }
+
+.re-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-3);
+  cursor: pointer;
+  padding: 0;
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.re-row-action:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: var(--fg-1);
+}
+
+.re-row-action--danger:hover { color: #C2A89A; }
+.re-row-action i { width: 14px; height: 14px; }
+</style>

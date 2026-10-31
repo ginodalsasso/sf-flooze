@@ -1,0 +1,20 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.property }}" label="Bien financé" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.bankName }}" label="Banque" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.startDate }}" label="Déblocage des fonds" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_loan_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

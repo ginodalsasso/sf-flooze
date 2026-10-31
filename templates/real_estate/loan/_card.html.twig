@@ -1,0 +1,66 @@
+{# Loan card. loan = Loan. with_property = show the property name (false on the property page). #}
+{% set currency = loan.space.currency %}
+{% set lineCount = loan.lines|length %}
+
+<div class="re-card">
+    <div class="re-card-header">
+        <div class="re-card-icon">
+            <i data-lucide="banknote"></i>
+        </div>
+        <twig:Badge label="{{ loan.bankName }}" variant="info" />
+    </div>
+
+    <div>
+        <a class="re-card-link" href="{{ path('app_loan_show', {id: loan.id}) }}">
+            <p class="re-card-name">
+                {% if with_property|default(true) %}{{ loan.property.name }}{% else %}Échéancier{% endif %}
+            </p>
+        </a>
+        <p class="re-card-sub">
+            {% if lineCount > 0 %}
+                {{ loan_borrowed_capital(loan)|money(currency) }} ·
+                {{ lineCount }} ligne{{ lineCount > 1 ? 's' : '' }}
+            {% else %}
+                Aucune ligne saisie
+            {% endif %}
+        </p>
+    </div>
+
+    <div>
+        <p class="re-card-amount">{{ loan_monthly_payment(loan)|money(currency) }}</p>
+        <p class="re-card-sub">Mensualité, assurances comprises</p>
+    </div>
+
+    <div class="re-facts">
+        {% for line in loan.lines %}
+            <div class="re-fact">
+                <span class="re-fact-label">{{ line.label }}</span>
+                <span class="re-fact-value re-fact-value--mono">
+                    {{ line.amount|money(currency) }} à {{ line.rate|number_format(2, ',', ' ') }} %
+                </span>
+            </div>
+        {% endfor %}
+        <div class="re-fact">
+            <span class="re-fact-label">Fonds débloqués</span>
+            <span class="re-fact-value">{{ loan.startDate|date_short }}</span>
+        </div>
+    </div>
+
+    <div class="re-card-footer">
+        <twig:Button
+            as="a"
+            href="{{ path('app_loan_show', {id: loan.id}) }}"
+            icon="table"
+            label="Détail"
+            variant="secondary"
+        />
+        <twig:Button
+            as="a"
+            href="{{ path('app_loan_edit', {id: loan.id}) }}"
+            icon="pencil"
+            label="Modifier"
+            variant="secondary"
+        />
+        {% include 'real_estate/loan/forms/_delete.html.twig' with {loan: loan} %}
+    </div>
+</div>

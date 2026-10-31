@@ -1,0 +1,28 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'real_estate/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Nouvel emprunt — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader title="Nouvel emprunt" subtitle="Le dossier d'abord, ses lignes ensuite" />
+
+<div class="page-content">
+    <div class="form-page">
+        <twig:Flash levels="{{ ['error'] }}" />
+
+        <twig:Notice variant="info" icon="info" title="Les taux se saisissent ligne par ligne">
+            <p class="notice-text">
+                Un dossier de prêt réunit souvent plusieurs lignes à des taux différents — prêt
+                principal, PTZ à 0 %, prêt employeur. Tu renseignes ici la banque, le bien et la date
+                de déblocage ; les capitaux, taux et durées s'ajoutent juste après, une ligne à la fois.
+            </p>
+        </twig:Notice>
+
+        {% include 'real_estate/loan/forms/_form.html.twig' with {submit_label: 'Créer le dossier'} %}
+    </div>
+</div>
+{% endblock %}

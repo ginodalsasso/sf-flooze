@@ -1,0 +1,38 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.property }}" label="Bien loué" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.tenants }}" label="Locataires" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.type }}" label="Type de bail" />
+    </div>
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.rent }}" label="Loyer" />
+        <twig:Form:Field field="{{ form.charges }}" label="Charges" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.securityDeposit }}" label="Dépôt de garantie" />
+    </div>
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.startDate }}" label="Début du bail" />
+        <twig:Form:Field field="{{ form.endDate }}" label="Fin du bail" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:CheckboxField field="{{ form.isActive }}" label="Bail en cours" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_lease_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

@@ -1,0 +1,27 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.firstName }}" label="Prénom" />
+        <twig:Form:Field field="{{ form.lastName }}" label="Nom" />
+    </div>
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.email }}" label="Email" />
+        <twig:Form:Field field="{{ form.phone }}" label="Téléphone" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.monthlyIncome }}" label="Revenu mensuel net" />
+    </div>
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.guarantorName }}" label="Garant" />
+        <twig:Form:Field field="{{ form.guarantorIncome }}" label="Revenu du garant" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_tenant_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

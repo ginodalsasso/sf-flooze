@@ -1,0 +1,25 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.name }}" label="Nom du bien" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.address }}" label="Adresse" />
+    </div>
+
+    <div class="form-section">
+        <twig:Form:Field field="{{ form.type }}" label="Type de bien" />
+    </div>
+
+    <div class="form-section re-form-row">
+        <twig:Form:Field field="{{ form.purchasePrice }}" label="Prix d'achat" />
+        <twig:Form:Field field="{{ form.purchaseDate }}" label="Date d'achat" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button as="a" href="{{ path('app_property_index') }}" label="Annuler" variant="secondary" />
+        <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
+    </div>
+
+{{ form_end(form) }}

@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('app_loan_delete', {id: loan.id}) }}"
+      onsubmit="return confirm('Supprimer l\'emprunt « {{ loan.bankName }} » sur « {{ loan.property.name }} » ?\n\nCette action est irréversible.')">
+    <input type="hidden" name="_token" value="{{ csrf_token('loan_delete_' ~ loan.id) }}">
+    <twig:Button type="submit" icon="trash-2" label="Supprimer" variant="danger" />
+</form>
