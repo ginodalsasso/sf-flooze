@@ -1,0 +1,329 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'real_estate/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Emprunt {{ loan.bankName }} — Flooze{% endblock %}
+
+{% block content %}
+{% set currency = loan.space.currency %}
+{% set combined = schedule.combined %}
+{% set thisYear = combined.years|filter(y => y.year == currentYear)|first %}
+
+<twig:PageHeader
+    title="Emprunt {{ loan.bankName }}"
+    subtitle="{{ loan.property.name }} · fonds débloqués le {{ loan.startDate|date_short }}"
+    ctaLabel="Ajouter une ligne"
+    ctaHref="{{ path('app_loan_line_new', {loan: loan.id}) }}"
+/>
+
+<div class="page-content">
+    <div class="re-stack">
+        <twig:Flash />
+
+        {% if schedule.isEmpty %}
+            <twig:EmptyState
+                icon="list-plus"
+                text="Aucune ligne sur ce dossier"
+                hint="Un dossier de prêt se compose d'une ou plusieurs lignes, chacune avec son capital, son taux et sa durée — prêt principal, PTZ, prêt employeur…"
+                ctaLabel="Ajouter la première ligne"
+                ctaHref="{{ path('app_loan_line_new', {loan: loan.id}) }}"
+            />
+        {% else %}
+
+            <div class="re-figures">
+                <div class="re-figure re-figure--highlight">
+                    <span class="re-figure-label">Déductible en {{ currentYear }}</span>
+                    <span class="re-figure-value">
+                        {{ (thisYear ? thisYear.deductiblePart() : '0.00')|money(currency) }}
+                    </span>
+                    <span class="re-figure-note">
+                        {% if thisYear %}
+                            Intérêts {{ thisYear.interestPart|money(currency) }}
+                            + assurance {{ thisYear.insurancePart|money(currency) }},
+                            toutes lignes confondues. Déductible des revenus fonciers au régime réel uniquement.
+                        {% else %}
+                            Aucune échéance en {{ currentYear }}.
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="re-figure">
+                    <span class="re-figure-label">Mensualité</span>
+                    <span class="re-figure-value">{{ combined.monthlyPayment|money(currency) }}</span>
+                    <span class="re-figure-note">
+                        {% if schedule.hasStaggeredDurations() %}
+                            Première échéance. Elle baisse à chaque ligne qui s'achève.
+                        {% else %}
+                            Toutes lignes et assurances comprises
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="re-figure">
+                    <span class="re-figure-label">Capital emprunté</span>
+                    <span class="re-figure-value">{{ schedule.borrowedCapital|money(currency) }}</span>
+                    <span class="re-figure-note">
+                        {{ schedule.lines|length }} ligne{{ schedule.lines|length > 1 ? 's' : '' }} de prêt
+                    </span>
+                </div>
+
+                <div class="re-figure">
+                    <span class="re-figure-label">Coût du crédit</span>
+                    <span class="re-figure-value">{{ combined.totalCost()|money(currency) }}</span>
+                    <span class="re-figure-note">
+                        Intérêts {{ combined.totalInterest|money(currency) }}
+                        + assurance {{ combined.totalInsurance|money(currency) }}
+                    </span>
+                </div>
+
+                <div class="re-figure">
+                    <span class="re-figure-label">Dernière échéance</span>
+                    <span class="re-figure-value">{{ combined.rows|last.dueDate|date_short }}</span>
+                    <span class="re-figure-note">
+                        {{ combined.rows|length }} échéances, première le {{ combined.rows|first.dueDate|date_short }}
+                    </span>
+                </div>
+            </div>
+
+            {% if nextRow and nextRow.dueDate <= today() %}
+                <div>
+                    <h2 class="re-section-title">Échéance à régler</h2>
+
+                    <div class="re-figure re-figure--highlight">
+                        <span class="re-figure-label">Échéance du {{ nextRow.dueDate|date_short }}</span>
+                        <span class="re-figure-value">{{ nextRow.totalPayment|money(currency) }}</span>
+                        <span class="re-figure-note">
+                            Capital {{ nextRow.capitalPart|money(currency) }}
+                            + intérêts {{ nextRow.interestPart|money(currency) }}
+                            + assurance {{ nextRow.insurancePart|money(currency) }}
+                        </span>
+                    </div>
+
+                    {% include 'real_estate/loan/forms/_confirm_payment.html.twig' with {loan: loan, confirmForm: confirmForm, nextRow: nextRow} %}
+                </div>
+            {% endif %}
+
+            <div>
+                <h2 class="re-section-title">Lignes du prêt</h2>
+                <div class="data-table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Ligne</th>
+                                <th>Capital</th>
+                                <th>Taux</th>
+                                <th>Assurance</th>
+                                <th>Durée</th>
+                                <th>Mensualité</th>
+                                <th>Coût</th>
+                                <th>Déductible {{ currentYear }}</th>
+                                <th>Fin</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in schedule.lines %}
+                                {% set lineYear = item.schedule.years|filter(y => y.year == currentYear)|first %}
+                                <tr>
+                                    <td>{{ item.line.label }}</td>
+                                    <td class="data-num">{{ item.line.amount|money(currency) }}</td>
+                                    <td class="data-num">{{ item.line.rate|number_format(2, ',', ' ') }} %</td>
+                                    <td class="data-num data-num--muted">{{ item.line.insuranceRate|number_format(2, ',', ' ') }} %</td>
+                                    <td class="data-num data-num--muted">{{ item.line.durationMonths }} mois</td>
+                                    <td class="data-num">{{ item.schedule.monthlyPayment|money(currency) }}</td>
+                                    <td class="data-num data-num--muted">{{ item.schedule.totalCost()|money(currency) }}</td>
+                                    <td class="data-num data-num--deductible">
+                                        {{ (lineYear ? lineYear.deductiblePart() : '0.00')|money(currency) }}
+                                    </td>
+                                    <td class="data-num data-num--muted">
+                                        {{ item.schedule.rows|length > 0 ? item.schedule.rows|last.dueDate|date_short : '—' }}
+                                    </td>
+                                    <td>
+                                        <div class="re-row-actions">
+                                            <a href="{{ path('app_loan_line_edit', {id: item.line.id}) }}" class="re-row-action" title="Modifier">
+                                                <i data-lucide="pencil"></i>
+                                            </a>
+                                            {% include 'real_estate/loan/forms/_line_delete.html.twig' with {line: item.line} %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td>Total</td>
+                                <td>{{ schedule.borrowedCapital|money(currency) }}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>{{ combined.monthlyPayment|money(currency) }}</td>
+                                <td>{{ combined.totalCost()|money(currency) }}</td>
+                                <td>{{ (thisYear ? thisYear.deductiblePart() : '0.00')|money(currency) }}</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            {% if schedule.hasStaggeredDurations() %}
+                <twig:Notice variant="warn" icon="chart-no-axes-column-decreasing" title="Les lignes ne s'achèvent pas ensemble">
+                    <p class="notice-text">
+                        La mensualité affichée est celle de la <strong>première échéance</strong>. Elle diminue
+                        chaque fois qu'une ligne arrive à son terme : le tableau par année ci-dessous montre
+                        ces paliers, colonne « Total payé ».
+                    </p>
+                </twig:Notice>
+            {% endif %}
+
+            <div>
+                <h2 class="re-section-title">Par année, toutes lignes confondues</h2>
+                {% include 'real_estate/loan/_year_table.html.twig' with {
+                    years: combined.years,
+                    schedule: combined,
+                    capital: schedule.borrowedCapital,
+                    currency: currency,
+                    currentYear: currentYear,
+                } %}
+            </div>
+
+            {% for item in schedule.lines %}
+                <details class="re-details">
+                    <summary>
+                        <i data-lucide="chevron-right" class="re-details-chevron"></i>
+                        {{ item.line.label }} — par année ({{ item.line.rate|number_format(2, ',', ' ') }} %)
+                    </summary>
+                    <div class="re-details-body">
+                        {% include 'real_estate/loan/_year_table.html.twig' with {
+                            years: item.schedule.years,
+                            schedule: item.schedule,
+                            capital: item.line.amount,
+                            currency: currency,
+                            currentYear: currentYear,
+                        } %}
+                    </div>
+                </details>
+            {% endfor %}
+
+            <details class="re-details">
+                <summary>
+                    <i data-lucide="chevron-right" class="re-details-chevron"></i>
+                    Échéancier mensuel combiné ({{ combined.rows|length }} lignes)
+                </summary>
+                <div class="re-details-body">
+                    <div class="data-table-wrap data-table-wrap--tall">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Échéance</th>
+                                    <th>Capital</th>
+                                    <th>Intérêts</th>
+                                    <th>Assurance</th>
+                                    <th>Mensualité</th>
+                                    <th>Reste dû</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in combined.rows %}
+                                    <tr>
+                                        <td class="data-num data-num--muted">{{ row.monthNumber }}</td>
+                                        <td class="data-num">{{ row.dueDate|date_short }}</td>
+                                        <td class="data-num data-num--muted">{{ row.capitalPart|money(currency) }}</td>
+                                        <td class="data-num">{{ row.interestPart|money(currency) }}</td>
+                                        <td class="data-num">{{ row.insurancePart|money(currency) }}</td>
+                                        <td class="data-num">{{ row.totalPayment|money(currency) }}</td>
+                                        <td class="data-num data-num--muted">{{ row.remainingCapital|money(currency) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+
+            <div>
+                <h2 class="re-section-title">Mensualités confirmées</h2>
+
+                {% if payments|length > 0 %}
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Échéance</th>
+                                    <th>Capital</th>
+                                    <th>Intérêts</th>
+                                    <th>Assurance</th>
+                                    <th>Mensualité</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                    <tr>
+                                        <td class="data-num data-num--muted">{{ payment.monthNumber }}</td>
+                                        <td class="data-num">{{ payment.dueDate|date_short }}</td>
+                                        <td class="data-num data-num--muted">{{ payment.capitalPart|money(currency) }}</td>
+                                        <td class="data-num">{{ payment.interestPart|money(currency) }}</td>
+                                        <td class="data-num">{{ payment.insurancePart|money(currency) }}</td>
+                                        <td class="data-num">
+                                            {{ payment.transaction ? payment.transaction.amount|money(currency) : '—' }}
+                                        </td>
+                                        <td>
+                                            {% if payment.transaction %}
+                                                <twig:Button
+                                                    as="a"
+                                                    href="{{ path('app_transaction_edit', {id: payment.transaction.id, redirect_to: path('app_loan_show', {id: loan.id})}) }}"
+                                                    icon="arrow-up-right"
+                                                    label="Transaction"
+                                                    variant="secondary"
+                                                />
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <twig:EmptyState
+                        icon="receipt"
+                        text="Aucune mensualité réglée"
+                        hint="Confirme l'échéance à régler ci-dessus pour démarrer l'historique."
+                    />
+                {% endif %}
+            </div>
+
+            <twig:Notice variant="info" icon="info" title="Ce que l'échéancier suppose">
+                <ul class="notice-list">
+                    <li>
+                        <i data-lucide="calculator"></i>
+                        <span><strong>Mensualité constante à taux fixe</strong> sur chaque ligne, première échéance un mois après le déblocage des fonds. Un taux variable, un différé ou un lissage négocié ne se calculent pas comme ça.</span>
+                    </li>
+                    <li>
+                        <i data-lucide="shield"></i>
+                        <span><strong>Assurance sur le capital de la ligne</strong>, donc prime constante. Certains contrats l'assoient sur le capital restant dû : la prime décroît alors avec le temps.</span>
+                    </li>
+                    <li>
+                        <i data-lucide="receipt-text"></i>
+                        <span><strong>Aucune transaction n'est créée</strong> par cet échéancier : il est calculé, pas enregistré. Les mensualités réellement payées restent à saisir, et seule la part intérêts + assurance est déductible — jamais le capital remboursé.</span>
+                    </li>
+                </ul>
+            </twig:Notice>
+
+        {% endif %}
+
+        <div class="re-show-actions">
+            <twig:Button as="a" href="{{ path('app_loan_index') }}" icon="arrow-left" label="Tous les emprunts" variant="ghost" />
+            <twig:Button as="a" href="{{ path('app_property_show', {id: loan.property.id}) }}" icon="building-2" label="Voir le bien" variant="secondary" />
+            <twig:Button as="a" href="{{ path('app_loan_edit', {id: loan.id}) }}" icon="pencil" label="Modifier le dossier" variant="secondary" />
+            {% include 'real_estate/loan/forms/_delete.html.twig' with {loan: loan} %}
+        </div>
+    </div>
+</div>
+{% endblock %}

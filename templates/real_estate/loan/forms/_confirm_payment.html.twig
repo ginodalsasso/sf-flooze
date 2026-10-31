@@ -1,0 +1,11 @@
+{# Confirms the next due loan instalment. loan, confirmForm, nextRow = AmortizationRowDto. #}
+{{ form_start(confirmForm, {action: path('app_loan_payment_confirm', {loan: loan.id})}) }}
+    <div class="re-form-row">
+        <twig:Form:Field field="{{ confirmForm.account }}" label="Compte" />
+        <twig:Form:Field field="{{ confirmForm.category }}" label="Catégorie" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button type="submit" icon="check" label="Réglée" />
+    </div>
+{{ form_end(confirmForm) }}
