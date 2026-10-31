@@ -1,0 +1,6 @@
+{# Marks the oldest due rent as unpaid. lease, nextDue = RentDueDto. #}
+<form method="post" action="{{ path('app_rent_payment_late', {lease: lease.id}) }}">
+    <input type="hidden" name="due_date" value="{{ nextDue.dueDate|date('Y-m-d') }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('rent_payment_late_' ~ lease.id) }}">
+    <twig:Button type="submit" icon="alert-triangle" label="Impayé" variant="ghost" />
+</form>

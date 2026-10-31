@@ -1,0 +1,140 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'real_estate/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Bail {{ lease.property.name }} — Flooze{% endblock %}
+
+{% block content %}
+{% set currency = lease.space.currency %}
+{% set term = lease_term(lease) %}
+
+<twig:PageHeader
+    title="{{ lease.property.name }}"
+    subtitle="{{ lease.type.label() }} · {{ lease.tenants|map(tenant => tenant.fullName)|join(', ') }}"
+/>
+
+<div class="page-content">
+    <div class="re-stack">
+        <twig:Flash />
+
+        <div class="re-figures">
+            <div class="re-figure re-figure--highlight">
+                <span class="re-figure-label">Loyer hors charges</span>
+                <span class="re-figure-value">{{ lease.rent|money(currency) }}</span>
+                <span class="re-figure-note">+ {{ lease.charges|money(currency) }} de charges</span>
+            </div>
+
+            <div class="re-figure">
+                <span class="re-figure-label">Dépôt de garantie</span>
+                <span class="re-figure-value">{{ lease.securityDeposit|money(currency) }}</span>
+            </div>
+
+            <div class="re-figure">
+                <span class="re-figure-label">Période</span>
+                <span class="re-figure-value">{{ lease.startDate|date_short }} → {{ term.endDate|date_short }}</span>
+                <span class="re-figure-note">
+                    {% if term.isRenewed %}
+                        Reconduit tacitement {{ term.renewalCount }} fois, terme signé {{ lease.endDate|date_short }}
+                    {% else %}
+                        Terme signé
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        {% if lease.isActive %}
+            <div>
+                <h2 class="re-section-title">Loyer à encaisser</h2>
+
+                {% if nextDue %}
+                    <div class="re-figure re-figure--highlight">
+                        <span class="re-figure-label">Échéance du {{ nextDue.dueDate|date_short }}</span>
+                        <span class="re-figure-value">{{ nextDue.amount|money(currency) }}</span>
+                        <span class="re-figure-note">Loyer et charges comprises</span>
+                    </div>
+
+                    {% if nextDue.backlog > 0 %}
+                        <twig:Notice variant="warn" icon="alert-triangle" title="{{ nextDue.backlog }} échéance{{ nextDue.backlog > 1 ? 's' : '' }} en attente derrière celle-ci">
+                            <p class="notice-text">
+                                Seule la plus ancienne peut être traitée : confirme-la ou marque-la impayée pour
+                                faire avancer le compteur.
+                            </p>
+                        </twig:Notice>
+                    {% endif %}
+
+                    {% include 'real_estate/lease/forms/_confirm_rent.html.twig' with {lease: lease, confirmForm: confirmForm, nextDue: nextDue} %}
+                    {% include 'real_estate/lease/forms/_late_rent.html.twig' with {lease: lease, nextDue: nextDue} %}
+                {% else %}
+                    <twig:Notice variant="info" icon="check" title="Loyers à jour">
+                        <p class="notice-text">Aucune échéance en attente de décision.</p>
+                    </twig:Notice>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div>
+            <h2 class="re-section-title">Historique des loyers</h2>
+
+            {% if payments|length > 0 %}
+                <div class="data-table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Échéance</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Date</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                <tr>
+                                    <td class="data-num">{{ payment.dueDate|date_short }}</td>
+                                    <td class="data-num">{{ payment.amount|money(currency) }}</td>
+                                    <td>
+                                        <twig:Badge
+                                            label="{{ payment.status.label() }}"
+                                            variant="{{ payment.status.value == 'paid' ? 'positive' : 'negative' }}"
+                                        />
+                                    </td>
+                                    <td class="data-num data-num--muted">
+                                        {{ payment.paidDate ? payment.paidDate|date_short : '—' }}
+                                    </td>
+                                    <td>
+                                        {% if payment.transaction %}
+                                            <twig:Button
+                                                as="a"
+                                                href="{{ path('app_transaction_edit', {id: payment.transaction.id, redirect_to: path('app_lease_show', {id: lease.id})}) }}"
+                                                icon="arrow-up-right"
+                                                label="Transaction"
+                                                variant="secondary"
+                                            />
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <twig:EmptyState
+                    icon="receipt"
+                    text="Aucun loyer enregistré"
+                    hint="Confirme la première échéance ci-dessus pour démarrer l'historique."
+                />
+            {% endif %}
+        </div>
+
+        <div class="re-show-actions">
+            <twig:Button as="a" href="{{ path('app_lease_index') }}" icon="arrow-left" label="Tous les baux" variant="ghost" />
+            <twig:Button as="a" href="{{ path('app_property_show', {id: lease.property.id}) }}" icon="building-2" label="Voir le bien" variant="secondary" />
+            <twig:Button as="a" href="{{ path('app_lease_edit', {id: lease.id}) }}" icon="pencil" label="Modifier le bail" variant="secondary" />
+            {% include 'real_estate/lease/forms/_delete.html.twig' with {lease: lease} %}
+        </div>
+    </div>
+</div>
+{% endblock %}

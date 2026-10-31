@@ -1,0 +1,13 @@
+{# Confirms the oldest due rent as paid. lease, confirmForm, nextDue = RentDueDto. #}
+{{ form_start(confirmForm, {action: path('app_rent_payment_confirm', {lease: lease.id})}) }}
+    {{ form_widget(confirmForm.dueDate, {value: nextDue.dueDate|date('Y-m-d')}) }}
+
+    <div class="re-form-row">
+        <twig:Form:Field field="{{ confirmForm.account }}" label="Compte" />
+        <twig:Form:Field field="{{ confirmForm.category }}" label="Catégorie" />
+    </div>
+
+    <div class="form-actions">
+        <twig:Button type="submit" icon="check" label="Encaissé" />
+    </div>
+{{ form_end(confirmForm) }}

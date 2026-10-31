@@ -1,0 +1,80 @@
+{# Lease card. lease = Lease. with_property = show the property name (false on the property page). #}
+{% set currency = lease.space.currency %}
+{% set term = lease_term(lease) %}
+
+<div class="re-card">
+    <div class="re-card-header">
+        <div class="re-card-icon">
+            <i data-lucide="file-signature"></i>
+        </div>
+        {% if not lease.isActive %}
+            <twig:Badge label="Clôturé" variant="inactive" />
+        {% elseif term.isRenewed %}
+            <twig:Badge label="Reconduit" variant="info" />
+        {% else %}
+            <twig:Badge label="En cours" variant="active" />
+        {% endif %}
+    </div>
+
+    <div>
+        {% if with_property|default(true) %}
+            <a class="re-card-link" href="{{ path('app_property_show', {id: lease.property.id}) }}">
+                <p class="re-card-name">{{ lease.property.name }}</p>
+            </a>
+        {% else %}
+            <p class="re-card-name">{{ lease.type.label() }}</p>
+        {% endif %}
+        <p class="re-card-sub">
+            {% if with_property|default(true) %}{{ lease.type.label() }} · {% endif %}
+            {{ lease.tenants|map(tenant => tenant.fullName)|join(', ') }}
+        </p>
+    </div>
+
+    <div>
+        <p class="re-card-amount">{{ lease.rent|money(currency) }}</p>
+        <p class="re-card-sub">Loyer hors charges</p>
+    </div>
+
+    <div class="re-facts">
+        <div class="re-fact">
+            <span class="re-fact-label">Charges</span>
+            <span class="re-fact-value re-fact-value--mono">{{ lease.charges|money(currency) }}</span>
+        </div>
+        <div class="re-fact">
+            <span class="re-fact-label">Dépôt de garantie</span>
+            <span class="re-fact-value re-fact-value--mono">{{ lease.securityDeposit|money(currency) }}</span>
+        </div>
+        <div class="re-fact">
+            <span class="re-fact-label">Période</span>
+            <span class="re-fact-value">{{ lease.startDate|date_short }} → {{ term.endDate|date_short }}</span>
+        </div>
+        {% if term.isRenewed %}
+            <div class="re-fact">
+                <span class="re-fact-label">Reconduction tacite</span>
+                <span class="re-fact-value">
+                    {{ term.renewalCount }} an{{ term.renewalCount > 1 ? 's' : '' }} ·
+                    terme signé {{ lease.endDate|date_short }}
+                </span>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="re-card-footer">
+        {% include 'real_estate/lease/forms/_toggle.html.twig' with {lease: lease} %}
+        <twig:Button
+            as="a"
+            href="{{ path('app_lease_show', {id: lease.id}) }}"
+            icon="table"
+            label="Détail"
+            variant="secondary"
+        />
+        <twig:Button
+            as="a"
+            href="{{ path('app_lease_edit', {id: lease.id}) }}"
+            icon="pencil"
+            label="Modifier"
+            variant="secondary"
+        />
+        {% include 'real_estate/lease/forms/_delete.html.twig' with {lease: lease} %}
+    </div>
+</div>
