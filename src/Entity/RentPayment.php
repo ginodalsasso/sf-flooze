@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: RentPaymentRepository::class)]
 #[ORM\Table(name: 'rent_payment')]
+#[ORM\UniqueConstraint(name: 'uniq_rent_payment_lease_due_date', columns: ['lease_id', 'due_date'])]
 #[ORM\HasLifecycleCallbacks]
 class RentPayment
 {
