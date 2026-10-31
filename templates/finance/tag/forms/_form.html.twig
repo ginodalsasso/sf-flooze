@@ -6,7 +6,11 @@
     </div>
 
     <div class="form-actions">
-        <twig:Button as="a" href="{{ path('app_tag_index') }}" label="Annuler" variant="secondary" />
+        {% if inline|default(false) %}
+            <twig:Button type="button" label="Annuler" variant="secondary" attr="{{ {'data-action': 'inline-create#close'} }}" />
+        {% else %}
+            <twig:Button as="a" href="{{ path('app_tag_index') }}" label="Annuler" variant="secondary" />
+        {% endif %}
         <twig:Button type="submit" icon="check" label="{{ submit_label }}" />
     </div>
 

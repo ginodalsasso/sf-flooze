@@ -66,6 +66,35 @@ class TagController extends AbstractController
         return $this->render('finance/tag/new.html.twig', ['form' => $form]);
     }
 
+    #[Route('/new/inline', name: 'new_inline')]
+    public function newInline(Request $request): Response
+    {
+        $space = $this->resolveActiveSpace('EDIT');
+        if ($space instanceof RedirectResponse) {
+            return $space;
+        }
+
+        $target = (string) $request->query->get('target', '');
+
+        $tag = (new Tag())->setSpace($space);
+        $form = $this->createForm(TagFormType::class, $tag);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->tagService->save($tag);
+
+            return $this->render('finance/tag/_inline_new_stream.html.twig', [
+                'tag' => $tag,
+                'target' => $target,
+            ], new Response(null, 200, ['Content-Type' => 'text/vnd.turbo-stream.html']));
+        }
+
+        return $this->render('finance/tag/_inline_new.html.twig', [
+            'form' => $form,
+            'target' => $target,
+        ]);
+    }
+
     #[Route('/{id}/edit', name: 'edit', requirements: ['id' => '\d+'])]
     public function edit(Request $request, Tag $tag): Response
     {
