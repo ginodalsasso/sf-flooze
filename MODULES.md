@@ -407,8 +407,14 @@ public function generateNumber(Space $space, int $year): string {
 
 > **Déjà en place : la page Déclaration** (`/tax/declaration`, `TaxSummaryService`) — vue annuelle
 > **calculée et en lecture seule**, construite sur `Transaction` × `Category.fiscal_bucket` /
-> `fiscal_role`. Elle ne persiste rien : ni `TaxYear`, ni `TaxItem`, qui restent à implémenter
-> pour la revue cochable et l'export 2042.
+> `fiscal_role`. Elle ne persiste rien.
+>
+> **Déjà en place : la revue cochable** (`/tax/years`, `TaxYearService`/`TaxItemService`) — un
+> `TaxYear` par space et par année (statut `draft|filed|paid`, régime retenu par bucket, note
+> libre), et un `TaxItem` par ligne bucket × rôle cochée comme reportée sur la déclaration.
+> Aucun montant n'y est stocké : `TaxItem` ne fait que mémoriser qu'une ligne déjà calculée par
+> `TaxSummaryService` a été traitée — jamais une deuxième source de vérité pour un chiffre.
+> L'export 2042 (`TaxExportService`) reste à implémenter.
 >
 > **Une assiette par catégorie de revenus, jamais de solde global.** `TaxSummaryDto` n'expose
 > volontairement aucun « résultat imposable » unique : la loi cloisonne, et soustraire des
@@ -431,58 +437,55 @@ public function generateNumber(Space $space, int $year): string {
 
 **TaxYear**
 ```
-id, space_id (FK), year (int), status (draft|filed|paid), note, created_at, updated_at
+id, space_id (FK), year (smallint), status (draft|filed|paid),
+regime_choices (JSON, nullable), note (text, nullable), created_at, updated_at
 ```
+`regime_choices` : map `{bucket_value: 'reel'|'micro'}` — le régime réellement retenu par
+catégorie fiscale, indépendant de la recommandation affichée par `TaxBucketDto.cheaperRegime()`.
 
 **TaxItem**
 ```
-id, space_id, tax_year_id (FK), transaction_id (FK nullable), property_id (FK nullable),
-kind (to_declare|to_deduct|to_pay), label, amount (decimal nullable), note, done (bool),
-created_at, updated_at
+id, space_id, tax_year_id (FK, ON DELETE CASCADE), fiscal_bucket (enum FiscalBucketEnum),
+fiscal_role (enum FiscalRoleEnum), done (bool), created_at, updated_at
 ```
+Contrainte unique `(tax_year_id, fiscal_bucket, fiscal_role)`. Une ligne n'existe que si
+l'utilisateur a coché au moins une fois — jamais pré-générée pour tous les buckets d'une année.
 
 ### Use Cases
 
-- Create a fiscal year record per year (draft by default).
-- Add items : income to declare, charges to deduct, taxes to pay.
-- Link TaxItems to source Transactions or Properties for traceability.
-- Calculate estimated tax : `(sum to_declare) - (sum to_deduct)` × rate.
-- Track what has been filed (`done=true`) and what remains.
-- Generate fiscal summary PDF for 2042, 2042-C-Pro declaration forms.
-- Support fiscal regimes : micro-BIC, réel, micro-foncier, LMNP, PEA.
+- Ouvrir la revue d'une année (`/tax/years/{year}`) crée son `TaxYear` en `draft` si besoin.
+- Cocher, par bucket et par rôle (revenu/charge), qu'une ligne de `/tax/declaration` a été
+  reportée sur la déclaration officielle.
+- Choisir, par bucket, le régime réellement retenu (réel/micro) quand la catégorie l'admet.
+- Faire avancer le statut du dossier d'un pas à la fois (`draft → filed → paid`, et retour).
+- Noter librement l'état d'avancement de la revue.
 
 ### Key Relationships
 
 ```
 Space (1) → (N) TaxYear
 TaxYear (1) → (N) TaxItem
-TaxItem (N) → (0..1) Transaction  [source transaction, nullable]
-TaxItem (N) → (0..1) Property     [source property, nullable]
 ```
 
 ### Workflows
 
-**Workflow: Annual Tax Summary**
+**Workflow: Revue annuelle**
 ```
-php bin/console app:generate-tax-summary --year=2024 --space=1
+GET /tax/years/{year}
     ↓
-GenerateTaxSummaryCommand → TaxYearService.aggregateForYear($space, 2024)
+TaxYearService.getOrCreate($space, $year) → TaxYear (draft si nouveau)
     ↓
-Query: all Transaction WHERE category.is_declarable=true AND YEAR(date)=2024
-    → create TaxItem(kind=to_declare, label=category.name, amount=sum)
-Query: all Transaction WHERE category.is_deductible=true AND YEAR(date)=2024
-    → create TaxItem(kind=to_deduct, label=category.name, amount=sum)
-Query: all LoanPayment.interest_part WHERE year=2024
-    → create TaxItem(kind=to_deduct, label='Intérêts emprunt', amount=sum)
+TaxSummaryService.summarize($space, $year) → mêmes buckets que /tax/declaration
     ↓
-TaxYear.status = 'draft' → ready for review
+Pour chaque ligne bucket × rôle : case à cocher (TaxItemService.toggle(), créée à la demande)
+Pour chaque bucket admettant le micro : sélecteur de régime (TaxYearService.setRegimeChoice())
     ↓
-User reviews items, marks done=true one by one
-    ↓ GET /tax/export/{year}
-TaxSummaryPdfGenerator.generate($taxYear)
-    → Render: revenues, charges, net taxable, estimated tax
-    → PDF download for declaration
+L'utilisateur fait avancer le statut (TaxYearService.transition()) au fil de la déclaration
 ```
+
+> Aucune `Transaction` ni aucun montant n'est créé par cette revue — elle ne fait que tracer
+> ce qui, parmi ce que `TaxSummaryService` calcule déjà, a été traité. L'export PDF 2042
+> (`TaxExportService`) reste à implémenter.
 
 ---
 

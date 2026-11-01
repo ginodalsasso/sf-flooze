@@ -140,8 +140,8 @@ src/Entity/
 ├── Invoice.php               # Invoicing: facture with sequential number
 ├── InvoiceLine.php           # Invoicing: line items (HT/TTC breakdown)
 │
-├── TaxYear.php               # Tax: fiscal year (draft/filed/paid)
-├── TaxItem.php               # Tax: item (to_declare/to_deduct/to_pay)
+├── TaxYear.php               # Tax: fiscal year (draft/filed/paid), regime choisi par bucket
+├── TaxItem.php               # Tax: case cochée par bucket × rôle (revenu/charge)
 │
 ├── Document.php              # Generic: stored file (PDF, image)
 ├── DocumentLink.php          # Generic: polymorphic relation Document → any entity
@@ -196,8 +196,6 @@ Quote (1) ──── (0..1) Invoice [conversion]
 Invoice (1) ──── (N) InvoiceLine
 
 TaxYear (1) ──── (N) TaxItem
-TaxItem (N) ──── (0..1) Transaction [nullable FK]
-TaxItem (N) ──── (0..1) Property [nullable FK]
 
 Document (1) ──── (N) DocumentLink
 DocumentLink (N) ──── (1) {any entity} [polymorphic: entity_id + entity_type]
@@ -257,8 +255,8 @@ Invoicing/
 
 Tax/
 ├── TaxSummaryService.php         # Vue declaration d'une annee, calculee depuis le registre
-├── TaxItemService.php            # CRUD + linking
-└── TaxYearService.php            # Aggregate, calculate, export
+├── TaxYearService.php            # Statut (draft/filed/paid), regime choisi par bucket, note
+└── TaxItemService.php            # Toggle a reviewed checkbox per bucket × role
 
 PDF/
 ├── QuotePdfGenerator.php
@@ -320,8 +318,7 @@ Invoicing/
 
 Tax/
 ├── DeclarationController.php     # /tax/declaration (vue annuelle, lecture seule)
-├── TaxYearController.php         # /tax/years
-├── TaxItemController.php         # /tax/items
+├── TaxYearController.php         # /tax/years (index, show, status, regime, note, item toggle)
 └── TaxExportController.php       # /tax/export (2042 PDF)
 
 Document/
@@ -351,7 +348,6 @@ AI/
 | Command | Purpose | Schedule |
 |---------|---------|----------|
 | `ProcessRemindersCommand` | Send email before deadlines | Daily cron |
-| `GenerateTaxSummaryCommand` | Aggregate TaxYear items | On demand |
 | `ReconcileAccountCommand` | Match Transactions ↔ bank statement | On demand |
 | `SyncCloudStorageCommand` | Backup docs to Google Drive | Weekly (future) |
 | `OptimizeTaxesCommand` | Run Ollama fiscal recommendations | On demand (future) |
