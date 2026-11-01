@@ -10,6 +10,8 @@ use App\Dto\Finance\TransactionTotalsDto;
 use App\Entity\Account;
 use App\Entity\Space;
 use App\Entity\Transaction;
+use App\Enum\FiscalBucketEnum;
+use App\Enum\FiscalRoleEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\Contract\TransactionRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -289,5 +291,141 @@ final class TransactionRepository extends ServiceEntityRepository implements Tra
             ->setParameter('account', $account)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * Totals per category for one fiscal role, grouped by the fiscal bucket they belong to.
+     *
+     * The bucket is what makes the declaration sound: a charge is only ever deducted from the
+     * income of its own bucket, so totals are never added across buckets.
+     *
+     * @return list<array{bucket: FiscalBucketEnum, categoryId: int, categoryName: string, total: string, nb: int}>
+     */
+    public function sumByFiscalRole(Space $space, DateRangeDto $range, FiscalRoleEnum $role): array
+    {
+        $rows = $this->createTaxScopedQb($space, $range)
+            ->select(
+                'c.fiscalBucket AS bucket',
+                'c.id AS categoryId',
+                'c.name AS categoryName',
+                'COALESCE(SUM(t.amount * t.fxRate), 0) AS total',
+                'COUNT(t.id) AS nb',
+            )
+            ->andWhere('c.fiscalRole = :role')
+            ->andWhere('c.fiscalBucket IS NOT NULL')
+            ->setParameter('role', $role)
+            ->groupBy('c.fiscalBucket')
+            ->addGroupBy('c.id')
+            ->addGroupBy('c.name')
+            ->orderBy('total', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static fn(array $row) => [
+            // A scalar select returns the stored value, not the hydrated enum.
+            'bucket'       => $row['bucket'] instanceof FiscalBucketEnum
+                ? $row['bucket']
+                : FiscalBucketEnum::from((string) $row['bucket']),
+            'categoryId'   => (int) $row['categoryId'],
+            'categoryName' => (string) $row['categoryName'],
+            'total'        => bcadd((string) $row['total'], '0', 2),
+            'nb'           => (int) $row['nb'],
+        ], $rows);
+    }
+
+    /**
+     * The transactions behind the declaration lines, so every total can be opened and checked.
+     * Ordered by category to be grouped for display without re-summing.
+     *
+     * @return Transaction[]
+     */
+    public function findTaxRelevantByCategory(Space $space, DateRangeDto $range): array
+    {
+        return $this->createTaxScopedQb($space, $range)
+            ->andWhere('c.fiscalBucket IS NOT NULL')
+            ->andWhere('c.fiscalRole IS NOT NULL')
+            ->orderBy('c.name', 'ASC')
+            ->addOrderBy('t.date', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * What the declaration does NOT count: movements with no category, or one whose fiscal
+     * scope is incomplete. Surfacing them is the point — an omission is the likeliest mistake.
+     *
+     * @return array{income: string, expense: string, nb: int}
+     */
+    public function sumOutsideTaxScope(Space $space, DateRangeDto $range): array
+    {
+        $row = $this->createTaxScopedQb($space, $range)
+            ->select(
+                'COUNT(t.id) AS nb',
+                'COALESCE(SUM(CASE WHEN t.type = :incomeType THEN t.amount * t.fxRate ELSE 0 END), 0) AS income',
+                'COALESCE(SUM(CASE WHEN t.type = :expenseType THEN t.amount * t.fxRate ELSE 0 END), 0) AS expense',
+            )
+            ->andWhere('(t.category IS NULL OR c.fiscalBucket IS NULL OR c.fiscalRole IS NULL)')
+            ->setParameter('incomeType', TransactionTypeEnum::INCOME)
+            ->setParameter('expenseType', TransactionTypeEnum::EXPENSE)
+            ->getQuery()
+            ->getSingleResult();
+
+        return [
+            'income'  => bcadd((string) $row['income'], '0', 2),
+            'expense' => bcadd((string) $row['expense'], '0', 2),
+            'nb'      => (int) $row['nb'],
+        ];
+    }
+
+    /**
+     * Years the space actually holds movements in, most recent first.
+     *
+     * Derived from the first and last dates rather than a YEAR() grouping, which is a
+     * vendor-specific DQL function.
+     *
+     * @return list<int>
+     */
+    public function findYearsWithTransactions(Space $space): array
+    {
+        $row = $this->createQueryBuilder('t')
+            ->select('MIN(t.date) AS firstDate', 'MAX(t.date) AS lastDate')
+            ->where('t.space = :space')
+            ->andWhere('t.deletedAt IS NULL')
+            ->setParameter('space', $space)
+            ->getQuery()
+            ->getSingleResult();
+
+        if ($row['firstDate'] === null) {
+            return [];
+        }
+
+        // Parsing a stored date, not reading "now": the clock rule does not apply here.
+        $first = (int) (new \DateTimeImmutable((string) $row['firstDate']))->format('Y');
+        $last = (int) (new \DateTimeImmutable((string) $row['lastDate']))->format('Y');
+
+        return range($last, $first);
+    }
+
+    /**
+     * Base of every declaration figure: active movements of the period, transfers excluded.
+     *
+     * A transfer moves money between the owner's own accounts — counting it as income or
+     * charge would inflate the declaration twice over.
+     */
+    private function createTaxScopedQb(Space $space, DateRangeDto $range): QueryBuilder
+    {
+        return $this->createQueryBuilder('t')
+            ->join('t.account', 'a')
+            ->leftJoin('t.category', 'c')
+            ->where('t.space = :space')
+            ->andWhere('t.deletedAt IS NULL')
+            ->andWhere('a.deletedAt IS NULL')
+            ->andWhere('t.type != :transferType')
+            ->andWhere('t.date >= :start')
+            ->andWhere('t.date < :end')
+            ->setParameter('space', $space)
+            ->setParameter('transferType', TransactionTypeEnum::TRANSFER)
+            ->setParameter('start', $range->from)
+            ->setParameter('end', $range->toExclusive);
     }
 }

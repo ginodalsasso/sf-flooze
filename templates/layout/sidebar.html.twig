@@ -96,26 +96,27 @@
         </a>
 
         <span class="nav-section-label">Patrimoine</span>
-        <details class="nav-group">
+        {% set inRealEstate = _route starts with 'app_property_' or _route starts with 'app_lease_' or _route starts with 'app_tenant_' or _route starts with 'app_loan_' %}
+        <details class="nav-group"{{ inRealEstate ? ' open' : '' }}>
             <summary>
                 <i data-lucide="building-2"></i>
                 Immobilier
                 <i data-lucide="chevron-right" class="nav-group-chevron"></i>
             </summary>
             <div class="nav-group-items">
-                <a href="#" class="nav-item nav-item--sub">
+                <a href="{{ path('app_property_index') }}" class="nav-item nav-item--sub{{ _route starts with 'app_property_' ? ' is-active' : '' }}">
                     <i data-lucide="home"></i>
                     Biens
                 </a>
-                <a href="#" class="nav-item nav-item--sub">
+                <a href="{{ path('app_lease_index') }}" class="nav-item nav-item--sub{{ _route starts with 'app_lease_' ? ' is-active' : '' }}">
                     <i data-lucide="file-signature"></i>
                     Baux
                 </a>
-                <a href="#" class="nav-item nav-item--sub">
+                <a href="{{ path('app_tenant_index') }}" class="nav-item nav-item--sub{{ _route starts with 'app_tenant_' ? ' is-active' : '' }}">
                     <i data-lucide="users"></i>
                     Locataires
                 </a>
-                <a href="#" class="nav-item nav-item--sub">
+                <a href="{{ path('app_loan_index') }}" class="nav-item nav-item--sub{{ _route starts with 'app_loan_' ? ' is-active' : '' }}">
                     <i data-lucide="banknote"></i>
                     Emprunts
                 </a>
@@ -144,13 +145,17 @@
                 </a>
             </div>
         </details>
-        <details class="nav-group">
+        <details class="nav-group"{{ _route starts with 'app_declaration_' ? ' open' : '' }}>
             <summary>
                 <i data-lucide="calculator"></i>
                 Impôts
                 <i data-lucide="chevron-right" class="nav-group-chevron"></i>
             </summary>
             <div class="nav-group-items">
+                <a href="{{ path('app_declaration_index') }}" class="nav-item nav-item--sub{{ _route starts with 'app_declaration_' ? ' is-active' : '' }}">
+                    <i data-lucide="receipt-text"></i>
+                    Déclaration
+                </a>
                 <a href="#" class="nav-item nav-item--sub">
                     <i data-lucide="calendar-range"></i>
                     Années fiscales

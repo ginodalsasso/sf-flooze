@@ -1,0 +1,211 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'tax/declaration/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Déclaration {{ summary.year }} — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Déclaration {{ summary.year }}"
+    subtitle="Catégorie fiscale par catégorie fiscale, comme la loi les cloisonne"
+/>
+
+<div class="page-content">
+    <div class="dec-stack">
+
+        <div class="dec-years">
+            {% for year in summary.availableYears %}
+                <a href="{{ path('app_declaration_index', {year: year}) }}"
+                   class="dec-year{{ year == summary.year ? ' is-active' : '' }}">{{ year }}</a>
+            {% endfor %}
+        </div>
+
+        {% if summary.hasNothing %}
+            <twig:EmptyState
+                icon="receipt-text"
+                text="Rien à déclarer sur {{ summary.year }}"
+                hint="Aucun mouvement sur cette année. Saisis des transactions, puis rattache leurs catégories à une catégorie fiscale."
+                ctaLabel="Gérer les catégories"
+                ctaHref="{{ path('app_category_index') }}"
+            />
+        {% else %}
+
+            <div class="dec-totals">
+                <div class="dec-total dec-total--declare">
+                    <span class="dec-total-label">
+                        <i data-lucide="arrow-down-to-line"></i>
+                        Revenus à déclarer
+                    </span>
+                    <span class="dec-total-amount">{{ summary.revenusTotal|money(summary.currency) }}</span>
+                    <span class="dec-total-note">
+                        Toutes catégories fiscales confondues
+                    </span>
+                </div>
+
+                <div class="dec-total dec-total--deduct">
+                    <span class="dec-total-label">
+                        <i data-lucide="arrow-up-from-line"></i>
+                        Charges déductibles
+                    </span>
+                    <span class="dec-total-amount">{{ summary.chargesTotal|money(summary.currency) }}</span>
+                    <span class="dec-total-note">
+                        <strong>Ne soustrais pas ces deux totaux.</strong> Une charge ne se déduit que
+                        des revenus de sa propre catégorie : les assiettes se lisent ci-dessous,
+                        catégorie par catégorie.
+                    </span>
+                </div>
+            </div>
+
+            {% if summary.buckets|length > 0 %}
+                {% for bucket in summary.buckets %}
+                    {% include 'tax/declaration/_bucket.html.twig' with {
+                        bucket: bucket,
+                        currency: summary.currency,
+                    } %}
+                {% endfor %}
+            {% else %}
+                <twig:EmptyState
+                    icon="scale"
+                    text="Aucune catégorie fiscale renseignée"
+                    hint="Rattache tes catégories à une catégorie fiscale — revenus fonciers, BIC, salaires… — pour que la déclaration calcule tes assiettes."
+                    ctaLabel="Gérer les catégories"
+                    ctaHref="{{ path('app_category_index') }}"
+                />
+            {% endif %}
+
+            {% if not loanCharges.isEmpty() %}
+                <div class="dec-panel dec-panel--computed">
+                    <div class="dec-panel-head">
+                        <h2 class="dec-panel-title">
+                            <i data-lucide="banknote"></i>
+                            Charges d'emprunt — calculées, hors registre
+                        </h2>
+                        <span class="dec-panel-count">Lues sur l'échéancier, pas sur tes transactions</span>
+                    </div>
+
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Emprunt</th>
+                                    <th>Éch. {{ loanCharges.year }}</th>
+                                    <th>Intérêts</th>
+                                    <th>Assurance</th>
+                                    <th>Déductible</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for charge in loanCharges.perLoan %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('app_loan_show', {id: charge.loan.id}) }}">
+                                                {{ charge.loan.bankName }}
+                                            </a>
+                                            — {{ charge.loan.property.name }}
+                                        </td>
+                                        <td class="data-num data-num--muted">{{ charge.instalmentCount }}</td>
+                                        <td class="data-num">{{ charge.interestPart|money(summary.currency) }}</td>
+                                        <td class="data-num">{{ charge.insurancePart|money(summary.currency) }}</td>
+                                        <td class="data-num data-num--deductible">{{ charge.deductiblePart()|money(summary.currency) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>Total</td>
+                                    <td></td>
+                                    <td>{{ loanCharges.interestTotal|money(summary.currency) }}</td>
+                                    <td>{{ loanCharges.insuranceTotal|money(summary.currency) }}</td>
+                                    <td>{{ loanCharges.deductibleTotal()|money(summary.currency) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <twig:Notice variant="warn" icon="triangle-alert" title="Ces charges ne sont dans aucune assiette ci-dessus">
+                    <p class="notice-text">
+                        Elles viennent du <strong>calcul de l'échéancier</strong>, pas de ton registre.
+                        Sur un locatif, elles s'imputent sur les <strong>revenus fonciers au régime réel</strong>
+                        — jamais sur un micro, jamais sur une autre catégorie. Deux cas, deux conduites :
+                    </p>
+                    <ul class="notice-list">
+                        <li>
+                            <i data-lucide="circle-check"></i>
+                            <span><strong>Tu n'as pas saisi tes mensualités</strong> comme transactions : ajoute ce total à tes charges foncières au moment de déclarer. C'est le cas normal aujourd'hui.</span>
+                        </li>
+                        <li>
+                            <i data-lucide="circle-alert"></i>
+                            <span><strong>Tu les as saisies</strong> avec une catégorie rattachée aux revenus fonciers en charge : elles sont déjà dans l'assiette au réel ci-dessus. Ignore ce tableau, sinon tu déduis deux fois.</span>
+                        </li>
+                    </ul>
+                    <p class="notice-text">
+                        Rappel : seule la part <strong>intérêts + assurance</strong> est déductible. Le capital
+                        remboursé ne l'est jamais.
+                    </p>
+                </twig:Notice>
+            {% endif %}
+
+            {% if summary.outsideScopeCount > 0 %}
+                <twig:Notice
+                    variant="warn"
+                    icon="triangle-alert"
+                    title="{{ summary.outsideScopeCount }} mouvement{{ summary.outsideScopeCount > 1 ? 's' : '' }} compté{{ summary.outsideScopeCount > 1 ? 's' : '' }} dans aucune catégorie fiscale"
+                >
+                    <p class="notice-text">
+                        Ces mouvements de {{ summary.year }} n'ont pas de catégorie, ou une catégorie sans
+                        rattachement fiscal complet. C'est normal pour un achat perso — mais c'est aussi
+                        là que se cache un oubli. Parcours-les avant de déclarer.
+                    </p>
+                    <div class="notice-figures">
+                        <div class="notice-figure">
+                            <span class="notice-figure-label">Revenus non rattachés</span>
+                            <span class="notice-figure-value">{{ summary.outsideScopeIncome|money(summary.currency) }}</span>
+                        </div>
+                        <div class="notice-figure">
+                            <span class="notice-figure-label">Dépenses non rattachées</span>
+                            <span class="notice-figure-value">{{ summary.outsideScopeExpense|money(summary.currency) }}</span>
+                        </div>
+                    </div>
+                    <div class="notice-figures">
+                        <twig:Button as="a" href="{{ path('app_transaction_index') }}" icon="list" label="Voir les transactions" variant="secondary" />
+                        <twig:Button as="a" href="{{ path('app_category_index') }}" icon="tag" label="Gérer les catégories" variant="secondary" />
+                    </div>
+                </twig:Notice>
+            {% endif %}
+
+            <twig:Notice variant="info" icon="info" title="Ce que cette page ne calcule pas">
+                <p class="notice-text">
+                    Les assiettes ci-dessus sortent du registre des transactions. Ces éléments n'y sont
+                    pas, ou relèvent de règles que Flooze n'applique pas.
+                </p>
+                <ul class="notice-list">
+                    <li>
+                        <i data-lucide="gauge"></i>
+                        <span><strong>L'éligibilité aux régimes micro</strong> — les plafonds de recettes et les cas d'exclusion ne sont pas vérifiés. Les deux assiettes sont affichées pour comparaison, pas pour trancher à ta place.</span>
+                    </li>
+                    <li>
+                        <i data-lucide="banknote"></i>
+                        <span><strong>Intérêts et assurance d'emprunt</strong> — dans leur propre tableau ci-dessus, calculés depuis l'échéancier, hors assiettes.</span>
+                    </li>
+                    <li>
+                        <i data-lucide="file-signature"></i>
+                        <span><strong>Loyers non saisis</strong> — seuls les loyers enregistrés comme transaction comptent. Un loyer encaissé mais non saisi est absent.</span>
+                    </li>
+                    <li>
+                        <i data-lucide="percent"></i>
+                        <span><strong>L'impôt lui-même</strong> — barème, taux marginal, prélèvement forfaitaire, réductions et crédits d'impôt. Ces pages donnent des assiettes, pas un montant dû.</span>
+                    </li>
+                </ul>
+                <div class="notice-figures">
+                    <twig:Button as="a" href="{{ path('app_loan_index') }}" icon="banknote" label="Mes emprunts" variant="secondary" />
+                </div>
+            </twig:Notice>
+
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

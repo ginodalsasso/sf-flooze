@@ -1,0 +1,27 @@
+{# One declaration line. line = TaxCategoryLineDto. currency = space CurrencyEnum. #}
+<details class="dec-line">
+    <summary>
+        <i data-lucide="chevron-right" class="dec-line-chevron"></i>
+        <span class="dec-line-name">{{ line.categoryName }}</span>
+        <span class="dec-line-nb">{{ line.transactionCount }} mouvement{{ line.transactionCount > 1 ? 's' : '' }}</span>
+        <span class="dec-line-amount">{{ line.total|money(currency) }}</span>
+    </summary>
+
+    <div class="dec-moves">
+        {% for transaction in line.transactions %}
+            <div class="dec-move">
+                <span class="dec-move-date">{{ transaction.date|date_short }}</span>
+                <span>
+                    <span class="dec-move-label">{{ transaction.description ?: line.categoryName }}</span><br>
+                    <span class="dec-move-account">{{ transaction.account.name }}</span>
+                </span>
+                <span>
+                    <span class="dec-move-amount">{{ transaction.amount|money(transaction.account.currency) }}</span>
+                    {% if transaction.account.currency != currency %}
+                        <br><span class="dec-move-converted">= {{ transaction.amountInSpaceCurrency|money(currency) }}</span>
+                    {% endif %}
+                </span>
+            </div>
+        {% endfor %}
+    </div>
+</details>

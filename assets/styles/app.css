@@ -1223,3 +1223,187 @@ a.tag-pill:hover { border-color: var(--sage-400); color: var(--sage-400); }
 }
 
 
+/* ── Notice ─────────────────────────────────────────────────
+   Shared panel for a caveat or a warning (twig:Notice).
+   Used by the declaration page and the loan schedule. */
+.notice {
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notice--warn {
+  background: rgba(194, 184, 154, 0.12);
+  border: 1px solid #C2B89A;
+}
+
+.notice--info {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+}
+
+.notice-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-1);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notice-title i { width: 17px; height: 17px; flex-shrink: 0; }
+.notice--warn .notice-title i { color: #C2B89A; }
+.notice--info .notice-title i { color: var(--fg-3); }
+
+.notice-text {
+  font-size: 13px;
+  color: var(--fg-2);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.notice-figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+}
+
+.notice-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notice-figure-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: var(--fg-3);
+}
+
+.notice-figure-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg-1);
+}
+
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notice-list li {
+  font-size: 13px;
+  color: var(--fg-2);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.notice-list i {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--fg-3);
+}
+
+.notice-list strong { color: var(--fg-1); font-weight: 600; }
+
+/* -- Data table -------------------------------------------
+   Shared numeric table: loan schedules, declaration breakdowns. */
+.data-table-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  overflow-x: auto;
+}
+
+.data-table-wrap--tall {
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--fg-2);
+  text-align: right;
+  padding: 12px 14px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.data-table thead th:first-child,
+.data-table tbody td:first-child { text-align: left; }
+
+.data-table tbody td {
+  padding: 10px 14px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  color: var(--fg-2);
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: var(--bg-elevated); }
+
+.data-table .data-num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--fg-1);
+}
+
+.data-table .data-num--muted { color: var(--fg-3); }
+.data-table .data-num--deductible { color: #A89AC2; font-weight: 600; }
+
+.data-table tbody tr.is-current td {
+  background: rgba(168,154,194,0.12);
+}
+
+.data-table tbody tr.is-current td:first-child { font-weight: 600; color: var(--fg-1); }
+
+.data-table tfoot td {
+  padding: 12px 14px;
+  text-align: right;
+  white-space: nowrap;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-strong);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--fg-1);
+}
+
+.data-table tfoot td:first-child {
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  color: var(--fg-2);
+}

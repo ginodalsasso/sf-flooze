@@ -30,4 +30,12 @@ final readonly class DateRangeDto
     {
         return \DateTimeImmutable::createFromFormat('!' . self::INPUT_FORMAT, $value) ?: null;
     }
+
+    /** A full calendar year — the period a fiscal declaration is built on. */
+    public static function forYear(int $year): self
+    {
+        $start = new \DateTimeImmutable(sprintf('%04d-01-01 00:00:00', $year));
+
+        return new self($start, $start->modify('+1 year'));
+    }
 }

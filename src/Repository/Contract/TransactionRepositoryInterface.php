@@ -10,6 +10,8 @@ use App\Dto\Finance\TransactionTotalsDto;
 use App\Entity\Account;
 use App\Entity\Space;
 use App\Entity\Transaction;
+use App\Enum\FiscalBucketEnum;
+use App\Enum\FiscalRoleEnum;
 use App\Enum\TransactionTypeEnum;
 use Doctrine\Persistence\ObjectRepository;
 
@@ -56,4 +58,32 @@ interface TransactionRepositoryInterface extends ObjectRepository
 
     /** Number of active transactions moving money on the account, incoming transfers included. */
     public function countByAccount(Account $account): int;
+
+    /**
+     * Totals per category for one fiscal role, grouped by the fiscal bucket they belong to.
+     *
+     * @return list<array{bucket: FiscalBucketEnum, categoryId: int, categoryName: string, total: string, nb: int}>
+     */
+    public function sumByFiscalRole(Space $space, DateRangeDto $range, FiscalRoleEnum $role): array;
+
+    /**
+     * The transactions behind the declaration lines, ordered by category.
+     *
+     * @return Transaction[]
+     */
+    public function findTaxRelevantByCategory(Space $space, DateRangeDto $range): array;
+
+    /**
+     * What the declaration does NOT count: no category, or an incomplete fiscal scope.
+     *
+     * @return array{income: string, expense: string, nb: int}
+     */
+    public function sumOutsideTaxScope(Space $space, DateRangeDto $range): array;
+
+    /**
+     * Years the space holds movements in, most recent first.
+     *
+     * @return list<int>
+     */
+    public function findYearsWithTransactions(Space $space): array;
 }

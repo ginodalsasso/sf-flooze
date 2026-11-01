@@ -1,0 +1,107 @@
+{# One catégorie de revenus. bucket = TaxBucketDto. currency = CurrencyEnum. #}
+{% set micro = bucket.microBase() %}
+{% set cheaper = bucket.cheaperRegime() %}
+
+<div class="dec-bucket">
+    <div class="dec-bucket-head">
+        <h2 class="dec-bucket-title">
+            <i data-lucide="{{ bucket.bucket.icon() }}"></i>
+            {{ bucket.bucket.label() }}
+        </h2>
+        <span class="dec-bucket-net">
+            {{ bucket.revenusTotal|money(currency) }} de revenus
+            {% if bucket.charges|length > 0 %}
+                · {{ bucket.chargesTotal|money(currency) }} de charges
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="dec-bucket-body">
+        <div class="dec-bucket-side">
+            <p class="dec-bucket-side-label">
+                <i data-lucide="arrow-down-to-line"></i>
+                Revenus à déclarer
+            </p>
+            {% if bucket.revenus|length > 0 %}
+                {% for line in bucket.revenus %}
+                    {% include 'tax/declaration/_line.html.twig' with {line: line, currency: currency} %}
+                {% endfor %}
+                <div class="dec-bucket-side-foot">
+                    <span>Total</span>
+                    <span class="dec-bucket-side-total">{{ bucket.revenusTotal|money(currency) }}</span>
+                </div>
+            {% else %}
+                <p class="dec-bucket-side-empty">Aucun revenu dans cette catégorie sur l'année.</p>
+            {% endif %}
+        </div>
+
+        <div class="dec-bucket-side">
+            <p class="dec-bucket-side-label">
+                <i data-lucide="arrow-up-from-line"></i>
+                Charges déductibles
+            </p>
+            {% if not bucket.bucket.acceptsCharges() %}
+                <p class="dec-bucket-side-empty">
+                    Cette catégorie n'admet pas de charges déductibles du revenu.
+                </p>
+            {% elseif bucket.charges|length > 0 %}
+                {% for line in bucket.charges %}
+                    {% include 'tax/declaration/_line.html.twig' with {line: line, currency: currency} %}
+                {% endfor %}
+                <div class="dec-bucket-side-foot">
+                    <span>Total</span>
+                    <span class="dec-bucket-side-total">{{ bucket.chargesTotal|money(currency) }}</span>
+                </div>
+            {% else %}
+                <p class="dec-bucket-side-empty">Aucune charge saisie dans cette catégorie.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dec-regimes">
+        <div class="dec-regime{{ cheaper == 'reel' ? ' is-cheaper' : '' }}">
+            <span class="dec-regime-label">
+                {{ bucket.bucket.reelLabel() }}
+                {% if cheaper == 'reel' %}
+                    <twig:Badge label="Plus avantageux" variant="positive" />
+                {% endif %}
+            </span>
+            <span class="dec-regime-base{{ bucket.isDeficit() ? ' dec-regime-base--deficit' : '' }}">
+                {{ bucket.reelBase()|money(currency) }}
+            </span>
+            <span class="dec-regime-note">
+                {% if bucket.isDeficit() %}
+                    Déficit. Son imputation suit ses propres règles — plafond annuel sur le revenu
+                    global et report de l'excédent — que Flooze ne calcule pas.
+                {% else %}
+                    Revenus {{ bucket.revenusTotal|money(currency) }}
+                    − charges {{ bucket.chargesTotal|money(currency) }}
+                {% endif %}
+            </span>
+        </div>
+
+        {% if micro is not null %}
+            <div class="dec-regime{{ cheaper == 'micro' ? ' is-cheaper' : '' }}">
+                <span class="dec-regime-label">
+                    {{ bucket.bucket.microLabel() }}
+                    {% if cheaper == 'micro' %}
+                        <twig:Badge label="Plus avantageux" variant="positive" />
+                    {% endif %}
+                </span>
+                <span class="dec-regime-base">{{ micro|money(currency) }}</span>
+                <span class="dec-regime-note">
+                    Abattement de {{ bucket.bucket.microAbatementPercent() }} %
+                    ({{ bucket.microAbatement()|money(currency) }}).
+                    <strong>Les charges ne se déduisent pas</strong> — l'abattement les remplace.
+                </span>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if bucket.bucket.microCaveat() is not null %}
+        <p class="dec-bucket-caveat">
+            <i data-lucide="info"></i>
+            {{ bucket.bucket.microCaveat() }} Flooze ne vérifie pas ces conditions.
+        </p>
+    {% endif %}
+</div>
