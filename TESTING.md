@@ -53,6 +53,7 @@ tests/
 - Workflows complets (e.g. `ReceiptToTransactionWorkflowTest`) : enchaîner upload → OCR → review → persist, vérifier l'état final en DB.
 - Auth : utiliser `loginUser($user)` du `WebTestCase`, jamais de bypass de sécurité.
 - Multi-tenant : créer 2 users avec 2 spaces différents, vérifier qu'un user ne peut pas accéder aux entités d'un autre space (`SpaceScopeVoter` doit retourner 403).
+- Idempotence : pour toute action de confirmation financière (échéance de récurrence, de loyer, de prêt), appeler l'endpoint deux fois (ou en concurrence) pour la même échéance et vérifier qu'une seule `Transaction` existe en base — voir [`.claude/rules.md`](.claude/rules.md) → *Sécurité* #9.
 
 ---
 

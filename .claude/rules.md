@@ -83,6 +83,8 @@ public function findBySpace(Space $space): array
 5. **CSRF** — actif (auto via `AbstractType`). Toute action destructive passe par `POST`/`DELETE`, jamais par un `GET`.
 6. **Redirections** — jamais une URL issue de la requête (`redirect_to`, `Referer`) sans validation locale.
 7. **Entrées** — validation par contraintes Symfony sur le DTO/l'entité, pas seulement par les attributs HTML (`required`, `min`, `pattern`).
+8. **Upload de fichier** (module Document/OCR, pas encore implémenté — s'applique dès son écriture) : vérifier le type MIME réel du contenu (`finfo`/`UploadedFile::guessExtension()`), pas seulement l'extension ou le `Content-Type` envoyé par le client. Taille max imposée côté serveur. Nom de stockage généré (hash), jamais le nom original du fichier utilisé comme chemin. Stockage privé — jamais un bucket/dossier listable publiquement ; une URL de fichier passe par un contrôleur qui revérifie le `space`, pas par un lien direct.
+9. **Idempotence des confirmations financières** — toute action qui matérialise une écriture dans le ledger (confirmation d'échéance de récurrence, de loyer, de mensualité de prêt) doit être protégée contre un double-clic ou une requête rejouée : soit la séquence lire-garde-écrire-avancer-le-curseur s'exécute dans `$em->wrapInTransaction()`, soit une contrainte unique en base fait échouer la 2e écriture. Un double-submit qui crée deux `Transaction` pour la même échéance fausse silencieusement le solde — voir [`SECURITY_PLAN.md`](../SECURITY_PLAN.md) → *Race condition dans `RecurringTransactionService::confirm()`* pour un cas réel.
 
 Tests attendus : pour chaque endpoint sensible, un test fonctionnel « user B accède à une entité du space de user A → 403 » (voir [`TESTING.md`](../TESTING.md)).
 
@@ -236,6 +238,8 @@ Une interface ne justifie pas une deuxième implémentation « pour l'exemple »
 - > 300 lignes → split par use case.
 - Retourner DTOs ou entités typées, jamais d'arrays anonymes.
 - Toujours livré avec son interface, et injecté par elle (voir [Interfaces](#interfaces)).
+- **Garde métier invalide → `\InvalidArgumentException`** avec un message destiné à l'utilisateur final (français, actionnable). Convention déjà en place (`TransactionService::guardValidTransfer`, `RecurringTransactionService::guardDueDate`…) : le controller l'attrape et la transforme en flash, jamais en 500. Ne pas introduire une hiérarchie d'exceptions métier tant qu'un seul type d'erreur ne suffit pas à distinguer les cas (ce serait de l'abstraction anticipée, voir *Simplicité*).
+- **Écriture multi-entités = une transaction DB.** Dès qu'un use case modifie plus d'une entité de façon interdépendante (ex. confirmer une échéance : créer la `Transaction` *et* avancer le curseur de la récurrence), encapsuler dans `$em->wrapInTransaction(fn() => ...)` plutôt que deux `flush()` séparés — sinon une erreur ou une requête concurrente entre les deux laisse un état à moitié écrit.
 
 ### Repositories
 
@@ -243,6 +247,7 @@ Une interface ne justifie pas une deuxième implémentation « pour l'exemple »
 - QueryBuilder pour filtres complexes, DQL pour joins complexes. **Jamais de SQL inline.**
 - Toujours filtrer `space` + `deletedAt IS NULL`.
 - **Calculs mathématiques côté DB :** si une opération (somme, moyenne, agrégation) peut s'exprimer en requête, la faire côté base. Ordre de priorité : **DQL d'abord**, **SQL natif si DQL insuffisant**, **PHP en dernier recours**.
+- **Pas de N+1 :** une relation lue dans une boucle (liste de `Transaction` affichant chacune sa `Category`) se charge par un `JOIN`/`fetch` explicite dans le repository, jamais par lazy-load laissé à Twig — sinon une page liste déclenche une requête par ligne.
 - **Entités sans calcul :** une entité n'agrège pas sa propre collection. Les calculs vont dans un service ou le repository ; l'entité expose getters/setters.
 
 ### Forms
@@ -320,6 +325,9 @@ Aucune date ne se calcule ni ne se formate à la main. Quatre points d'ancrage, 
 - SQL inline.
 - Array non typé en retour de service.
 - Service > 300 lignes sans découpage.
+- Relation lazy-loadée dans une boucle Twig (N+1).
+- Deux `flush()` séparés pour une opération qui doit réussir ou échouer en bloc (voir [Services](#services)).
+- Upload de fichier validé sur l'extension ou le `Content-Type` client plutôt que le contenu réel.
 
 **Documentation**
 - Docblock qui paraphrase la signature.

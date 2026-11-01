@@ -246,7 +246,10 @@ RealEstate/
 ├── LeaseTermService.php          # Terme en cours, reconductions tacites incluses (calculé)
 ├── LoanService.php               # Loan file CRUD
 ├── LoanLineService.php           # Lignes de prêt + garde-fous sur les termes
-└── LoanAmortizationService.php   # Échéancier + totaux par année (calculé, jamais stocké)
+├── LoanAmortizationService.php   # Échéancier + totaux par année (calculé, jamais stocké)
+├── RentPaymentService.php        # Confirmation / impayé d'une échéance de loyer
+├── LoanPaymentService.php        # Confirmation d'une mensualité de prêt
+└── LeaseRentScheduleService.php  # Échéances de loyer calculées en lecture
 
 Invoicing/
 ├── QuoteService.php              # Quote → Invoice conversion
@@ -306,7 +309,9 @@ RealEstate/
 ├── LeaseController.php           # /leases
 ├── TenantController.php          # /tenants
 ├── LoanController.php            # /real-estate/loans (dossier + échéancier)
-└── LoanLineController.php        # Lignes d'un dossier (ajout, édition, suppression)
+├── LoanLineController.php        # Lignes d'un dossier (ajout, édition, suppression)
+├── RentPaymentController.php     # /real-estate/leases/{lease}/rent-payments (confirm, late)
+└── LoanPaymentController.php     # /real-estate/loans/{loan}/payments (confirm)
 
 Invoicing/
 ├── ClientController.php          # /clients
@@ -337,7 +342,6 @@ AI/
 | `TimestampListener` | `prePersist`, `preUpdate` | Auto-set `created_at`, `updated_at` |
 | `SoftDeleteListener` | `preRemove` | Set `deleted_at`, prevent hard delete |
 | `AutoCategoryListener` | `prePersist` Transaction | Call Ollama for category hint |
-| `LinkedTransactionListener` | `postPersist` RentPayment/LoanPayment | Auto-create linked Transaction |
 | `AuditListener` | `postPersist`, `postUpdate` | Log created_by, updated_by (future) |
 
 ---
@@ -346,7 +350,6 @@ AI/
 
 | Command | Purpose | Schedule |
 |---------|---------|----------|
-| `GenerateRentPaymentsCommand` | Create monthly RentPayment entries | Monthly cron |
 | `ProcessRemindersCommand` | Send email before deadlines | Daily cron |
 | `GenerateTaxSummaryCommand` | Aggregate TaxYear items | On demand |
 | `ReconcileAccountCommand` | Match Transactions ↔ bank statement | On demand |
@@ -381,8 +384,8 @@ Every entity uses `SpaceScopeTrait` (adds `space_id`). Queries always filter by 
 All money flows — rent, loan payments, invoices — ultimately create a `Transaction` record. This gives a unified view of cash flow regardless of origin.
 
 ```
-RentPayment created → LinkedTransactionListener → Transaction(income) created
-LoanPayment created → LinkedTransactionListener → Transaction(expense) created
+RentPayment confirmed → RentPaymentService::confirm() → Transaction(income) created
+LoanPayment confirmed → LoanPaymentService::confirm() → Transaction(expense) created
 Invoice paid → InvoiceController → Transaction(income) created
 ```
 

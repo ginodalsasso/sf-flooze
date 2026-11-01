@@ -193,7 +193,7 @@ l'annuité éteint la ligne avant son terme, ce que la logique d'arrondi existan
 changement. L'assurance continue de se calculer comme pour toute ligne (`insurance_rate` × capital de la
 ligne) — ce champ ne couvre que la part capital + intérêts.
 
-**LoanPayment** — *pas encore implémenté*
+**LoanPayment**
 ```
 id, space_id, loan_id (FK), transaction_id (FK nullable), month_number, due_date,
 capital_part (decimal), interest_part (decimal), insurance_part (decimal),
@@ -203,6 +203,21 @@ Une ligne naît à la **confirmation d'une mensualité payée**, pas à la gén�
 même règle que `RentPayment`. Les quatre parts y sont **figées** au moment du paiement : les intérêts
 déduits d'une année fiscale ne doivent pas bouger si le taux du prêt est corrigé plus tard
 (même principe que `transaction.fx_rate`).
+
+```
+Échéancier du dossier (calculé en lecture, rien stocké)
+    ↓
+Prochaine mensualité due : « Mensualité n°12 — 1 024 € — due le 05/11 »
+    ↓
+Aucune ligne loan_payment n'existe tant que l'utilisateur n'a pas confirmé le paiement
+    ↓
+Décision « payée » (compte débité choisi à la confirmation)
+    ↓
+LoanPayment(4 parts figées) + Transaction(type=expense)
+    ↓
+Les lignes loan_payment persistées SONT le curseur :
+mensualité avec ligne = payée, mensualité sans ligne = due.
+```
 
 ### Use Cases
 
@@ -280,8 +295,8 @@ Regroupement par année civile → AmortizationYearDto, pour le combiné et pour
 ```
 
 > **Aucune `Transaction` n'est créée par l'échéancier.** Il décrit ce qui est dû, pas ce qui est payé.
-> Les mensualités réellement réglées entreront dans le registre via `LoanPayment` (à implémenter),
-> et seule la part intérêts + assurance sera déductible — jamais le capital remboursé.
+> Les mensualités réellement réglées entrent dans le registre via `LoanPayment`, confirmées une à
+> une, et seule la part intérêts + assurance est déductible — jamais le capital remboursé.
 >
 > Hypothèses du calcul, à vérifier contre l'offre de prêt : **taux fixe**, mensualité constante,
 > première échéance un mois après le déblocage, et **assurance sur le capital emprunté** (prime
@@ -614,8 +629,8 @@ Dashboard shows timeline of upcoming obligations
 
 | From | To | Via | Purpose |
 |------|----|-----|---------|
-| RentPayment | Transaction | LinkedTransactionListener | Rental income auto-recorded |
-| LoanPayment | Transaction | LinkedTransactionListener | Mortgage payment auto-recorded |
+| RentPayment | Transaction | RentPaymentService::confirm() | Rental income auto-recorded |
+| LoanPayment | Transaction | LoanPaymentService::confirm() | Mortgage payment auto-recorded |
 | Invoice paid | Transaction | InvoiceController | Client revenue recorded |
 | TaxItem | Transaction | FK nullable | Declarable transaction traceable |
 | TaxItem | Property | FK nullable | Property-linked deduction traceable |

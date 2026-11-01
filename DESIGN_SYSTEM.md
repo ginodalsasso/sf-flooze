@@ -57,6 +57,12 @@ Alerte / échéance  : #C2B89A  bg: rgba(194,184,154,0.12)
 - Les montants positifs → `#A8C4A0`, négatifs → `#C2A89A`
 - Les boutons primaires : fond `#C8D5C2`, texte `#1A1F18`
 
+### Accessibilité des couleurs
+
+- **Contraste texte/fond : AA minimum** (4,5:1 texte courant, 3:1 à partir de 18px/gras). `--fg-1` sur `--bg-base`/`--bg-surface` est large ; `--fg-2` et surtout `--fg-3` se rapprochent de la limite sur `--bg-elevated`/`--bg-overlay` — vérifier au cas par cas avant de les combiner (ex. un label `--fg-2` sur un badge `--bg-elevated`), pas seulement en isolation sur `--bg-base`.
+- **La couleur seule ne porte jamais une information** : un montant positif/négatif, un statut de facture, une variante de badge — toujours accompagnés d'un signe, d'une icône ou d'un texte, pour les utilisateurs daltoniens.
+- **Focus visible systématique** : le glow sauge (`box-shadow: 0 0 20px rgba(200,213,194,0.10)`, déjà utilisé sur les inputs) est le style de référence pour l'état `:focus-visible` de tout élément interactif — jamais de `outline: none` sans cet équivalent.
+
 ---
 
 ## Typographie
@@ -280,6 +286,21 @@ Source : **Lucide Icons** — fichier local `public/vendor/lucide/lucide.min.js`
 - **Max-width** : 1400px centré sur grands écrans
 - Pas de scroll horizontal
 
+### Responsive
+
+Aucun breakpoint n'était défini avant cette version — ce qui suit est la référence pour tout nouveau template, à affiner au premier écran mobile réellement construit plutôt qu'à deviner plus loin que nécessaire.
+
+```
+≥ 1100px  : layout desktop décrit ci-dessus (sidebar fixe 228px, grille KPIs à 4 colonnes)
+769–1099px: sidebar repliable en icônes seules (largeur ~64px, labels en tooltip)
+≤ 768px   : sidebar devient une barre de navigation basse (icônes + label court) ;
+            grille KPIs passe à 2 colonnes puis 1 sous 420px ; grille dashboard
+            (`1fr 360px`) repasse en une seule colonne, l'aside après le contenu
+```
+
+- **Cible tactile minimale : 44×44px** sur mobile/tablette (boutons, items de nav, lignes de tableau cliquables) — les 14–16px des icônes Lucide restent inchangés, c'est la zone cliquable autour qui grandit (`padding`).
+- Toujours vérifier au zoom navigateur 200% autant qu'aux breakpoints : pas de troncature de texte, pas de scroll horizontal (règle absolue, voir *Ce qu'il ne faut JAMAIS faire*).
+
 ---
 
 ## Données & format
@@ -291,6 +312,8 @@ Positif   : +1 250 €     (toujours préfixé du signe)
 Négatif   : −842 €       (tiret cadratin − pas le tiret -)
 Police    : JetBrains Mono obligatoire
 ```
+
+**Multi-devise** : le `€` suffixe n'est que le cas `EUR`. Un compte ou un actif dans une autre devise (`Account.currency`, `Space.currency`) affiche son propre symbole/code à la place — toujours celui de la devise de la **ligne affichée**, jamais celui de la devise de référence du space. Le formatage (groupement de milliers, virgule décimale, signe, tiret cadratin) ne change pas ; seul le suffixe varie. Ce formatage vit dans `MoneyExtension` — jamais recalculé dans un template ou en JS.
 
 ---
 
@@ -321,16 +344,3 @@ Persister en `localStorage` sous la clé `flooze-theme`.
 - ❌ Gold/amber/orange — remplacé par le sauge `#C8D5C2`
 
 ---
-
-## Fichiers de référence dans ce projet
-
-```
-colors_and_type.css          — Tous les tokens CSS (source de vérité)
-ui_kits/app/index.html       — Prototype desktop interactif complet
-ui_kits/app/mobile.html      — Prototype mobile iOS
-ui_kits/app/theme.js         — Tokens JS pour composants React
-ui_kits/app/Sidebar.jsx      — Composant sidebar React
-ui_kits/app/Dashboard.jsx    — Composant dashboard React
-ui_kits/app/Screens.jsx      — Tous les écrans React (8 modules)
-preview/                     — Cartes de preview du design system
-```
