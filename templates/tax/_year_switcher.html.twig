@@ -1,0 +1,7 @@
+{# routeName = route to link each year to. currentYear = int. availableYears = int[]. #}
+<div class="dec-years">
+    {% for year in availableYears %}
+        <a href="{{ path(routeName, {year: year}) }}"
+           class="dec-year{{ year == currentYear ? ' is-active' : '' }}">{{ year }}</a>
+    {% endfor %}
+</div>
