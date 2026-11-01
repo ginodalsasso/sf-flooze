@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\Tax;
 
 use App\Controller\ActiveSpaceControllerTrait;
+use App\Entity\Space;
+use App\Entity\TaxYear;
 use App\Enum\FiscalBucketEnum;
 use App\Enum\FiscalRoleEnum;
 use App\Enum\TaxYearStatusEnum;
@@ -60,8 +62,15 @@ class TaxYearController extends AbstractController
             return $space;
         }
 
-        $taxYear = $this->taxYearService->getOrCreate($space, $year);
         $summary = $this->taxSummaryService->summarize($space, $year);
+
+        if ($summary->year !== $year) {
+            $this->addFlash('info', sprintf('Aucun mouvement sur %d — affichage de %d.', $year, $summary->year));
+
+            return $this->redirectToRoute('app_tax_year_show', ['year' => $summary->year]);
+        }
+
+        $taxYear = $this->taxYearService->getOrCreate($space, $year);
 
         $itemsByKey = [];
         foreach ($this->taxItemRepository->findByTaxYear($taxYear) as $item) {
@@ -85,7 +94,10 @@ class TaxYearController extends AbstractController
             return $space;
         }
 
-        $taxYear = $this->taxYearService->getOrCreate($space, $year);
+        $taxYear = $this->resolveTaxYear($space, $year);
+        if ($taxYear instanceof RedirectResponse) {
+            return $taxYear;
+        }
 
         if (!$this->isCsrfTokenValid('tax_year_status_' . $taxYear->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -112,7 +124,10 @@ class TaxYearController extends AbstractController
             return $space;
         }
 
-        $taxYear = $this->taxYearService->getOrCreate($space, $year);
+        $taxYear = $this->resolveTaxYear($space, $year);
+        if ($taxYear instanceof RedirectResponse) {
+            return $taxYear;
+        }
 
         if (!$this->isCsrfTokenValid('tax_year_regime_' . $taxYear->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -141,7 +156,10 @@ class TaxYearController extends AbstractController
             return $space;
         }
 
-        $taxYear = $this->taxYearService->getOrCreate($space, $year);
+        $taxYear = $this->resolveTaxYear($space, $year);
+        if ($taxYear instanceof RedirectResponse) {
+            return $taxYear;
+        }
 
         if (!$this->isCsrfTokenValid('tax_year_note_' . $taxYear->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -161,7 +179,10 @@ class TaxYearController extends AbstractController
             return $space;
         }
 
-        $taxYear = $this->taxYearService->getOrCreate($space, $year);
+        $taxYear = $this->resolveTaxYear($space, $year);
+        if ($taxYear instanceof RedirectResponse) {
+            return $taxYear;
+        }
 
         if (!$this->isCsrfTokenValid('tax_year_item_toggle_' . $taxYear->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -178,5 +199,24 @@ class TaxYearController extends AbstractController
         }
 
         return $this->redirectToRoute('app_tax_year_show', ['year' => $year]);
+    }
+
+    /**
+     * Only a year TaxSummaryService actually offers (one with movements, or the current
+     * year) may get a TaxYear row — otherwise a stale bookmark or a forged request would
+     * create a dossier for a year whose displayed figures silently belong to a different
+     * one. Redirects to the real year instead of creating anything when they don't match.
+     */
+    private function resolveTaxYear(Space $space, int $year): TaxYear|RedirectResponse
+    {
+        $actualYear = $this->taxSummaryService->summarize($space, $year)->year;
+
+        if ($actualYear !== $year) {
+            $this->addFlash('error', sprintf('Aucun mouvement sur %d — redirigé vers %d.', $year, $actualYear));
+
+            return $this->redirectToRoute('app_tax_year_show', ['year' => $actualYear]);
+        }
+
+        return $this->taxYearService->getOrCreate($space, $year);
     }
 }
