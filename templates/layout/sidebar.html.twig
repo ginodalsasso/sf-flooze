@@ -145,7 +145,7 @@
                 </a>
             </div>
         </details>
-        <details class="nav-group"{{ _route starts with 'app_declaration_' ? ' open' : '' }}>
+        <details class="nav-group"{{ (_route starts with 'app_declaration_' or _route starts with 'app_tax_year_') ? ' open' : '' }}>
             <summary>
                 <i data-lucide="calculator"></i>
                 Impôts
@@ -156,13 +156,9 @@
                     <i data-lucide="receipt-text"></i>
                     Déclaration
                 </a>
-                <a href="#" class="nav-item nav-item--sub">
+                <a href="{{ path('app_tax_year_index') }}" class="nav-item nav-item--sub{{ _route starts with 'app_tax_year_' ? ' is-active' : '' }}">
                     <i data-lucide="calendar-range"></i>
                     Années fiscales
-                </a>
-                <a href="#" class="nav-item nav-item--sub">
-                    <i data-lucide="list-checks"></i>
-                    Éléments fiscaux
                 </a>
             </div>
         </details>
