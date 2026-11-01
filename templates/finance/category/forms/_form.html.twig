@@ -17,15 +17,16 @@
     </div>
 
     <div class="form-section">
-        <p class="form-section-label" title="Indiquez si cette catégorie a un impact fiscal sur vos déclarations">Flags fiscaux</p>
-        <div class="cat-form-flags">
-            <twig:Form:CheckboxField field="{{ form.isDeductible }}"
-                                     label="Charge déductible"
-                                     hint="Cette charge réduit votre revenu imposable (ex : frais pro, cotisations)" />
-            <twig:Form:CheckboxField field="{{ form.isDeclarable }}"
-                                     label="Revenu déclarable"
-                                     hint="Ce revenu doit être déclaré aux impôts (ex : salaire, loyer perçu)" />
+        <p class="form-section-label">Portée fiscale</p>
+        <div class="cat-form-row">
+            <twig:Form:Field field="{{ form.fiscalBucket }}" label="Catégorie fiscale" />
+            <twig:Form:Field field="{{ form.fiscalRole }}" label="Sens" />
         </div>
+        <span class="form-hint">
+            Les deux ensemble, ou aucun. Exemples : loyers perçus d'une location nue →
+            <em>Revenus fonciers</em> + <em>Revenu</em> ; travaux et taxe foncière du même bien →
+            <em>Revenus fonciers</em> + <em>Charge</em>. Un achat perso ne reçoit rien.
+        </span>
     </div>
 
     <div class="form-actions">

@@ -47,10 +47,14 @@
 .cat-row-actions form { margin: 0; }
 
 /* ── Form ──────────────────────────────────────────────── */
-.cat-form-flags {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.cat-form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .cat-form-row { grid-template-columns: 1fr; }
 }
 
 /* Expanded choice widget: alternating input/label children laid out in 2 columns */

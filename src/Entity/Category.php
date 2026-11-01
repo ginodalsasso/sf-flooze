@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\FiscalBucketEnum;
+use App\Enum\FiscalRoleEnum;
 use App\Enum\TransactionTypeEnum;
 use App\Repository\CategoryRepository;
 use App\Trait\SpaceScopeTrait;
@@ -36,11 +38,18 @@ class Category
     #[ORM\Column(length: 100)]
     private string $name;
 
-    #[ORM\Column(type: 'boolean')]
-    private bool $isDeductible = false;
+    /**
+     * Catégorie de revenus à laquelle cette catégorie se rattache. Null = aucune portée fiscale.
+     *
+     * C'est ce qui cloisonne la déclaration : une charge ne se déduit que des revenus de sa
+     * propre catégorie. Un booléen « déductible » ne pouvait pas dire de quoi.
+     */
+    #[ORM\Column(name: 'fiscal_bucket', type: 'string', enumType: FiscalBucketEnum::class, nullable: true)]
+    private ?FiscalBucketEnum $fiscalBucket = null;
 
-    #[ORM\Column(type: 'boolean')]
-    private bool $isDeclarable = false;
+    /** Sens dans cette catégorie fiscale : revenu ou charge. Null = aucune portée fiscale. */
+    #[ORM\Column(name: 'fiscal_role', type: 'string', enumType: FiscalRoleEnum::class, nullable: true)]
+    private ?FiscalRoleEnum $fiscalRole = null;
 
     /** @var list<string> TransactionTypeEnum values this category can be used on; empty = all types */
     #[ORM\Column(type: 'json')]
@@ -86,28 +95,40 @@ class Category
         return $this;
     }
 
-    public function isDeductible(): bool
+    public function getFiscalBucket(): ?FiscalBucketEnum
     {
-        return $this->isDeductible;
+        return $this->fiscalBucket;
     }
 
-    public function setIsDeductible(bool $isDeductible): static
+    public function setFiscalBucket(?FiscalBucketEnum $fiscalBucket): static
     {
-        $this->isDeductible = $isDeductible;
+        $this->fiscalBucket = $fiscalBucket;
 
         return $this;
     }
 
-    public function isDeclarable(): bool
+    public function getFiscalRole(): ?FiscalRoleEnum
     {
-        return $this->isDeclarable;
+        return $this->fiscalRole;
     }
 
-    public function setIsDeclarable(bool $isDeclarable): static
+    public function setFiscalRole(?FiscalRoleEnum $fiscalRole): static
     {
-        $this->isDeclarable = $isDeclarable;
+        $this->fiscalRole = $fiscalRole;
 
         return $this;
+    }
+
+    /** Une catégorie n'entre dans la déclaration que si son rattachement est complet. */
+    public function hasFiscalScope(): bool
+    {
+        return $this->fiscalBucket !== null && $this->fiscalRole !== null;
+    }
+
+    /** Un rôle posé sans catégorie fiscale : la saisie est à terminer, rien n'est compté. */
+    public function hasIncompleteFiscalScope(): bool
+    {
+        return $this->fiscalBucket === null && $this->fiscalRole !== null;
     }
 
     /** @return list<TransactionTypeEnum> */

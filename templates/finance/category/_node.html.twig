@@ -8,11 +8,14 @@
             {% for type in category.applicableTypes %}
                 <twig:Badge label="{{ type.label }}" variant="{{ type.badgeVariant }}" />
             {% endfor %}
-            {% if category.isDeductible %}
-                <twig:Badge label="Déductible" variant="fiscal" />
-            {% endif %}
-            {% if category.isDeclarable %}
-                <twig:Badge label="Déclarable" variant="positive" />
+            {% if category.hasFiscalScope() %}
+                <twig:Badge label="{{ category.fiscalBucket.shortLabel() }}" variant="fiscal" />
+                <twig:Badge
+                    label="{{ category.fiscalRole.label() }}"
+                    variant="{{ category.fiscalRole.badgeVariant() }}"
+                />
+            {% elseif category.hasIncompleteFiscalScope() %}
+                <twig:Badge label="Catégorie fiscale à préciser" variant="alert" />
             {% endif %}
         </div>
         <div class="cat-row-actions">
