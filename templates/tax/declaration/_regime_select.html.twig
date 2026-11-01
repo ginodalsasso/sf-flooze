@@ -1,0 +1,13 @@
+{# taxYear = TaxYear. bucket = FiscalBucketEnum. current = 'reel'|'micro'|null. #}
+<form method="post" action="{{ path('app_tax_year_regime', {year: taxYear.year}) }}" class="dec-regime-form">
+    <input type="hidden" name="_token" value="{{ csrf_token('tax_year_regime_' ~ taxYear.id) }}">
+    <input type="hidden" name="bucket" value="{{ bucket.value }}">
+    <label>
+        Régime retenu
+        <select name="regime" onchange="this.form.requestSubmit()">
+            <option value=""{{ current is null ? ' selected' : '' }}>— à choisir —</option>
+            <option value="reel"{{ current == 'reel' ? ' selected' : '' }}>{{ bucket.reelLabel() }}</option>
+            <option value="micro"{{ current == 'micro' ? ' selected' : '' }}>{{ bucket.microLabel() }}</option>
+        </select>
+    </label>
+</form>

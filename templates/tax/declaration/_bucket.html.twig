@@ -1,4 +1,5 @@
-{# One catégorie de revenus. bucket = TaxBucketDto. currency = CurrencyEnum. #}
+{# One catégorie de revenus. bucket = TaxBucketDto. currency = CurrencyEnum.
+   editable/taxYear/itemsByKey/regimeChoices = optional, review-page only. #}
 {% set micro = bucket.microBase() %}
 {% set cheaper = bucket.cheaperRegime() %}
 
@@ -30,6 +31,14 @@
                     <span>Total</span>
                     <span class="dec-bucket-side-total">{{ bucket.revenusTotal|money(currency) }}</span>
                 </div>
+                {% if editable|default(false) %}
+                    {% include 'tax/declaration/_item_toggle.html.twig' with {
+                        taxYear: taxYear,
+                        bucket: bucket.bucket,
+                        role: 'revenu',
+                        done: itemsByKey[bucket.bucket.value ~ '-revenu'] ?? false,
+                    } %}
+                {% endif %}
             {% else %}
                 <p class="dec-bucket-side-empty">Aucun revenu dans cette catégorie sur l'année.</p>
             {% endif %}
@@ -52,6 +61,14 @@
                     <span>Total</span>
                     <span class="dec-bucket-side-total">{{ bucket.chargesTotal|money(currency) }}</span>
                 </div>
+                {% if editable|default(false) %}
+                    {% include 'tax/declaration/_item_toggle.html.twig' with {
+                        taxYear: taxYear,
+                        bucket: bucket.bucket,
+                        role: 'charge',
+                        done: itemsByKey[bucket.bucket.value ~ '-charge'] ?? false,
+                    } %}
+                {% endif %}
             {% else %}
                 <p class="dec-bucket-side-empty">Aucune charge saisie dans cette catégorie.</p>
             {% endif %}
@@ -59,6 +76,13 @@
     </div>
 
     <div class="dec-regimes">
+        {% if editable|default(false) and micro is not null %}
+            {% include 'tax/declaration/_regime_select.html.twig' with {
+                taxYear: taxYear,
+                bucket: bucket.bucket,
+                current: regimeChoices[bucket.bucket.value] ?? null,
+            } %}
+        {% endif %}
         <div class="dec-regime{{ cheaper == 'reel' ? ' is-cheaper' : '' }}">
             <span class="dec-regime-label">
                 {{ bucket.bucket.reelLabel() }}

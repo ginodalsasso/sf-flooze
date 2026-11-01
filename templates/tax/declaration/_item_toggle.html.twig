@@ -1,0 +1,12 @@
+{# taxYear = TaxYear. bucket = FiscalBucketEnum. role = string ('revenu'|'charge'). done = bool. #}
+<form method="post" action="{{ path('app_tax_year_item_toggle', {year: taxYear.year}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('tax_year_item_toggle_' ~ taxYear.id) }}">
+    <input type="hidden" name="bucket" value="{{ bucket.value }}">
+    <input type="hidden" name="role" value="{{ role }}">
+    <twig:Button
+        type="submit"
+        icon="{{ done ? 'check-square' : 'square' }}"
+        label="{{ done ? 'Reporté sur la déclaration' : 'Marquer reporté' }}"
+        variant="ghost"
+    />
+</form>
