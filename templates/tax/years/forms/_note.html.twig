@@ -1,0 +1,9 @@
+{# taxYear = TaxYear. #}
+<form method="post" action="{{ path('app_tax_year_note', {year: taxYear.year}) }}" class="dec-note-form">
+    <input type="hidden" name="_token" value="{{ csrf_token('tax_year_note_' ~ taxYear.id) }}">
+    <label>
+        Note
+        <textarea name="note" rows="2">{{ taxYear.note }}</textarea>
+    </label>
+    <twig:Button type="submit" label="Enregistrer" variant="secondary" />
+</form>

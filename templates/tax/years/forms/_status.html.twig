@@ -1,0 +1,21 @@
+{# taxYear = TaxYear. #}
+{% set order = ['draft', 'filed', 'paid'] %}
+{% set index = {'draft': 0, 'filed': 1, 'paid': 2}[taxYear.status.value] %}
+{% set forwardLabel = {'filed': 'Marquer déposée', 'paid': 'Marquer payée'} %}
+{% set backwardLabel = {'draft': 'Revenir en brouillon', 'filed': 'Revenir en déposée'} %}
+<div class="dec-status-actions">
+    {% if index > 0 %}
+        {{ _self.button(taxYear, order[index - 1], backwardLabel[order[index - 1]]) }}
+    {% endif %}
+    {% if index < 2 %}
+        {{ _self.button(taxYear, order[index + 1], forwardLabel[order[index + 1]]) }}
+    {% endif %}
+</div>
+
+{% macro button(taxYear, to, label) %}
+    <form method="post" action="{{ path('app_tax_year_status', {year: taxYear.year}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('tax_year_status_' ~ taxYear.id) }}">
+        <input type="hidden" name="to" value="{{ to }}">
+        <twig:Button type="submit" label="{{ label }}" variant="secondary" />
+    </form>
+{% endmacro %}

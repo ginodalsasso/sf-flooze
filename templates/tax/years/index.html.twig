@@ -1,0 +1,60 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Années fiscales — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Années fiscales"
+    subtitle="Statut de revue, par année"
+/>
+
+<div class="page-content">
+    <div class="dec-stack">
+        {% if taxYears|length == 0 %}
+            <twig:EmptyState
+                icon="calendar-range"
+                text="Aucune revue commencée"
+                hint="Ouvre l'année en cours pour démarrer la revue de ta déclaration."
+                ctaLabel="Revoir {{ currentYear }}"
+                ctaHref="{{ path('app_tax_year_show', {year: currentYear}) }}"
+            />
+        {% else %}
+            <twig:Button
+                as="a"
+                href="{{ path('app_tax_year_show', {year: currentYear}) }}"
+                icon="calendar-range"
+                label="Revoir {{ currentYear }}"
+                variant="secondary"
+            />
+
+            <div class="data-table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Année</th>
+                            <th>Statut</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for taxYear in taxYears %}
+                            <tr>
+                                <td>{{ taxYear.year }}</td>
+                                <td>
+                                    <twig:Badge
+                                        label="{{ taxYear.status.label() }}"
+                                        variant="{{ taxYear.status.value == 'draft' ? 'info' : (taxYear.status.value == 'filed' ? 'active' : 'positive') }}"
+                                    />
+                                </td>
+                                <td>
+                                    <a href="{{ path('app_tax_year_show', {year: taxYear.year}) }}">Revoir</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

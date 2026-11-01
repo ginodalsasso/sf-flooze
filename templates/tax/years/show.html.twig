@@ -1,0 +1,45 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% include 'tax/declaration/_styles.html.twig' %}
+{% endblock %}
+
+{% block title %}Revue {{ taxYear.year }} — Flooze{% endblock %}
+
+{% block content %}
+<twig:PageHeader
+    title="Revue {{ taxYear.year }}"
+    subtitle="Coche ce qui est reporté sur la déclaration officielle"
+/>
+
+<div class="page-content">
+    <div class="dec-stack">
+
+        {% include 'tax/_year_switcher.html.twig' with {
+            routeName: 'app_tax_year_show',
+            currentYear: taxYear.year,
+            availableYears: summary.availableYears,
+        } %}
+
+        <div class="dec-status">
+            <twig:Badge
+                label="{{ taxYear.status.label() }}"
+                variant="{{ taxYear.status.value == 'draft' ? 'info' : (taxYear.status.value == 'filed' ? 'active' : 'positive') }}"
+            />
+            {% include 'tax/years/forms/_status.html.twig' with {taxYear: taxYear} %}
+        </div>
+
+        {% include 'tax/years/forms/_note.html.twig' with {taxYear: taxYear} %}
+
+        {% include 'tax/_summary.html.twig' with {
+            summary: summary,
+            loanCharges: loanCharges,
+            editable: true,
+            taxYear: taxYear,
+            itemsByKey: itemsByKey,
+            regimeChoices: regimeChoices,
+        } %}
+    </div>
+</div>
+{% endblock %}
