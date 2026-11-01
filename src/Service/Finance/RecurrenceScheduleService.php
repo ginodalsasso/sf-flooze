@@ -6,10 +6,13 @@ namespace App\Service\Finance;
 
 use App\Entity\RecurringTransaction;
 use App\Enum\RecurrenceUnitEnum;
+use App\Service\Date\Contract\DateShifterInterface;
 use App\Service\Finance\Contract\RecurrenceScheduleServiceInterface;
 
 final class RecurrenceScheduleService implements RecurrenceScheduleServiceInterface
 {
+    public function __construct(private readonly DateShifterInterface $dateShifter) {}
+
     /**
      * Return the date of the $index‑th occurrence of a recurring transaction.
      *
@@ -25,7 +28,7 @@ final class RecurrenceScheduleService implements RecurrenceScheduleServiceInterf
 
         return match ($frequency->unit()) {
             RecurrenceUnitEnum::DAY => $start->modify(sprintf('%+d days', $index * $step)),
-            RecurrenceUnitEnum::MONTH => $this->addMonthsClamped($start, $index * $step),
+            RecurrenceUnitEnum::MONTH => $this->dateShifter->addMonths($start, $index * $step),
         };
     }
 
@@ -81,23 +84,6 @@ final class RecurrenceScheduleService implements RecurrenceScheduleServiceInterf
         }
 
         return $dates;
-    }
-
-    /**
-     * Add $months months to $date, keeping the day within the target month.
-     * If the original day does not exist in the target month (e.g., 31 Jan → Feb),
-     * the day is clamped to the last day of that month.
-     * $new = $service->addMonthsClamped(new \DateTimeImmutable('2023-01-31'), 1);
-     * // $new is 2023-02-28
-     */
-    private function addMonthsClamped(\DateTimeImmutable $date, int $months): \DateTimeImmutable
-    {
-        $firstOfTargetMonth = $date->modify('first day of this month')->modify(sprintf('%+d months', $months));
-        $day = min((int) $date->format('d'), (int) $firstOfTargetMonth->format('t'));
-
-        return $firstOfTargetMonth
-            ->setDate((int) $firstOfTargetMonth->format('Y'), (int) $firstOfTargetMonth->format('n'), $day)
-            ->setTime(0, 0);
     }
 
     /**
