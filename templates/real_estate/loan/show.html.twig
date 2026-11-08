@@ -322,6 +322,9 @@
             <twig:Button as="a" href="{{ path('app_loan_index') }}" icon="arrow-left" label="Tous les emprunts" variant="ghost" />
             <twig:Button as="a" href="{{ path('app_property_show', {id: loan.property.id}) }}" icon="building-2" label="Voir le bien" variant="secondary" />
             <twig:Button as="a" href="{{ path('app_loan_edit', {id: loan.id}) }}" icon="pencil" label="Modifier le dossier" variant="secondary" />
+            {% if not schedule.isEmpty %}
+                <twig:Button as="a" href="{{ path('app_loan_amortization_pdf', {id: loan.id}) }}" icon="file-down" label="Exporter en PDF" variant="secondary" />
+            {% endif %}
             {% include 'real_estate/loan/forms/_delete.html.twig' with {loan: loan} %}
         </div>
     </div>

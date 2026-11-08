@@ -11,6 +11,7 @@ use App\Form\RealEstate\LoanPaymentConfirmFormType;
 use App\Repository\Contract\LoanPaymentRepositoryInterface;
 use App\Repository\Contract\LoanRepositoryInterface;
 use App\Repository\Contract\PropertyRepositoryInterface;
+use App\Service\RealEstate\Contract\LoanAmortizationPdfGeneratorInterface;
 use App\Service\RealEstate\Contract\LoanAmortizationServiceInterface;
 use App\Service\RealEstate\Contract\LoanPaymentServiceInterface;
 use App\Service\RealEstate\Contract\LoanServiceInterface;
@@ -30,6 +31,7 @@ class LoanController extends AbstractController
     public function __construct(
         private readonly LoanServiceInterface $loanService,
         private readonly LoanAmortizationServiceInterface $amortizationService,
+        private readonly LoanAmortizationPdfGeneratorInterface $amortizationPdfGenerator,
         private readonly LoanPaymentServiceInterface $loanPaymentService,
         private readonly LoanRepositoryInterface $loanRepository,
         private readonly LoanPaymentRepositoryInterface $loanPaymentRepository,
@@ -92,6 +94,20 @@ class LoanController extends AbstractController
             'nextRow' => $this->loanPaymentService->nextDueRow($loan),
             'confirmForm' => $this->createForm(LoanPaymentConfirmFormType::class, null, ['space' => $loan->getSpace()])->createView(),
             'payments' => $this->loanPaymentRepository->findByLoan($loan),
+        ]);
+    }
+
+    #[Route('/{id}/amortization.pdf', name: 'amortization_pdf', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function amortizationPdf(Loan $loan): Response
+    {
+        $this->denyAccessUnlessGranted('VIEW', $loan->getSpace());
+
+        $pdf = $this->amortizationPdfGenerator->generate($loan, $this->amortizationService->schedule($loan));
+        $year = (int) $this->clock->now()->format('Y');
+
+        return new Response($pdf, Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => sprintf('attachment; filename="amortissement-%d-%d.pdf"', $loan->getId(), $year),
         ]);
     }
 

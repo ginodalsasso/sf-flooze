@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: DejaVu Sans, sans-serif; font-size: 8.5pt; color: #1a1a1a; }
+        h1 { font-size: 14pt; margin: 0 0 4pt; }
+        h2 { font-size: 10.5pt; margin: 14pt 0 5pt; }
+        .meta { margin: 0 0 8pt; color: #555; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 3pt 4pt; border-bottom: 0.5pt solid #ccc; text-align: right; }
+        th:first-child, td:first-child { text-align: left; }
+        thead th { background: #f0f0f0; font-weight: bold; }
+        tr.total td { font-weight: bold; border-top: 1pt solid #1a1a1a; }
+        .note { border: 0.5pt solid #999; padding: 6pt 8pt; margin: 10pt 0; font-size: 8pt; }
+    </style>
+</head>
+<body>
+{% set currency = loan.space.currency %}
+{% set combined = schedule.combined %}
+
+<h1>Échéancier d'emprunt — {{ loan.bankName }}</h1>
+<p class="meta">
+    {{ loan.property.name }} · fonds débloqués le {{ loan.startDate|date_short }}<br>
+    Capital emprunté {{ schedule.borrowedCapital|money(currency) }} ·
+    Coût du crédit {{ combined.totalCost()|money(currency) }}
+    (intérêts {{ combined.totalInterest|money(currency) }} + assurance {{ combined.totalInsurance|money(currency) }})
+</p>
+
+<div class="note">
+    <strong>Échéancier théorique.</strong> Calculé sur les termes du dossier : taux fixe, mensualité constante
+    par ligne, première échéance un mois après le déblocage, assurance sur le capital de la ligne.
+    Il ne reflète pas les paiements effectivement réglés. Seule la part intérêts + assurance est déductible
+    des revenus fonciers au régime réel.
+</div>
+
+<h2>Récapitulatif par année</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Année</th>
+            <th>Échéances</th>
+            <th>Capital</th>
+            <th>Intérêts</th>
+            <th>Assurance</th>
+            <th>Déductible</th>
+            <th>Total versé</th>
+            <th>Capital restant dû</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for year in combined.years %}
+        <tr>
+            <td>{{ year.year }}</td>
+            <td>{{ year.instalmentCount }}</td>
+            <td>{{ year.capitalPart|money(currency) }}</td>
+            <td>{{ year.interestPart|money(currency) }}</td>
+            <td>{{ year.insurancePart|money(currency) }}</td>
+            <td>{{ year.deductiblePart()|money(currency) }}</td>
+            <td>{{ year.totalPayment|money(currency) }}</td>
+            <td>{{ year.remainingCapital|money(currency) }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<h2>Détail mois par mois</h2>
+<table>
+    <thead>
+        <tr>
+            <th>N°</th>
+            <th>Échéance</th>
+            <th>Capital</th>
+            <th>Intérêts</th>
+            <th>Assurance</th>
+            <th>Total</th>
+            <th>Capital restant dû</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in combined.rows %}
+        <tr>
+            <td>{{ row.monthNumber }}</td>
+            <td>{{ row.dueDate|date_short }}</td>
+            <td>{{ row.capitalPart|money(currency) }}</td>
+            <td>{{ row.interestPart|money(currency) }}</td>
+            <td>{{ row.insurancePart|money(currency) }}</td>
+            <td>{{ row.totalPayment|money(currency) }}</td>
+            <td>{{ row.remainingCapital|money(currency) }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>
