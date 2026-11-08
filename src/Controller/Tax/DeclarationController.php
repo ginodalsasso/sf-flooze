@@ -7,6 +7,7 @@ namespace App\Controller\Tax;
 use App\Controller\ActiveSpaceControllerTrait;
 use App\Service\RealEstate\Contract\LoanChargeServiceInterface;
 use App\Service\Space\Contract\SpaceResolverInterface;
+use App\Service\Tax\Contract\TaxDeclarationCsvGeneratorInterface;
 use App\Service\Tax\Contract\TaxSummaryServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -26,6 +27,7 @@ class DeclarationController extends AbstractController
     public function __construct(
         private readonly TaxSummaryServiceInterface $taxSummaryService,
         private readonly LoanChargeServiceInterface $loanChargeService,
+        private readonly TaxDeclarationCsvGeneratorInterface $taxDeclarationCsvGenerator,
         private readonly SpaceResolverInterface $spaceResolver,
     ) {}
 
@@ -44,6 +46,31 @@ class DeclarationController extends AbstractController
         return $this->render('tax/declaration/index.html.twig', [
             'summary' => $summary,
             'loanCharges' => $this->loanChargeService->chargesForYear($space, $summary->year),
+        ]);
+    }
+
+    #[Route('/{year}/export.csv', name: 'export_csv', requirements: ['year' => '\d{4}'], methods: ['GET'])]
+    public function exportCsv(int $year): Response
+    {
+        $space = $this->resolveActiveSpace('VIEW');
+        if ($space instanceof RedirectResponse) {
+            return $space;
+        }
+
+        // The service falls back to another year when this one has no movements: refuse rather than export the wrong one.
+        $summary = $this->taxSummaryService->summarize($space, $year);
+        if ($summary->year !== $year) {
+            throw $this->createNotFoundException();
+        }
+
+        $csv = $this->taxDeclarationCsvGenerator->generate(
+            $summary,
+            $this->loanChargeService->chargesForYear($space, $year),
+        );
+
+        return new Response($csv, Response::HTTP_OK, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => sprintf('attachment; filename="declaration-%d.csv"', $year),
         ]);
     }
 }

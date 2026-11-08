@@ -11,6 +11,8 @@
 <twig:PageHeader
     title="Déclaration {{ summary.year }}"
     subtitle="Catégorie fiscale par catégorie fiscale, comme la loi les cloisonne"
+    ctaLabel="Exporter en CSV"
+    ctaHref="{{ path('app_declaration_export_csv', {year: summary.year}) }}"
 />
 
 <div class="page-content">
